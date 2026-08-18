@@ -1,0 +1,88 @@
+.solis-route-fallback {
+  width: 100%;
+  padding: var(--space-8, 32px) var(--space-6, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  animation: solisFadeIn 0.2s ease-out;
+}
+
+.solis-route-fallback__shimmer-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  max-width: 480px;
+}
+
+.solis-route-fallback__bar {
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-surface-elevated, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.06));
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-route-fallback__bar--title {
+  width: 240px;
+  height: 36px;
+}
+
+.solis-route-fallback__bar--subtitle {
+  width: 360px;
+  height: 18px;
+}
+
+.solis-route-fallback__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-6, 24px);
+}
+
+.solis-route-fallback__card {
+  height: 240px;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--color-bg-surface, #FFFFFF);
+  border: 1px solid var(--color-border-subtle, rgba(0, 0, 0, 0.06));
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-route-fallback__bar::after,
+.solis-route-fallback__card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  animation: solisShimmer 1.5s infinite;
+}
+
+[data-theme='dark'] .solis-route-fallback__bar::after,
+[data-theme='dark'] .solis-route-fallback__card::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes solisShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes solisFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

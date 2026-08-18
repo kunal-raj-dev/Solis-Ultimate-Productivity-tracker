@@ -1,0 +1,65 @@
+.solis-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+
+.solis-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-progress-track {
+  width: 100%;
+  background-color: var(--color-ivory-300);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.solis-progress-track--sm {
+  height: 4px;
+}
+
+.solis-progress-track--md {
+  height: 8px;
+}
+
+.solis-progress-track--lg {
+  height: 12px;
+}
+
+.solis-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.6s var(--ease-out-expo);
+  position: relative;
+}
+
+.solis-progress-fill--coral {
+  background-color: var(--color-coral-500);
+}
+
+.solis-progress-fill--amber {
+  background-color: var(--color-amber-500);
+}
+
+.solis-progress-fill--sage {
+  background-color: var(--color-sage-500);
+}
+
+.solis-progress-fill--lavender {
+  background-color: var(--color-lavender-500);
+}
+
+.solis-progress-fill--momentum {
+  background: var(--gradient-momentum);
+}
+
+.solis-progress-fill--charcoal {
+  background-color: var(--color-charcoal-900);
+}

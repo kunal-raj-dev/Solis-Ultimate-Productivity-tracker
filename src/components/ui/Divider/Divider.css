@@ -1,0 +1,38 @@
+.solis-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: none;
+  margin: var(--space-md) 0;
+}
+
+.solis-divider--horizontal {
+  height: 1px;
+  background-color: var(--border-subtle);
+}
+
+.solis-divider--vertical {
+  width: 1px;
+  height: 100%;
+  min-height: 24px;
+  background-color: var(--border-subtle);
+  margin: 0 var(--space-sm);
+}
+
+.solis-divider-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.solis-divider-label::before,
+.solis-divider-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-subtle);
+}

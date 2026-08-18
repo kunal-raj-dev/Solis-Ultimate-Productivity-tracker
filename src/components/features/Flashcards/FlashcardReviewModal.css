@@ -1,0 +1,128 @@
+.solis-card-flip-container {
+  perspective: 1000px;
+  width: 100%;
+  min-height: 260px;
+  cursor: pointer;
+  margin: var(--space-md) 0;
+}
+
+.solis-card-flip-inner {
+  position: relative;
+  width: 100%;
+  min-height: 260px;
+  text-align: center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+
+.solis-card-flip-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.solis-card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-xl) var(--space-lg);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  box-shadow: var(--shadow-floating);
+}
+
+.solis-card-face--front {
+  color: var(--text-primary);
+}
+
+.solis-card-face--back {
+  background-color: var(--bg-surface-secondary);
+  border-color: var(--border-strong);
+  transform: rotateY(180deg);
+}
+
+.solis-card-prompt {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  line-height: 1.4;
+  margin-bottom: var(--space-md);
+  max-width: 90%;
+}
+
+.solis-card-answer {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-md);
+  line-height: 1.6;
+  color: var(--text-primary);
+  max-width: 90%;
+}
+
+.solis-cloze-blank {
+  display: inline-block;
+  padding: 2px 8px;
+  border-bottom: 2px solid var(--color-coral-500);
+  background-color: var(--color-coral-100);
+  color: var(--color-coral-600);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.solis-recall-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.solis-recall-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm) var(--space-xs);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-smooth);
+}
+
+.solis-recall-btn:hover {
+  transform: translateY(-2px);
+}
+
+.solis-recall-btn--again:hover {
+  border-color: var(--status-error);
+  background-color: var(--status-error-bg);
+}
+
+.solis-recall-btn--hard:hover {
+  border-color: var(--status-warning);
+  background-color: var(--status-warning-bg);
+}
+
+.solis-recall-btn--good:hover {
+  border-color: var(--color-sage-500);
+  background-color: var(--color-sage-100);
+}
+
+.solis-recall-btn--easy:hover {
+  border-color: var(--color-lavender-500);
+  background-color: var(--color-lavender-100);
+}
+
+.solis-recall-btn__label {
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+}
+
+.solis-recall-btn__interval {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  margin-top: 2px;
+}

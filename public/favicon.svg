@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <circle cx="16" cy="16" r="14" fill="#1A1816"/>
+  <circle cx="16" cy="16" r="8" fill="url(#solis-grad)"/>
+  <circle cx="21" cy="11" r="2.5" fill="#FAF8F5" fill-opacity="0.9"/>
+  <defs>
+    <linearGradient id="solis-grad" x1="8" y1="8" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E65A41"/>
+      <stop offset="0.55" stop-color="#E58E26"/>
+      <stop offset="1" stop-color="#D64562"/>
+    </linearGradient>
+  </defs>
+</svg>

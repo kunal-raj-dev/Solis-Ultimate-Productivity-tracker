@@ -33,3 +33,4 @@ dist-ssr
 # Vitest / coverage
 coverage/
 .vitest/
+*.tsbuildinfo

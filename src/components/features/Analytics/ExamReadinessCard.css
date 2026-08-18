@@ -1,0 +1,53 @@
+.solis-readiness-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: 16px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.solis-readiness-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.solis-readiness-score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.solis-readiness-number {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-coral-500);
+}
+
+.solis-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .solis-readiness-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.solis-readiness-component {
+  padding: 10px 12px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

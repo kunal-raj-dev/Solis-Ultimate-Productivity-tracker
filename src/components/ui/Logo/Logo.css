@@ -1,0 +1,104 @@
+/* ==========================================================================
+   SOLIS — LOGO & BRAND EMBLEM (Unified Adaptive Identity)
+   ========================================================================== */
+
+.solis-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  text-decoration: none;
+  user-select: none;
+  transition: opacity var(--transition-fast);
+}
+
+.solis-brand-logo:hover {
+  opacity: 0.92;
+}
+
+/* Emblem / Spark Mark */
+.solis-brand-logo__mark {
+  border-radius: 50%;
+  background: var(--gradient-momentum);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(230, 90, 65, 0.35);
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.solis-brand-logo:hover .solis-brand-logo__mark {
+  transform: scale(1.05);
+}
+
+/* Sizes */
+.solis-brand-logo--sm .solis-brand-logo__mark {
+  width: 22px;
+  height: 22px;
+}
+
+.solis-brand-logo--md .solis-brand-logo__mark {
+  width: 28px;
+  height: 28px;
+}
+
+.solis-brand-logo--lg .solis-brand-logo__mark {
+  width: 36px;
+  height: 36px;
+}
+
+/* Wordmark */
+.solis-brand-logo__wordmark {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.solis-brand-logo--sm .solis-brand-logo__wordmark {
+  font-size: var(--text-body-lg);
+}
+
+.solis-brand-logo--md .solis-brand-logo__wordmark {
+  font-size: var(--text-heading-2);
+}
+
+.solis-brand-logo--lg .solis-brand-logo__wordmark {
+  font-size: var(--text-heading-1);
+}
+
+/* Context-Aware Color Variants */
+.solis-brand-logo--auto .solis-brand-logo__wordmark {
+  color: var(--text-primary);
+}
+
+.solis-brand-logo--light .solis-brand-logo__wordmark,
+.solis-brand-logo--hero .solis-brand-logo__wordmark {
+  color: #FCFAF7 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.solis-brand-logo--dark .solis-brand-logo__wordmark {
+  color: #1A1816 !important;
+}
+
+/* Optional OS Badge */
+.solis-brand-logo__badge {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  margin-left: 4px;
+}
+
+.solis-brand-logo--hero .solis-brand-logo__badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}

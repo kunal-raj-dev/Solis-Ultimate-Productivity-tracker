@@ -1,0 +1,198 @@
+.solis-sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background-color: var(--bg-surface-primary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  user-select: none;
+}
+
+@media (max-width: 1023px) {
+  .solis-sidebar {
+    display: none;
+  }
+}
+
+.solis-sidebar__brand {
+  height: var(--header-height);
+  padding: 0 var(--space-lg);
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-sidebar__nav {
+  flex: 1;
+  padding: var(--space-md) var(--space-sm);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.solis-sidebar__section-title {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  padding: 0 var(--space-sm);
+  margin-bottom: var(--space-2xs);
+}
+
+.solis-sidebar__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  position: relative;
+}
+
+.solis-sidebar__link:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+/* Refined Active Navigation Indicator */
+.solis-sidebar__link--active {
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.solis-sidebar__link--active::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  background-color: var(--color-coral-500);
+  border-radius: var(--radius-full);
+}
+
+.solis-sidebar__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.solis-sidebar__link-badge {
+  margin-left: auto;
+  font-size: var(--text-micro);
+  background-color: var(--status-warning-bg);
+  color: var(--color-coral-500);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Momentum Summary Pod */
+.solis-sidebar__momentum-pod {
+  margin: 0 var(--space-sm) var(--space-sm);
+  padding: 10px 12px;
+  background-color: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-sidebar__momentum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solis-sidebar__momentum-bar {
+  height: 4px;
+  background-color: var(--bg-surface-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.solis-sidebar__momentum-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--gradient-momentum);
+  transition: width 0.6s var(--ease-spatial);
+}
+
+/* Footer Section */
+.solis-sidebar__footer {
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solis-sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.solis-sidebar__user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.solis-sidebar__user-name {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-sidebar__user-email {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-sidebar__logout-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.solis-sidebar__logout-btn:hover {
+  background-color: var(--status-error-bg);
+  color: var(--status-error);
+}

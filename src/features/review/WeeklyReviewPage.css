@@ -1,0 +1,123 @@
+.solis-review-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 800px;
+  padding-bottom: 60px;
+}
+
+.solis-review-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.solis-review-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-primary);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.solis-review-step-btn:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.solis-review-step-btn--active {
+  border-color: var(--color-coral-500);
+  background: var(--surface-secondary);
+  color: var(--color-coral-500);
+  font-weight: 600;
+}
+
+.solis-review-step-btn--completed {
+  border-color: var(--color-sage-500);
+  color: var(--color-sage-500);
+}
+
+.solis-review-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.solis-review-step-btn--active .solis-review-step-num {
+  background: var(--color-coral-500);
+  color: #fff;
+}
+
+.solis-review-step-btn--completed .solis-review-step-num {
+  background: var(--color-sage-500);
+  color: #fff;
+}
+
+.solis-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.solis-review-stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.solis-review-stat-num {
+  font-family: var(--font-heading);
+  font-size: var(--text-h3);
+  font-weight: 700;
+  color: var(--color-coral-500);
+  line-height: 1.1;
+}
+
+.solis-review-stat-lbl {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.solis-review-intel-banner {
+  padding: 14px 16px;
+  background: var(--surface-secondary);
+  border-left: 3px solid var(--color-coral-500);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.solis-review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}

@@ -1,0 +1,73 @@
+/* ==========================================================================
+   SOLIS — MOBILE BOTTOM NAVIGATION (Phase 6 Reformation)
+   ========================================================================== */
+
+.solis-mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--mobile-nav-height);
+  background-color: var(--nav-bg-scrolled);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--nav-border);
+  box-shadow: var(--nav-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 var(--space-xs);
+  z-index: var(--z-header);
+}
+
+@media (min-width: 1024px) {
+  .solis-mobile-nav {
+    display: none;
+  }
+}
+
+.solis-mobile-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 4px 8px;
+  color: var(--nav-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.solis-mobile-nav__item:hover {
+  color: var(--nav-text);
+}
+
+.solis-mobile-nav__item--active {
+  color: var(--color-coral-500);
+}
+
+.solis-mobile-nav__item--active .solis-mobile-nav__icon {
+  transform: translateY(-1px);
+}
+
+.solis-mobile-nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast);
+}
+
+.solis-mobile-nav__label {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.solis-mobile-nav__item--active .solis-mobile-nav__label {
+  font-weight: 700;
+}

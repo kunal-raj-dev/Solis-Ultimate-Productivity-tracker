@@ -1,0 +1,114 @@
+.solis-timeblock-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-timeblock-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-timeblock-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.solis-timeblock-stat-label {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.solis-timeblock-stat-value {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.solis-timeblock-conflict-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background-color: var(--status-warning-bg);
+  border: 1px solid var(--status-warning);
+  color: var(--status-warning);
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+
+.solis-timeblock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-timeblock-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: var(--bg-surface-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--duration-fast) var(--ease-out-smooth);
+}
+
+.solis-timeblock-card:hover {
+  border-color: var(--border-strong);
+  transform: translateX(2px);
+}
+
+.solis-timeblock-card--conflict {
+  border-left: 3px solid var(--status-warning);
+}
+
+.solis-timeblock-card--completed {
+  opacity: 0.65;
+}
+
+.solis-timeblock-card__time {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  min-width: 105px;
+  color: var(--text-primary);
+}
+
+.solis-timeblock-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  margin: 0 var(--space-md);
+}
+
+.solis-timeblock-card__title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-timeblock-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-timeblock-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -1,0 +1,141 @@
+/* ==========================================================================
+   SOLIS — MARKETING LAYOUT & HERO NAVIGATION (Phase 6 Reformation)
+   Context-Aware Floating Navigation with Smooth Scroll Transformation
+   ========================================================================== */
+
+.solis-marketing-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-canvas);
+  position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   01 // CONTEXT-AWARE FLOATING NAVBAR
+   -------------------------------------------------------------------------- */
+.solis-marketing-nav {
+  height: 72px;
+  position: sticky;
+  top: 0;
+  background-color: var(--nav-bg-transparent);
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  transition:
+    background-color var(--duration-deliberate) var(--ease-spatial),
+    border-color var(--duration-deliberate) var(--ease-spatial),
+    box-shadow var(--duration-deliberate) var(--ease-spatial),
+    backdrop-filter var(--duration-deliberate) var(--ease-spatial);
+}
+
+/* Scrolled Transformation State */
+.solis-marketing-nav--scrolled {
+  background-color: var(--nav-bg-scrolled);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: var(--nav-shadow);
+}
+
+.solis-marketing-nav__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Navigation Links */
+.solis-marketing-links {
+  display: none;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+@media (min-width: 768px) {
+  .solis-marketing-links {
+    display: flex;
+  }
+}
+
+.solis-marketing-link {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--nav-text-muted);
+  transition: color var(--transition-fast);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.solis-marketing-link:hover {
+  color: var(--nav-text);
+}
+
+/* Top of page / Hero state (Warm light text over atmospheric hero) */
+.solis-marketing-link--hero {
+  color: rgba(245, 242, 235, 0.82) !important;
+}
+
+.solis-marketing-link--hero:hover {
+  color: #FFFFFF !important;
+}
+
+.solis-marketing-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.solis-marketing-btn--hero-ghost {
+  color: #F5F2EB !important;
+}
+
+.solis-marketing-btn--hero-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #FFFFFF !important;
+}
+
+/* --------------------------------------------------------------------------
+   02 // MAIN SLOT & FOOTER
+   -------------------------------------------------------------------------- */
+.solis-marketing-main {
+  flex: 1;
+  z-index: var(--z-base);
+}
+
+.solis-marketing-footer {
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-2xl) 0 var(--space-xl);
+  background-color: var(--bg-surface-primary);
+  margin-top: auto;
+}
+
+.solis-marketing-footer__grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  justify-content: space-between;
+}
+
+@media (min-width: 768px) {
+  .solis-marketing-footer__grid {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.solis-marketing-footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.solis-marketing-footer__copy {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}

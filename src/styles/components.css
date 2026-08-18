@@ -1,0 +1,151 @@
+/* ==========================================================================
+   SOLIS — DESIGN SYSTEM 2.0 BASE COMPONENT & UTILITY STYLES
+   Depth layers, tactile press, subject accents, focus rings, responsive grids
+   ========================================================================== */
+
+/* Focus Ring System (Accessible, distinct, high-contrast) */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Container Scale */
+.container-full {
+  width: 100%;
+  max-width: var(--max-content-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-md);
+  padding-right: var(--space-md);
+}
+
+.container-narrow {
+  width: 100%;
+  max-width: var(--max-readable-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-md);
+  padding-right: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .container-full {
+    padding-left: var(--space-xl);
+    padding-right: var(--space-xl);
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-full {
+    padding-left: var(--space-2xl);
+    padding-right: var(--space-2xl);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   DEPTH SYSTEM 2.0 UTILITIES
+   -------------------------------------------------------------------------- */
+.depth-0 {
+  background-color: var(--depth-0-bg);
+}
+
+.depth-1 {
+  background-color: var(--depth-1-bg);
+  border: 1px solid var(--depth-1-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--depth-1-shadow);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.depth-1:hover {
+  border-color: var(--border-default);
+}
+
+.depth-2 {
+  background-color: var(--depth-2-bg);
+  border: 1px solid var(--depth-2-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--depth-2-shadow);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.depth-2:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-floating);
+}
+
+.depth-3 {
+  background-color: var(--depth-3-bg);
+  border: 1px solid var(--depth-3-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--depth-3-shadow);
+}
+
+.depth-4 {
+  background-color: var(--depth-4-bg);
+  border: 1px solid var(--depth-4-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--depth-4-shadow);
+}
+
+/* --------------------------------------------------------------------------
+   TACTILE PRESS MICRO-INTERACTION (Pure Visual Tactility)
+   -------------------------------------------------------------------------- */
+.tactile-press {
+  transition: transform var(--duration-instant) var(--ease-tactile), background-color var(--duration-swift) ease;
+}
+
+.tactile-press:active {
+  transform: scale(0.982);
+}
+
+/* --------------------------------------------------------------------------
+   SUBJECT ACCENT PILLS
+   -------------------------------------------------------------------------- */
+.subject-pill-coral {
+  color: var(--subject-coral-accent);
+  background-color: var(--subject-coral-subtle);
+  border: 1px solid rgba(230, 90, 65, 0.2);
+}
+
+.subject-pill-amber {
+  color: var(--subject-amber-accent);
+  background-color: var(--subject-amber-subtle);
+  border: 1px solid rgba(229, 142, 38, 0.2);
+}
+
+.subject-pill-lavender {
+  color: var(--subject-lavender-accent);
+  background-color: var(--subject-lavender-subtle);
+  border: 1px solid rgba(126, 105, 171, 0.2);
+}
+
+.subject-pill-sage {
+  color: var(--subject-sage-accent);
+  background-color: var(--subject-sage-subtle);
+  border: 1px solid rgba(74, 124, 89, 0.2);
+}
+
+/* Editorial quote / narrative block */
+.editorial-lead {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-h3);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}

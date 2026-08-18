@@ -1,0 +1,70 @@
+.solis-auth-layout {
+  min-height: 100vh;
+  display: flex;
+  background-color: var(--bg-canvas);
+  position: relative;
+}
+
+.solis-auth-panel-visual {
+  display: none;
+  flex: 1;
+  background-color: var(--bg-dark-surface);
+  color: var(--text-dark-primary);
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-3xl);
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+@media (min-width: 1024px) {
+  .solis-auth-panel-visual {
+    display: flex;
+  }
+}
+
+.solis-auth-visual-glow {
+  position: absolute;
+  top: -20%;
+  right: -20%;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(230, 90, 65, 0.25) 0%, rgba(229, 142, 38, 0.1) 40%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.solis-auth-visual-quote {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  line-height: var(--leading-snug);
+  font-weight: var(--font-weight-normal);
+  max-width: 480px;
+  color: var(--color-ivory-50);
+}
+
+.solis-auth-visual-author {
+  margin-top: var(--space-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-charcoal-400);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}
+
+.solis-auth-panel-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-xl) var(--space-md);
+  position: relative;
+  z-index: var(--z-base);
+}
+
+.solis-auth-form-container {
+  width: 100%;
+  max-width: 420px;
+}

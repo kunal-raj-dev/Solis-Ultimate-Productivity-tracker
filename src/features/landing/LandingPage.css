@@ -1,0 +1,220 @@
+.solis-landing-hero {
+  padding: var(--space-3xl) 0 var(--space-2xl);
+  text-align: center;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .solis-landing-hero {
+    padding: var(--space-4xl) 0 var(--space-3xl);
+  }
+}
+
+.solis-landing-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 4px 14px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-subtle);
+}
+
+.solis-landing-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display-xl);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tighter);
+  max-width: 820px;
+  margin: 0 auto var(--space-md);
+}
+
+.solis-landing-title em {
+  font-style: italic;
+  color: var(--color-coral-500);
+}
+
+.solis-landing-lead {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-lg);
+  color: var(--text-secondary);
+  max-width: 620px;
+  margin: 0 auto var(--space-xl);
+  line-height: var(--leading-relaxed);
+}
+
+.solis-landing-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-3xl);
+}
+
+.solis-landing-preview-wrapper {
+  margin-top: var(--space-xl);
+  perspective: 1000px;
+}
+
+.solis-landing-preview-card {
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-floating);
+  padding: var(--space-xl);
+  max-width: 980px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-landing-preview-inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .solis-landing-preview-inner {
+    grid-template-columns: 1fr 1.2fr;
+  }
+}
+
+.solis-landing-preview-glow {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 300px;
+  height: 300px;
+  background: var(--gradient-momentum);
+  opacity: 0.15;
+  filter: blur(50px);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Pillars Section */
+.solis-landing-section {
+  padding: var(--space-3xl) 0;
+}
+
+.solis-landing-section-header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto var(--space-2xl);
+}
+
+.solis-pillars-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .solis-pillars-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .solis-pillars-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.solis-pillar-card {
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: all var(--transition-fast);
+}
+
+.solis-pillar-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-card);
+}
+
+.solis-pillar-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-xs);
+}
+
+.solis-pillar-icon--coral {
+  background-color: var(--color-coral-50);
+  color: var(--color-coral-600);
+}
+
+.solis-pillar-icon--amber {
+  background-color: var(--color-amber-50);
+  color: var(--color-amber-600);
+}
+
+.solis-pillar-icon--lavender {
+  background-color: var(--color-lavender-50);
+  color: var(--color-lavender-600);
+}
+
+.solis-pillar-icon--sage {
+  background-color: var(--color-sage-50);
+  color: var(--color-sage-600);
+}
+
+.solis-pillar-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  color: var(--text-primary);
+}
+
+.solis-pillar-desc {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+/* Philosophy Banner */
+.solis-philosophy-banner {
+  background-color: var(--bg-dark-surface);
+  color: var(--text-dark-primary);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-2xl) var(--space-lg);
+  margin: var(--space-2xl) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .solis-philosophy-banner {
+    padding: var(--space-3xl) var(--space-2xl);
+  }
+}
+
+.solis-philosophy-glow {
+  position: absolute;
+  bottom: -40%;
+  right: -10%;
+  width: 450px;
+  height: 450px;
+  background: var(--gradient-momentum);
+  opacity: 0.15;
+  filter: blur(70px);
+  border-radius: 50%;
+  pointer-events: none;
+}

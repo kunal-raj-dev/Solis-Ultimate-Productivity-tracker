@@ -1,0 +1,344 @@
+/* ==========================================================================
+   SOLIS — DESIGN SYSTEM 2.0 TOKENS (International-Grade Theme System)
+   Semantic Token Architecture for Warm Ivory (Day) & Deep Charcoal (Night)
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. RAW PALETTE FOUNDATIONS (Primitives)
+     ------------------------------------------------------------------------ */
+  /* Warm Ivory Scale */
+  --color-ivory-50: #FCFAF7;
+  --color-ivory-100: #FAF8F5; /* Day Canvas Ground */
+  --color-ivory-200: #F4F0EA; /* Day Surface Secondary */
+  --color-ivory-300: #ECE6DC; /* Day Subtle Dividers */
+  --color-ivory-400: #DFD7CA;
+  --color-ivory-500: #C4B9A7;
+
+  /* Deep Charcoal & Obsidian Scale */
+  --color-charcoal-950: #100E0D;
+  --color-charcoal-900: #141211; /* Night Canvas Ground */
+  --color-charcoal-850: #1A1816; /* Day Primary Text / Night Surface Primary Base */
+  --color-charcoal-800: #1E1B18; /* Night Surface Primary */
+  --color-charcoal-750: #25221F; /* Night Surface Elevated */
+  --color-charcoal-700: #282420; /* Night Surface Secondary */
+  --color-charcoal-650: #332E29; /* Night Surface Tertiary */
+  --color-charcoal-600: #5C5650; /* Day Secondary Text */
+  --color-charcoal-500: #7A726A;
+  --color-charcoal-400: #9B938A; /* Day Muted Text */
+  --color-charcoal-300: #ABA398; /* Night Secondary Text */
+  --color-charcoal-200: #DDD8D1;
+  --color-charcoal-100: #EFECE8;
+
+  /* Accent: Coral (Energy / Action / Focus) */
+  --color-coral-50: #FFF5F2;
+  --color-coral-100: #FFE6DF;
+  --color-coral-200: #FFCDC2;
+  --color-coral-300: #FFA894;
+  --color-coral-400: #FF6B52; /* High-contrast dark mode coral */
+  --color-coral-500: #E65A41; /* Core Coral Accent */
+  --color-coral-600: #CF442C;
+  --color-coral-700: #A8311D;
+
+  /* Accent: Golden Amber (Momentum / Active / Progress) */
+  --color-amber-50: #FFF9ED;
+  --color-amber-100: #FEF0D2;
+  --color-amber-200: #FDE0A4;
+  --color-amber-300: #FBCF7D;
+  --color-amber-400: #F5A23D; /* High-contrast dark mode amber */
+  --color-amber-500: #E58E26; /* Core Amber Accent */
+  --color-amber-600: #C77516;
+
+  /* Accent: Morning Rose / Pink (Reflection / Highlights) */
+  --color-rose-50: #FFF1F3;
+  --color-rose-100: #FFE0E6;
+  --color-rose-300: #FA9EB3;
+  --color-rose-500: #D64562;
+  --color-rose-600: #B72B47;
+
+  /* Accent: Twilight Lavender (Quiet / Notes / Theory) */
+  --color-lavender-50: #F8F6FD;
+  --color-lavender-100: #EEE9FB;
+  --color-lavender-300: #C2B3F0;
+  --color-lavender-400: #9B87CC; /* High-contrast dark mode lavender */
+  --color-lavender-500: #7E69AB;
+  --color-lavender-600: #644F91;
+
+  /* Accent: Calm Sage (Habits / Rituals / Clarity) */
+  --color-sage-50: #F2F8F4;
+  --color-sage-100: #E1F0E6;
+  --color-sage-300: #9DCBA9;
+  --color-sage-400: #62A375; /* High-contrast dark mode sage */
+  --color-sage-500: #4A7C59;
+  --color-sage-600: #396446;
+
+  /* ------------------------------------------------------------------------
+     2. SPACING SCALE
+     ------------------------------------------------------------------------ */
+  --space-3xs: 0.125rem; /* 2px */
+  --space-2xs: 0.25rem;  /* 4px */
+  --space-xs:  0.5rem;   /* 8px */
+  --space-sm:  0.75rem;  /* 12px */
+  --space-md:  1rem;     /* 16px */
+  --space-lg:  1.5rem;   /* 24px */
+  --space-xl:  2rem;     /* 32px */
+  --space-2xl: 3rem;     /* 48px */
+  --space-3xl: 4rem;     /* 64px */
+  --space-4xl: 6rem;     /* 96px */
+
+  /* ------------------------------------------------------------------------
+     3. BORDER RADIUS
+     ------------------------------------------------------------------------ */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
+
+  /* ------------------------------------------------------------------------
+     4. MOTION & TACTILE TRANSITIONS (Design System 2.0)
+     ------------------------------------------------------------------------ */
+  --duration-instant: 100ms;
+  --duration-swift: 200ms;
+  --duration-deliberate: 350ms;
+  --duration-cinematic: 600ms;
+
+  --ease-tactile: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spatial: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --transition-fast: var(--duration-swift) var(--ease-tactile);
+  --transition-base: var(--duration-deliberate) var(--ease-spatial);
+  --transition-smooth: var(--duration-cinematic) var(--ease-spatial);
+
+  /* ------------------------------------------------------------------------
+     5. LAYOUT & Z-INDEX
+     ------------------------------------------------------------------------ */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --header-height: 64px;
+  --mobile-nav-height: 68px;
+  --max-content-width: 1280px;
+  --max-readable-width: 760px;
+
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-drawer: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-toast: 600;
+  --z-tooltip: 700;
+
+  /* ------------------------------------------------------------------------
+     6. DEFAULT / DAY THEME SEMANTIC MAPPINGS (Warm Ivory)
+     ------------------------------------------------------------------------ */
+  --bg-canvas: #FAF8F5;
+  --bg-canvas-glass: rgba(250, 248, 245, 0.85);
+  --bg-surface-primary: #FFFFFF;
+  --bg-surface-secondary: #F4F0EA;
+  --bg-surface-tertiary: #ECE6DC;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-surface-floating: #FFFFFF;
+  --bg-surface-subtle: rgba(244, 240, 234, 0.65);
+  --bg-surface-hover: rgba(26, 24, 22, 0.035);
+  --bg-surface-active: rgba(26, 24, 22, 0.06);
+
+  /* Depths in Day Mode */
+  --depth-0-bg: #FAF8F5;
+  --depth-0-border: transparent;
+  --depth-1-bg: #FFFFFF;
+  --depth-1-border: rgba(26, 24, 22, 0.06);
+  --depth-1-shadow: 0 1px 3px rgba(26, 24, 22, 0.02), 0 4px 12px rgba(26, 24, 22, 0.03);
+  --depth-2-bg: #FFFFFF;
+  --depth-2-border: rgba(26, 24, 22, 0.09);
+  --depth-2-shadow: 0 4px 8px rgba(26, 24, 22, 0.03), 0 16px 36px rgba(26, 24, 22, 0.05);
+  --depth-3-bg: rgba(255, 255, 255, 0.82);
+  --depth-3-border: rgba(255, 255, 255, 0.6);
+  --depth-3-shadow: 0 8px 32px rgba(26, 24, 22, 0.06);
+  --depth-4-bg: #FFFFFF;
+  --depth-4-border: rgba(26, 24, 22, 0.12);
+  --depth-4-shadow: 0 12px 36px rgba(26, 24, 22, 0.08), 0 28px 64px rgba(26, 24, 22, 0.1);
+
+  /* Inverted / Dark Card Surfaces (For focus pods) */
+  --bg-dark-surface: #141211;
+  --bg-dark-surface-elevated: #1E1B18;
+  --text-dark-primary: #FCFAF7;
+  --text-dark-secondary: #ABA398;
+  --text-dark-muted: #7A726A;
+
+  /* Typography / Text Semantics */
+  --text-primary: #1A1816;
+  --text-secondary: #5C5650;
+  --text-muted: #9B938A;
+  --text-inverse: #FAF8F5;
+  --text-accent: #E65A41;
+
+  /* Primary Button Semantics */
+  --btn-primary-bg: #1A1816;
+  --btn-primary-text: #FAF8F5;
+  --btn-primary-hover: #100E0D;
+
+  /* Navigation Semantic Tokens (Day Mode) */
+  --nav-bg-transparent: transparent;
+  --nav-bg-scrolled: rgba(250, 248, 245, 0.85);
+  --nav-text: #1A1816;
+  --nav-text-muted: #5C5650;
+  --nav-text-active: #E65A41;
+  --nav-border: rgba(26, 24, 22, 0.08);
+  --nav-hover: rgba(26, 24, 22, 0.04);
+  --nav-focus: #E65A41;
+  --nav-shadow: 0 4px 20px rgba(26, 24, 22, 0.04);
+
+  /* Border Semantics */
+  --border-subtle: rgba(26, 24, 22, 0.06);
+  --border-default: rgba(26, 24, 22, 0.11);
+  --border-strong: rgba(26, 24, 22, 0.22);
+  --border-focus: #E65A41;
+
+  /* Skeletons */
+  --skeleton-base: #F4F0EA;
+  --skeleton-shimmer: #ECE6DC;
+
+  /* Functional Status */
+  --status-success: #4A7C59;
+  --status-success-bg: #F2F8F4;
+  --status-warning: #E58E26;
+  --status-warning-bg: #FFF9ED;
+  --status-error: #D9383A;
+  --status-error-bg: #FFF2F2;
+  --status-info: #7E69AB;
+  --status-info-bg: #F8F6FD;
+
+  /* Subject Identity Accents (Day Mode) */
+  --subject-coral-accent: #E65A41;
+  --subject-coral-subtle: rgba(230, 90, 65, 0.08);
+  --subject-amber-accent: #E58E26;
+  --subject-amber-subtle: rgba(229, 142, 38, 0.08);
+  --subject-lavender-accent: #7E69AB;
+  --subject-lavender-subtle: rgba(126, 105, 171, 0.08);
+  --subject-sage-accent: #4A7C59;
+  --subject-sage-subtle: rgba(74, 124, 89, 0.08);
+
+  /* Atmospheric Gradients (Day Mode) */
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(244, 240, 234, 0.8) 0%, rgba(250, 248, 245, 0) 70%);
+  --gradient-focus: linear-gradient(135deg, #1A1816 0%, #2A231F 55%, #3D221C 100%);
+  --gradient-momentum: linear-gradient(135deg, #E65A41 0%, #E58E26 60%, #D64562 100%);
+  --gradient-achievement: linear-gradient(135deg, #E58E26 0%, #F5B041 50%, #E65A41 100%);
+  --gradient-reflection: linear-gradient(135deg, #7E69AB 0%, #9B7EBD 50%, #D64562 100%);
+  --gradient-subtle-glow: radial-gradient(circle at 50% 10%, rgba(230, 90, 65, 0.05) 0%, rgba(250, 248, 245, 0) 65%);
+
+  /* Ambient Shadows */
+  --shadow-subtle: 0 1px 2px rgba(26, 24, 22, 0.03), 0 2px 6px rgba(26, 24, 22, 0.02);
+  --shadow-card: 0 2px 4px rgba(26, 24, 22, 0.02), 0 6px 16px rgba(26, 24, 22, 0.04);
+  --shadow-elevated: 0 4px 8px rgba(26, 24, 22, 0.03), 0 12px 32px rgba(26, 24, 22, 0.06);
+  --shadow-floating: 0 8px 16px rgba(26, 24, 22, 0.04), 0 24px 48px rgba(26, 24, 22, 0.08);
+  --shadow-inner: inset 0 1px 2px rgba(26, 24, 22, 0.04);
+}
+
+/* ==========================================================================
+   NIGHT THEME SEMANTIC MAPPINGS (Deep Charcoal / Obsidian)
+   Activated via [data-theme="dark"] or .dark on root
+   ========================================================================== */
+[data-theme="dark"],
+.dark {
+  --bg-canvas: #141211;
+  --bg-canvas-glass: rgba(20, 18, 17, 0.85);
+  --bg-surface-primary: #1E1B18;
+  --bg-surface-secondary: #282420;
+  --bg-surface-tertiary: #332E29;
+  --bg-surface-elevated: #25221F;
+  --bg-surface-floating: #2D2824;
+  --bg-surface-subtle: rgba(40, 36, 32, 0.65);
+  --bg-surface-hover: rgba(245, 242, 235, 0.06);
+  --bg-surface-active: rgba(245, 242, 235, 0.10);
+
+  /* Depths in Night Mode */
+  --depth-0-bg: #141211;
+  --depth-0-border: transparent;
+  --depth-1-bg: #1E1B18;
+  --depth-1-border: rgba(245, 242, 235, 0.08);
+  --depth-1-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --depth-2-bg: #25221F;
+  --depth-2-border: rgba(245, 242, 235, 0.12);
+  --depth-2-shadow: 0 4px 8px rgba(0, 0, 0, 0.35), 0 16px 36px rgba(0, 0, 0, 0.4);
+  --depth-3-bg: rgba(30, 27, 24, 0.85);
+  --depth-3-border: rgba(245, 242, 235, 0.16);
+  --depth-3-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --depth-4-bg: #2D2824;
+  --depth-4-border: rgba(245, 242, 235, 0.20);
+  --depth-4-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 28px 64px rgba(0, 0, 0, 0.7);
+
+  /* Inverted / Dark Card Surfaces */
+  --bg-dark-surface: #100E0D;
+  --bg-dark-surface-elevated: #1A1816;
+  --text-dark-primary: #FCFAF7;
+  --text-dark-secondary: #ABA398;
+  --text-dark-muted: #7D756B;
+
+  /* Typography / Text Semantics (Night Mode) */
+  --text-primary: #F5F2EB;
+  --text-secondary: #ABA398;
+  --text-muted: #7D756B;
+  --text-inverse: #141211;
+  --text-accent: #FF6B52;
+
+  /* Primary Button Semantics (Night Mode) */
+  --btn-primary-bg: #F5F2EB;
+  --btn-primary-text: #141211;
+  --btn-primary-hover: #FFFFFF;
+
+  /* Navigation Semantic Tokens (Night Mode) */
+  --nav-bg-transparent: transparent;
+  --nav-bg-scrolled: rgba(20, 18, 17, 0.85);
+  --nav-text: #F5F2EB;
+  --nav-text-muted: #ABA398;
+  --nav-text-active: #FF6B52;
+  --nav-border: rgba(245, 242, 235, 0.10);
+  --nav-hover: rgba(245, 242, 235, 0.06);
+  --nav-focus: #FF6B52;
+  --nav-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* Border Semantics (Night Mode) */
+  --border-subtle: rgba(245, 242, 235, 0.08);
+  --border-default: rgba(245, 242, 235, 0.14);
+  --border-strong: rgba(245, 242, 235, 0.24);
+  --border-focus: #FF6B52;
+
+  /* Skeletons (Night Mode) */
+  --skeleton-base: #282420;
+  --skeleton-shimmer: #332E29;
+
+  /* Functional Status (Night Mode) */
+  --status-success: #62A375;
+  --status-success-bg: rgba(74, 124, 89, 0.16);
+  --status-warning: #F5A23D;
+  --status-warning-bg: rgba(229, 142, 38, 0.16);
+  --status-error: #FF6B6B;
+  --status-error-bg: rgba(217, 56, 58, 0.18);
+  --status-info: #9B87CC;
+  --status-info-bg: rgba(126, 105, 171, 0.16);
+
+  /* Subject Identity Accents (Night Mode: High-contrast legible variants) */
+  --subject-coral-accent: #FF6B52;
+  --subject-coral-subtle: rgba(255, 107, 82, 0.14);
+  --subject-amber-accent: #F5A23D;
+  --subject-amber-subtle: rgba(245, 162, 61, 0.14);
+  --subject-lavender-accent: #9B87CC;
+  --subject-lavender-subtle: rgba(155, 135, 204, 0.14);
+  --subject-sage-accent: #62A375;
+  --subject-sage-subtle: rgba(98, 163, 117, 0.14);
+
+  /* Atmospheric Gradients (Night Mode) */
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(40, 36, 32, 0.8) 0%, rgba(20, 18, 17, 0) 70%);
+  --gradient-subtle-glow: radial-gradient(circle at 50% 10%, rgba(255, 107, 82, 0.08) 0%, rgba(20, 18, 17, 0) 65%);
+
+  /* Ambient Shadows (Night Mode) */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-floating: 0 12px 36px rgba(0, 0, 0, 0.6);
+  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}

@@ -1,0 +1,70 @@
+/* ==========================================================================
+   SOLIS — TEXTAREA (Design System 2.0)
+   Editorial writing surface, fluid expansion, custom focus states
+   ========================================================================== */
+
+.solis-textarea-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+
+.solis-textarea-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.solis-textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: var(--space-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+  resize: vertical;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-subtle);
+}
+
+.solis-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.solis-textarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(230, 90, 65, 0.12);
+}
+
+.solis-textarea--error {
+  border-color: var(--status-error) !important;
+}
+
+.solis-textarea:disabled {
+  background-color: var(--bg-surface-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Editorial Canvas Variant (for Notes & Journaling) */
+.solis-textarea--editorial {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-md);
+  line-height: 1.75;
+  padding: 0;
+}
+
+.solis-textarea--editorial:focus {
+  box-shadow: none;
+}

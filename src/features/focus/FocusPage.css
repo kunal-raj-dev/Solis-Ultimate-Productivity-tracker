@@ -1,0 +1,140 @@
+/* ==========================================================================
+   SOLIS — FOCUS SANCTUARY (Design System 2.0 Reformation)
+   Full-environment immersion, breathing ambient light, floating time typography
+   ========================================================================== */
+
+.solis-focus-sanctuary {
+  position: relative;
+  min-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-md);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  transition: background 1s var(--ease-spatial), box-shadow 1s var(--ease-spatial);
+}
+
+@media (min-width: 768px) {
+  .solis-focus-sanctuary {
+    padding: var(--space-3xl) var(--space-2xl);
+    min-height: calc(100vh - 200px);
+  }
+}
+
+/* Atmospheric State Variants */
+.solis-focus-sanctuary--idle {
+  background: radial-gradient(circle at 50% 40%, #26201B 0%, #161413 70%, #0F0E0D 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+}
+
+.solis-focus-sanctuary--running {
+  background: radial-gradient(circle at 50% 35%, #381C15 0%, #221512 60%, #0E0B0A 100%);
+  border: 1px solid rgba(230, 90, 65, 0.3);
+  box-shadow: 0 32px 80px rgba(230, 90, 65, 0.18);
+}
+
+.solis-focus-sanctuary--paused {
+  background: radial-gradient(circle at 50% 40%, #2C2038 0%, #1A1622 65%, #0E0C12 100%);
+  border: 1px solid rgba(126, 105, 171, 0.3);
+  box-shadow: 0 32px 80px rgba(126, 105, 171, 0.16);
+}
+
+.solis-focus-sanctuary--completed {
+  background: radial-gradient(circle at 50% 40%, #1F2E22 0%, #141D16 65%, #0B100C 100%);
+  border: 1px solid rgba(74, 124, 89, 0.35);
+  box-shadow: 0 32px 80px rgba(74, 124, 89, 0.2);
+}
+
+/* Floating Time Display */
+.solis-focus-time-display {
+  font-family: var(--font-display);
+  font-size: clamp(5.5rem, 16vw, 10rem);
+  font-weight: 300;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  color: var(--color-ivory-50);
+  margin: var(--space-xl) 0 var(--space-lg);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 36px rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
+
+/* Intention Header */
+.solis-focus-intention-input {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-ivory-50);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-heading-3);
+  padding: 8px 0;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.solis-focus-intention-input:focus {
+  border-color: var(--color-coral-300);
+}
+
+.solis-focus-intention-input::placeholder {
+  color: var(--color-charcoal-400);
+}
+
+/* Sanctuary Controls */
+.solis-focus-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+/* Soundscape Bar */
+.solis-soundscape-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  margin-top: var(--space-lg);
+  backdrop-filter: blur(8px);
+}
+
+.solis-locked-outcome-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  color: var(--color-ivory-100);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  max-width: 520px;
+  text-align: center;
+}
+
+.solis-focus-checkpoint-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(230, 90, 65, 0.15);
+  border: 1px solid rgba(230, 90, 65, 0.3);
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  color: var(--color-ivory-100);
+  font-size: var(--text-caption);
+  margin-top: var(--space-md);
+  animation: pulse-slow 3s infinite ease-in-out;
+}

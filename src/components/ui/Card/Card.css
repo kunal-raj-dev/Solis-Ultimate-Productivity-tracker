@@ -1,0 +1,77 @@
+.solis-card {
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-subtle);
+  padding: var(--space-lg);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.solis-card--elevated {
+  box-shadow: var(--shadow-card);
+  border-color: var(--border-default);
+}
+
+.solis-card--subtle {
+  background-color: var(--bg-surface-subtle);
+  box-shadow: none;
+}
+
+.solis-card--dark {
+  background-color: var(--bg-dark-surface);
+  color: var(--text-dark-primary);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-elevated);
+}
+
+.solis-card--interactive {
+  cursor: pointer;
+}
+
+.solis-card--interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-card);
+}
+
+.solis-card--interactive:active {
+  transform: translateY(0);
+}
+
+.solis-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.solis-card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: var(--font-weight-medium);
+  color: inherit;
+}
+
+.solis-card-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-card--dark .solis-card-subtitle {
+  color: var(--text-dark-secondary);
+}
+
+.solis-card-content {
+  color: inherit;
+}
+
+.solis-card-footer {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

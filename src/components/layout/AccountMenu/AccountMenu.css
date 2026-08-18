@@ -1,0 +1,183 @@
+.solis-account-menu-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.solis-account-menu__trigger {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.solis-account-menu__trigger:hover {
+  transform: scale(1.05);
+}
+
+.solis-account-menu__trigger:focus-visible {
+  outline: 2px solid var(--color-coral-500);
+  outline-offset: 2px;
+}
+
+/* Dropdown Panel */
+.solis-account-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-xs);
+  z-index: var(--z-dropdown);
+  animation: solisAccountFadeIn var(--transition-fast) ease-out;
+}
+
+@keyframes solisAccountFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Identity Section */
+.solis-account-dropdown__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-sm);
+}
+
+.solis-account-dropdown__avatar-wrapper {
+  flex-shrink: 0;
+}
+
+.solis-account-dropdown__user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.solis-account-dropdown__name {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-account-dropdown__email {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-account-dropdown__field {
+  font-size: var(--text-micro);
+  color: var(--color-coral-500);
+  font-weight: var(--font-weight-medium);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-account-dropdown__divider {
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: var(--space-xs) 0;
+}
+
+.solis-account-dropdown__section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Dropdown Action Items */
+.solis-account-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-regular);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.solis-account-dropdown__item:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.solis-account-dropdown__item:focus-visible {
+  outline: 2px solid var(--color-coral-500);
+  outline-offset: -2px;
+}
+
+.solis-account-dropdown__item-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.solis-account-dropdown__item:hover .solis-account-dropdown__item-icon {
+  color: var(--text-primary);
+}
+
+/* Danger / Sign Out Item */
+.solis-account-dropdown__item--danger {
+  color: var(--status-error);
+}
+
+.solis-account-dropdown__item--danger .solis-account-dropdown__item-icon {
+  color: var(--status-error);
+}
+
+.solis-account-dropdown__item--danger:hover {
+  background-color: var(--status-error-bg);
+  color: var(--status-error);
+}
+
+.solis-account-dropdown__item--danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.solis-account-dropdown__spinner {
+  animation: solisSpin 1s linear infinite;
+  color: var(--status-error);
+  flex-shrink: 0;
+}
+
+@keyframes solisSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

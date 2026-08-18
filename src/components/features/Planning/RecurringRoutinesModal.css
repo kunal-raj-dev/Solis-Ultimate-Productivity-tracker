@@ -1,0 +1,46 @@
+.solis-routine-weekday-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.solis-routine-day-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: var(--text-caption);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-out-smooth);
+}
+
+.solis-routine-day-btn:hover {
+  border-color: var(--border-strong);
+}
+
+.solis-routine-day-btn--selected {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-500);
+  color: #fff;
+}
+
+.solis-routine-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 8px;
+}
+
+.solis-routine-item--inactive {
+  opacity: 0.5;
+}

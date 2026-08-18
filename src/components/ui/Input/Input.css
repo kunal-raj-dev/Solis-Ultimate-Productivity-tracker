@@ -1,0 +1,72 @@
+.solis-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+}
+
+.solis-input-label {
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-wide);
+}
+
+.solis-input-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-subtle);
+}
+
+.solis-input-wrapper:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(230, 90, 65, 0.12);
+}
+
+.solis-input-wrapper--error {
+  border-color: var(--status-error) !important;
+}
+
+.solis-input-wrapper--disabled {
+  background-color: var(--bg-surface-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.solis-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-md);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.solis-input::placeholder {
+  color: var(--text-muted);
+}
+
+.solis-input-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  padding: 0 var(--space-sm);
+}
+
+.solis-input-helper {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.solis-input-helper--error {
+  color: var(--status-error);
+}

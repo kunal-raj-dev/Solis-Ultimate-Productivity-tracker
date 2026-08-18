@@ -1,0 +1,63 @@
+/* ==========================================================================
+   SOLIS — SCENE ARCHITECTURE (Design System 2.0)
+   Compositional spatial narrative zones, progressive visual density
+   ========================================================================== */
+
+.solis-scene {
+  position: relative;
+  width: 100%;
+  padding: var(--space-xl) 0;
+  transition: opacity var(--duration-cinematic) var(--ease-spatial), transform var(--duration-cinematic) var(--ease-spatial);
+}
+
+.solis-scene--with-divider {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-2xl);
+  margin-top: var(--space-xl);
+}
+
+.solis-scene__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.solis-scene__number {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-coral-500);
+}
+
+.solis-scene__title {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.solis-scene__body {
+  position: relative;
+  z-index: 2;
+}
+
+/* Scene Variants */
+.solis-scene--dark {
+  background: linear-gradient(145deg, #181615 0%, #241E1A 50%, #301E17 100%);
+  color: var(--color-ivory-50);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.solis-scene--sanctuary {
+  background: radial-gradient(circle at 50% 30%, rgba(230, 90, 65, 0.04) 0%, transparent 70%);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-2xl);
+}

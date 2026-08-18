@@ -1,0 +1,106 @@
+.solis-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-wide);
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+
+.solis-badge--coral {
+  background-color: var(--color-coral-50);
+  color: var(--color-coral-600);
+  border-color: var(--color-coral-100);
+}
+
+.solis-badge--amber {
+  background-color: var(--color-amber-50);
+  color: var(--color-amber-600);
+  border-color: var(--color-amber-100);
+}
+
+.solis-badge--rose {
+  background-color: var(--color-rose-50);
+  color: var(--color-rose-600);
+  border-color: var(--color-rose-100);
+}
+
+.solis-badge--lavender {
+  background-color: var(--color-lavender-50);
+  color: var(--color-lavender-600);
+  border-color: var(--color-lavender-100);
+}
+
+.solis-badge--sage {
+  background-color: var(--color-sage-50);
+  color: var(--color-sage-600);
+  border-color: var(--color-sage-100);
+}
+
+.solis-badge--charcoal {
+  background-color: var(--color-charcoal-900);
+  color: var(--color-ivory-50);
+}
+
+.solis-badge--neutral {
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+.solis-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   NIGHT THEME BADGE VARIANTS (Luminous, subtle, high contrast)
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .solis-badge--coral,
+.dark .solis-badge--coral {
+  background-color: var(--subject-coral-subtle);
+  color: var(--subject-coral-accent);
+  border-color: rgba(255, 107, 82, 0.25);
+}
+
+[data-theme="dark"] .solis-badge--amber,
+.dark .solis-badge--amber {
+  background-color: var(--subject-amber-subtle);
+  color: var(--subject-amber-accent);
+  border-color: rgba(245, 162, 61, 0.25);
+}
+
+[data-theme="dark"] .solis-badge--rose,
+.dark .solis-badge--rose {
+  background-color: rgba(214, 69, 98, 0.16);
+  color: #FA9EB3;
+  border-color: rgba(214, 69, 98, 0.25);
+}
+
+[data-theme="dark"] .solis-badge--lavender,
+.dark .solis-badge--lavender {
+  background-color: var(--subject-lavender-subtle);
+  color: var(--subject-lavender-accent);
+  border-color: rgba(155, 135, 204, 0.25);
+}
+
+[data-theme="dark"] .solis-badge--sage,
+.dark .solis-badge--sage {
+  background-color: var(--subject-sage-subtle);
+  color: var(--subject-sage-accent);
+  border-color: rgba(98, 163, 117, 0.25);
+}
+
+[data-theme="dark"] .solis-badge--charcoal,
+.dark .solis-badge--charcoal {
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}

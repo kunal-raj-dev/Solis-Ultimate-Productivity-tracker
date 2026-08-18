@@ -1,0 +1,36 @@
+.solis-loading-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-canvas);
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-loading-orb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--gradient-momentum);
+  filter: blur(1px);
+  animation: pulseSubtle 2.5s infinite ease-in-out;
+  margin-bottom: var(--space-lg);
+  box-shadow: 0 0 32px rgba(230, 90, 65, 0.35);
+}
+
+.solis-loading-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.solis-loading-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+}

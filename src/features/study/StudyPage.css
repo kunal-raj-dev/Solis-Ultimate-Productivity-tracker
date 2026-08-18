@@ -1,0 +1,178 @@
+/* ==========================================================================
+   SOLIS — STUDY STUDIO & SUBJECT WORLDS (Design System 2.0 Reformation)
+   Living syllabus roadmap, mastery progression, subject atmosphere
+   ========================================================================== */
+
+.solis-study-studio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  padding-bottom: var(--space-4xl);
+}
+
+/* --------------------------------------------------------------------------
+   01 // SUBJECT WORLDS GRID
+   -------------------------------------------------------------------------- */
+.solis-subject-worlds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-lg);
+}
+
+.solis-subject-world-tile {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-subject-world-tile:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+}
+
+.solis-subject-world-tile--coral {
+  border-top: 3px solid var(--color-coral-500);
+}
+
+.solis-subject-world-tile--amber {
+  border-top: 3px solid var(--color-amber-500);
+}
+
+.solis-subject-world-tile--lavender {
+  border-top: 3px solid var(--color-lavender-500);
+}
+
+.solis-subject-world-tile--sage {
+  border-top: 3px solid var(--color-sage-500);
+}
+
+.solis-subject-world-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.solis-subject-world-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 400;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+.solis-subject-world-desc {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   02 // LIVING STUDY TIMELINE & QUEUE
+   -------------------------------------------------------------------------- */
+.solis-study-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.solis-study-timeline-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+  gap: var(--space-md);
+}
+
+.solis-study-timeline-item:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-subtle);
+}
+
+.solis-study-timeline-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  min-width: 70px;
+}
+
+/* --------------------------------------------------------------------------
+   03 // TOPIC MASTERY PROGRESSION
+   -------------------------------------------------------------------------- */
+.solis-mastery-chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all var(--transition-fast);
+}
+
+.solis-mastery-chip--unstudied {
+  background: var(--bg-surface-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-mastery-chip--learning {
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+  border: 1px solid var(--status-warning);
+}
+
+.solis-mastery-chip--mastered {
+  background: var(--status-success-bg);
+  color: var(--status-success);
+  border: 1px solid var(--status-success);
+}
+
+/* --------------------------------------------------------------------------
+   04 // RECENT SESSION SYNTHESIS LOGS
+   -------------------------------------------------------------------------- */
+.solis-session-synthesis-stream {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.solis-session-synthesis-item {
+  padding: 14px 18px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-retention-indicator {
+  display: flex;
+  gap: 2px;
+}
+
+.solis-retention-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-default);
+}
+
+.solis-retention-dot--filled {
+  background: var(--color-coral-500);
+}

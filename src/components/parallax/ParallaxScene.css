@@ -1,0 +1,46 @@
+.solis-parallax-scene {
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-parallax-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+.solis-parallax-layer--absolute {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.solis-atmospheric-orb {
+  position: absolute;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+  filter: blur(40px); /* Moderate, GPU-performant blur */
+  will-change: transform;
+}
+
+@media (max-width: 768px) {
+  .solis-atmospheric-orb {
+    filter: blur(25px); /* Reduced filter cost on mobile */
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solis-parallax-layer {
+    transform: none !important;
+    will-change: auto !important;
+  }
+  .solis-atmospheric-orb {
+    filter: none !important;
+    opacity: 0.15 !important;
+  }
+}

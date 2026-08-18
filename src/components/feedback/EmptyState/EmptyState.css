@@ -1,0 +1,43 @@
+.solis-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+  background-color: var(--bg-surface-subtle);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-xl);
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.solis-empty-state__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-ivory-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-charcoal-600);
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-empty-state__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.solis-empty-state__description {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  max-width: 400px;
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-lg);
+}

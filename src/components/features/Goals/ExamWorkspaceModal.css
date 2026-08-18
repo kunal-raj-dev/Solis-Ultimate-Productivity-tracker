@@ -1,0 +1,28 @@
+.solis-exam-countdown-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-exam-countdown-num {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  font-weight: 700;
+  color: var(--color-coral-500);
+  line-height: 1;
+}
+
+.solis-exam-topic-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background-color: var(--bg-surface-primary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 6px;
+}

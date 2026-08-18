@@ -1,0 +1,348 @@
+/* ==========================================================================
+   SOLIS — ANALYTICS & MASTERY INTELLIGENCE (Phase 6 Editorial Experience)
+   ========================================================================== */
+
+.solis-analytics-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  padding-bottom: var(--space-4xl);
+}
+
+/* --------------------------------------------------------------------------
+   01 // EDITORIAL HEADER & TIME SCOPE SELECTOR
+   -------------------------------------------------------------------------- */
+.solis-analytics-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .solis-analytics-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.solis-analytics-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  margin: var(--space-2xs) 0 0;
+}
+
+.solis-analytics-subtitle {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-body-lg);
+  color: var(--text-secondary);
+  margin: var(--space-xs) 0 0;
+  max-width: 620px;
+}
+
+/* --------------------------------------------------------------------------
+   02 // OVERVIEW METRIC TILES (Depth 1)
+   -------------------------------------------------------------------------- */
+.solis-analytics-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-md);
+}
+
+.solis-metric-card {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  transition: all var(--transition-fast);
+}
+
+.solis-metric-card:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-card);
+}
+
+.solis-metric-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+
+.solis-metric-card__value-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  margin: var(--space-2xs) 0;
+}
+
+.solis-metric-card__value {
+  font-family: var(--font-interface);
+  font-size: var(--text-heading-1);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.solis-metric-card__unit {
+  font-size: var(--text-body-sm);
+  color: var(--text-muted);
+}
+
+.solis-metric-card__subtext {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   03 // RECOMMENDATIONS LAYER (Signal → Evidence → Action)
+   -------------------------------------------------------------------------- */
+.solis-recommendations-layer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-lg);
+}
+
+.solis-recommendation-card {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--space-md);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.solis-recommendation-card--primary {
+  border-top: 3px solid var(--color-coral-500);
+  background: linear-gradient(180deg, var(--bg-surface-elevated) 0%, var(--bg-surface-primary) 100%);
+}
+
+.solis-recommendation-card--secondary {
+  border-top: 3px solid var(--border-strong);
+}
+
+.solis-recommendation-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: var(--space-xs) 0 var(--space-2xs);
+}
+
+.solis-recommendation-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-xs);
+}
+
+.solis-recommendation-step__label {
+  font-size: var(--text-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.solis-recommendation-step__text {
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.solis-recommendation-step__evidence {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   04 // COGNITIVE RHYTHM & 28-DAY CONSTELLATION
+   -------------------------------------------------------------------------- */
+.solis-rhythm-section {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-xl) var(--space-2xl);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.solis-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+  gap: 8px;
+  align-items: center;
+}
+
+.solis-heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  transition: transform var(--transition-fast);
+  cursor: pointer;
+}
+
+.solis-heatmap-cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.solis-rhythm-breakdown-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-time-bucket-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--space-sm);
+}
+
+.solis-time-bucket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-progress-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-secondary);
+  overflow: hidden;
+}
+
+.solis-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-coral-500);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --------------------------------------------------------------------------
+   05 // EFFORT DISTRIBUTION & NEGLECT DETECTION
+   -------------------------------------------------------------------------- */
+.solis-effort-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-lg);
+}
+
+.solis-effort-card {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-neglect-alert-banner {
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  color: var(--text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   06 // MASTERY INTELLIGENCE & TOPIC PROGRESSION
+   -------------------------------------------------------------------------- */
+.solis-mastery-section {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-xl) var(--space-2xl);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.solis-mastery-topics-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.solis-mastery-topic-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+@media (min-width: 768px) {
+  .solis-mastery-topic-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.solis-mastery-topic-row:hover {
+  border-color: var(--border-default);
+  background: var(--bg-surface-elevated);
+}
+
+.solis-mastery-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.solis-stars-container {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--color-amber-500);
+}

@@ -1,0 +1,323 @@
+/* ==========================================================================
+   SOLIS — DASHBOARD: DAILY FLOW EXPERIENCE (Design System 2.0)
+   Vertical spatial composition, sculptural momentum, editorial progression
+   ========================================================================== */
+
+.solis-daily-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xl);
+  padding-bottom: var(--space-4xl);
+}
+
+/* --------------------------------------------------------------------------
+   01 // ARRIVAL SCENE & CONTINUITY
+   -------------------------------------------------------------------------- */
+.solis-arrival-scene {
+  position: relative;
+  padding: var(--space-2xl) 0 var(--space-xl);
+}
+
+.solis-arrival-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 1024px) {
+  .solis-arrival-content {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.solis-arrival-greeting__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.solis-arrival-greeting__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+
+.solis-arrival-greeting__suggestion {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-body-lg);
+  color: var(--text-secondary);
+  max-width: 640px;
+  line-height: 1.5;
+  margin-top: var(--space-2xs);
+}
+
+/* Daily Intention Line */
+.solis-daily-intention-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  max-width: 580px;
+  margin-top: var(--space-sm);
+  box-shadow: var(--shadow-subtle);
+}
+
+.solis-daily-intention-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-body-md);
+  color: var(--text-primary);
+}
+
+.solis-daily-intention-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Continuity Memory Strip */
+.solis-continuity-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--color-coral-200);
+  border-radius: var(--radius-xl);
+  padding: 12px 20px;
+  box-shadow: 0 4px 20px rgba(230, 90, 65, 0.06);
+  flex-wrap: wrap;
+  transition: all var(--transition-fast);
+}
+
+.solis-continuity-strip:hover {
+  border-color: var(--color-coral-400);
+}
+
+.solis-continuity-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.solis-continuity-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-continuity-subtitle {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   02 // SCULPTURAL MOMENTUM SCENE
+   -------------------------------------------------------------------------- */
+.solis-momentum-hero {
+  background: linear-gradient(145deg, #181615 0%, #241D19 50%, #351C15 100%);
+  color: var(--color-ivory-50);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .solis-momentum-hero {
+    padding: var(--space-3xl);
+  }
+}
+
+.solis-momentum-hero__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 960px) {
+  .solis-momentum-hero__layout {
+    grid-template-columns: 1.15fr 1fr;
+    gap: var(--space-3xl);
+  }
+}
+
+.solis-momentum-score-sculpture {
+  font-family: var(--font-display);
+  font-size: clamp(4.5rem, 8vw, 6.5rem);
+  font-weight: 300;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--color-ivory-50);
+  display: flex;
+  align-items: baseline;
+}
+
+.solis-momentum-score-sculpture span {
+  font-size: 2rem;
+  color: var(--color-coral-300);
+  margin-left: 4px;
+}
+
+.solis-momentum-quad-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.solis-momentum-quad-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  backdrop-filter: blur(8px);
+}
+
+/* --------------------------------------------------------------------------
+   03 // ASYMMETRIC DAILY FLOW GRID
+   -------------------------------------------------------------------------- */
+.solis-flow-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+}
+
+@media (min-width: 1080px) {
+  .solis-flow-columns {
+    grid-template-columns: 1.6fr 1fr;
+    gap: var(--space-3xl);
+  }
+}
+
+.solis-flow-primary-stream,
+.solis-flow-secondary-stream {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.solis-flow-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-flow-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-flow-section__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+.solis-flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.solis-flow-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-fast);
+}
+
+.solis-flow-item:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-subtle);
+  transform: translateY(-1px);
+}
+
+.solis-flow-item__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+/* Subject Horizon Cards */
+.solis-subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.solis-subject-world-card {
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-subject-world-card:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-subtle);
+  transform: translateY(-2px);
+}
+
+/* Habit Matrix */
+.solis-habit-dot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.solis-habit-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.solis-habit-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-habit-dot--active {
+  background: var(--color-coral-500);
+  border-color: var(--color-coral-600);
+}

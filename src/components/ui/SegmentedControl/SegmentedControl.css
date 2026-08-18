@@ -1,0 +1,97 @@
+/* ==========================================================================
+   SOLIS — SEGMENTED CONTROL (Design System 2.0)
+   Tactile pill switcher, quiet borders, and fluid feedback
+   ========================================================================== */
+
+.solis-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+
+/* Contained style (boxed capsule) */
+.solis-segmented-control--contained {
+  background-color: var(--bg-surface-secondary);
+  padding: 4px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-segmented-control--contained .solis-segmented-item {
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.solis-segmented-control--contained .solis-segmented-item:hover {
+  color: var(--text-primary);
+}
+
+.solis-segmented-control--contained .solis-segmented-item--active {
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-subtle);
+}
+
+/* Pills style */
+.solis-segmented-control--pills {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.solis-segmented-control--pills .solis-segmented-item {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.solis-segmented-control--pills .solis-segmented-item:hover {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  background-color: var(--bg-surface-hover);
+}
+
+.solis-segmented-control--pills .solis-segmented-item--active {
+  background-color: var(--color-coral-500) !important;
+  border-color: var(--color-coral-500) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(230, 90, 65, 0.25);
+}
+
+/* Badge inside item */
+.solis-segmented-item__badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-tertiary);
+  color: var(--text-secondary);
+}
+
+.solis-segmented-item__badge--active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}

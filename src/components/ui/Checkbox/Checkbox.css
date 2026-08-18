@@ -1,0 +1,36 @@
+.solis-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+}
+
+.solis-checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-surface-primary);
+  transition: all var(--transition-fast);
+  color: #FFFFFF;
+}
+
+.solis-checkbox-label:active .solis-checkbox-custom {
+  transform: scale(0.88);
+}
+
+.solis-checkbox-input:checked + .solis-checkbox-custom {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-500);
+}
+
+.solis-checkbox-input:focus-visible + .solis-checkbox-custom {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}

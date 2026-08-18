@@ -1,0 +1,48 @@
+.solis-auth-card {
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.solis-auth-header {
+  margin-bottom: var(--space-lg);
+}
+
+.solis-auth-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3xs);
+}
+
+.solis-auth-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+
+.solis-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-auth-footer-nav {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-auth-footer-nav a {
+  color: var(--color-coral-500);
+  font-weight: var(--font-weight-medium);
+}
+
+.solis-auth-footer-nav a:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,44 @@
+.solis-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+}
+
+.solis-switch-track {
+  width: 40px;
+  height: 22px;
+  background-color: var(--bg-surface-tertiary);
+  border-radius: var(--radius-full);
+  position: relative;
+  transition: background-color var(--transition-fast);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-switch-thumb {
+  width: 16px;
+  height: 16px;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform var(--transition-fast);
+}
+
+.solis-switch-input:checked + .solis-switch-track {
+  background-color: var(--color-coral-500);
+}
+
+.solis-switch-input:checked + .solis-switch-track .solis-switch-thumb {
+  transform: translateX(17px);
+}
+
+.solis-switch-input:focus-visible + .solis-switch-track {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}

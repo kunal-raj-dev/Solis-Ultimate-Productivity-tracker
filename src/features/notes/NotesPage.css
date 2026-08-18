@@ -1,0 +1,210 @@
+/* ==========================================================================
+   SOLIS — KNOWLEDGE STUDIO (Design System 2.0 Reformation)
+   Calm editorial writing sanctuary, distraction-free thinking canvas
+   ========================================================================== */
+
+.solis-notes-studio {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--space-2xl);
+  min-height: calc(100vh - 180px);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .solis-notes-studio {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   LEFT PANE: KNOWLEDGE INDEX
+   -------------------------------------------------------------------------- */
+.solis-notes-index {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-notes-index__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xs);
+}
+
+.solis-notes-index__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  color: var(--text-primary);
+  font-weight: 400;
+}
+
+.solis-notes-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 360px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.solis-note-card {
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-note-card:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-subtle);
+  transform: translateY(-1px);
+}
+
+.solis-note-card--active {
+  border-color: var(--color-coral-500) !important;
+  background: var(--bg-surface-elevated) !important;
+  box-shadow: 0 4px 16px rgba(230, 90, 65, 0.08) !important;
+}
+
+.solis-note-card__title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-note-card__snippet {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.solis-note-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   RIGHT PANE: EDITORIAL THINKING CANVAS
+   -------------------------------------------------------------------------- */
+.solis-notes-canvas {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-card);
+  min-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  position: relative;
+}
+
+@media (min-width: 1200px) {
+  .solis-notes-canvas {
+    padding: var(--space-3xl);
+  }
+}
+
+.solis-notes-canvas__topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-md);
+}
+
+.solis-notes-canvas__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.solis-notes-canvas__title-input {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 0;
+}
+
+.solis-notes-canvas__title-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.solis-notes-canvas__body {
+  width: 100%;
+  max-width: var(--max-readable-width);
+  min-height: 480px;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-md);
+  line-height: 1.8;
+  color: var(--text-primary);
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: vertical;
+  padding: 0;
+}
+
+.solis-notes-canvas__body::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Tag Pills */
+.solis-note-tag-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-note-tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.solis-note-tag-item button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}

@@ -1,0 +1,73 @@
+.solis-app-header {
+  height: var(--header-height);
+  background-color: var(--bg-canvas-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-lg);
+}
+
+.solis-app-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.solis-app-header__date {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.solis-app-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.solis-app-header__search-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 12px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.solis-app-header__search-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.solis-app-header__kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  padding: 1px 5px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-app-header__user-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 4px;
+  border-radius: var(--radius-full);
+  transition: background-color var(--transition-fast);
+}
+
+.solis-app-header__user-btn:hover {
+  background-color: var(--bg-surface-hover);
+}

@@ -1,0 +1,67 @@
+.solis-atmosphere {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+  contain: strict;
+}
+
+.solis-atmosphere-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(48px);
+  opacity: 0.55;
+  transition: opacity 0.6s ease-out;
+  transform: translate3d(0, 0, 0);
+}
+
+.solis-atmosphere-orb--primary {
+  width: 500px;
+  height: 500px;
+  top: -120px;
+  right: -40px;
+  background: radial-gradient(circle, rgba(230, 90, 65, 0.16) 0%, rgba(229, 142, 38, 0.06) 50%, transparent 70%);
+}
+
+.solis-atmosphere-orb--secondary {
+  width: 400px;
+  height: 400px;
+  top: 30%;
+  left: -100px;
+  background: radial-gradient(circle, rgba(214, 69, 98, 0.10) 0%, rgba(126, 105, 171, 0.05) 50%, transparent 70%);
+}
+
+.solis-atmosphere-orb--tertiary {
+  width: 420px;
+  height: 420px;
+  bottom: -80px;
+  right: 15%;
+  background: radial-gradient(circle, rgba(229, 142, 38, 0.08) 0%, rgba(74, 124, 89, 0.04) 50%, transparent 70%);
+}
+
+/* Dark Mode Ambient Light Adjustments */
+[data-theme="dark"] .solis-atmosphere-orb,
+.dark .solis-atmosphere-orb {
+  opacity: 0.35;
+}
+
+/* Mobile GPU optimization: hide secondary and tertiary ambient orbs */
+@media (max-width: 768px) {
+  .solis-atmosphere-orb--secondary,
+  .solis-atmosphere-orb--tertiary {
+    display: none;
+  }
+  .solis-atmosphere-orb--primary {
+    width: 320px;
+    height: 320px;
+    filter: blur(36px);
+  }
+}
+
+/* Accessibility: Disable transitions when reduced motion is preferred */
+@media (prefers-reduced-motion: reduce) {
+  .solis-atmosphere-orb {
+    transition: none;
+  }
+}

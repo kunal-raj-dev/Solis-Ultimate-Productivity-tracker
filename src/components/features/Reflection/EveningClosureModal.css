@@ -1,0 +1,64 @@
+.solis-reflection-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: var(--space-md);
+}
+
+.solis-reflection-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-surface-tertiary);
+  transition: all var(--duration-fast) var(--ease-out-smooth);
+}
+
+.solis-reflection-step-dot--active {
+  width: 24px;
+  background-color: var(--color-coral-500);
+}
+
+.solis-reflection-step-dot--completed {
+  background-color: var(--color-sage-500);
+}
+
+.solis-score-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.solis-score-pill {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-body-md);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out-smooth);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.solis-score-pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.solis-score-pill--selected {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-500);
+  color: #ffffff;
+}
+
+.solis-score-pill--selected-amber {
+  background-color: var(--color-amber-500);
+  border-color: var(--color-amber-500);
+  color: #ffffff;
+}

@@ -1,0 +1,37 @@
+.solis-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-interface);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--color-charcoal-900);
+  color: var(--color-ivory-50);
+  overflow: hidden;
+  user-select: none;
+  border: 1.5px solid var(--border-subtle);
+}
+
+.solis-avatar--sm {
+  width: 28px;
+  height: 28px;
+  font-size: var(--text-caption);
+}
+
+.solis-avatar--md {
+  width: 38px;
+  height: 38px;
+  font-size: var(--text-body-sm);
+}
+
+.solis-avatar--lg {
+  width: 48px;
+  height: 48px;
+  font-size: var(--text-body);
+}
+
+.solis-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
