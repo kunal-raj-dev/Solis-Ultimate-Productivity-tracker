@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus,
   CheckCircle2,
@@ -44,7 +44,9 @@ export const TasksPage: React.FC = () => {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [isRetrying, setIsRetrying] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
 
   // Filter & Search State
@@ -52,6 +54,9 @@ export const TasksPage: React.FC = () => {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState<TaskTimeFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<TaskSortField>('priority');
+
+  // Filter out archived subjects for task assignment
+  const activeSubjects = useMemo(() => subjects.filter((s) => s.status !== 'archived'), [subjects]);
 
   // Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -75,9 +80,12 @@ export const TasksPage: React.FC = () => {
   // Inline subtask input per expanded task
   const [newSubtaskTitles, setNewSubtaskTitles] = useState<Record<string, string>>({});
 
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async (isInitial = false) => {
+    if (isInitial) setInitialLoadStatus('loading');
+    else setSyncStatus('syncing');
+
     try {
-      const [data, subList] = await Promise.all([
+      const [dataRes, subRes] = await Promise.allSettled([
         dataService.tasks.getTasks({
           category: selectedCategory as any,
           timeFilter: selectedTimeFilter,
@@ -86,22 +94,42 @@ export const TasksPage: React.FC = () => {
         }),
         dataService.study.getSubjects()
       ]);
-      setTasks(data);
-      setSubjects(subList);
+
+      if (dataRes.status === 'fulfilled') {
+        setTasks(dataRes.value);
+        setInitialLoadStatus('success');
+        setSyncStatus('idle');
+      } else {
+        console.error('Failed to load tasks:', dataRes.reason);
+        throw dataRes.reason;
+      }
+
+      if (subRes.status === 'fulfilled') {
+        setSubjects(subRes.value);
+      }
     } catch (err) {
-      console.error('Failed to load tasks:', err);
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to load tasks data:', err);
+      setTasks((current) => {
+        if (current.length === 0) setInitialLoadStatus('error');
+        else setSyncStatus('error');
+        return current;
+      });
     }
   }, [selectedCategory, selectedTimeFilter, searchQuery, sortBy]);
 
   useEffect(() => {
-    loadTasks();
+    loadTasks(true);
     const unsubscribe = dataService.subscribe(() => {
-      loadTasks();
+      loadTasks(false);
     });
     return () => unsubscribe();
   }, [loadTasks]);
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await loadTasks(tasks.length === 0);
+    setIsRetrying(false);
+  };
 
   const toggleAccordion = (id: string) => {
     setExpandedTaskIds((prev) => {
@@ -114,6 +142,12 @@ export const TasksPage: React.FC = () => {
 
   const handleToggleTask = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    const prevTasks = tasks;
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'completed' ? 'todo' : 'completed';
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t)));
+
     try {
       const updated = await dataService.tasks.toggleTaskCompletion(id);
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
@@ -123,6 +157,7 @@ export const TasksPage: React.FC = () => {
         type: 'success'
       });
     } catch {
+      setTasks(prevTasks);
       addToast({ title: 'Could not toggle task', type: 'error' });
     }
   };
@@ -163,6 +198,7 @@ export const TasksPage: React.FC = () => {
     e.preventDefault();
     setFormError(null);
     setIsSubmitting(true);
+    const prevTasks = tasks;
 
     const tagList = formTags
       .split(',')
@@ -204,6 +240,7 @@ export const TasksPage: React.FC = () => {
         addToast({ title: 'Task Created', description: created.title, type: 'success' });
       }
     } catch (err) {
+      setTasks(prevTasks);
       if (err instanceof ValidationError) {
         setFormError(err.message);
       } else {
@@ -216,12 +253,16 @@ export const TasksPage: React.FC = () => {
 
   const handleDeleteTask = async () => {
     if (!deletingTaskId) return;
+    const prevTasks = tasks;
+    const id = deletingTaskId;
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setDeletingTaskId(null);
+
     try {
-      await dataService.tasks.deleteTask(deletingTaskId);
-      setTasks((prev) => prev.filter((t) => t.id !== deletingTaskId));
-      setDeletingTaskId(null);
+      await dataService.tasks.deleteTask(id);
       addToast({ title: 'Task Deleted', type: 'info' });
     } catch {
+      setTasks(prevTasks);
       addToast({ title: 'Could not delete task', type: 'error' });
     }
   };
@@ -351,12 +392,51 @@ export const TasksPage: React.FC = () => {
       </div>
 
       {/* Tasks List */}
-      {isLoading ? (
+      {syncStatus === 'error' && tasks.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 14px',
+            backgroundColor: 'var(--status-warning-bg)',
+            border: '1px solid var(--status-warning)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: 'var(--space-md)',
+            fontSize: 'var(--text-caption)',
+            color: 'var(--text-primary)',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <AlertCircle size={14} color="var(--color-amber-500)" />
+            <span>Couldn't sync latest tasks with server. Displaying last saved version.</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+            Retry Sync
+          </Button>
+        </div>
+      )}
+
+      {initialLoadStatus === 'loading' && tasks.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <Skeleton height="76px" />
           <Skeleton height="76px" />
           <Skeleton height="76px" />
         </div>
+      ) : initialLoadStatus === 'error' && tasks.length === 0 ? (
+        <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
+          <AlertCircle size={28} color="var(--status-error)" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+            We couldn't load your task sanctuary.
+          </div>
+          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
+            A network or server connectivity error occurred.
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+            Retry
+          </Button>
+        </Card>
       ) : tasks.length === 0 ? (
         <EmptyState
           icon={CheckCircle2}
@@ -667,7 +747,7 @@ export const TasksPage: React.FC = () => {
               onChange={(val) => setFormSubjectId(val)}
               options={[
                 { value: '', label: 'No Subject Link' },
-                ...subjects.map((s) => ({ value: s.id, label: s.name, badge: s.code }))
+                ...activeSubjects.map((s: StudySubject) => ({ value: s.id, label: s.name, badge: s.code }))
               ]}
             />
           </div>

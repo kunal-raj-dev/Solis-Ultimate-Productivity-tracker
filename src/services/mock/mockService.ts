@@ -899,8 +899,9 @@ export class MockDataService implements IDataService {
       habit.history[dateStr] = !habit.history[dateStr];
 
       this.recalculateAllStreaks();
+      const updated = this._habits.find((h) => h.id === id)!;
       this.notify();
-      return JSON.parse(JSON.stringify(habit));
+      return JSON.parse(JSON.stringify(updated));
     }
   };
 

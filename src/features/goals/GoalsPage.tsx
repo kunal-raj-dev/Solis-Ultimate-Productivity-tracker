@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus,
   Target,
@@ -47,7 +47,12 @@ export const GoalsPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [resources, setResources] = useState<StudyResource[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Active subjects only for goal linkages
+  const activeSubjects = useMemo(() => subjects.filter((s) => s.status !== 'archived'), [subjects]);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -75,45 +80,73 @@ export const GoalsPage: React.FC = () => {
   // Inline milestone inputs per goal
   const [newMilestoneTitles, setNewMilestoneTitles] = useState<Record<string, string>>({});
 
-  const loadGoals = useCallback(async () => {
+  const loadGoals = useCallback(async (isInitial = false) => {
+    if (isInitial) setInitialLoadStatus('loading');
+    else setSyncStatus('syncing');
+
     try {
-      const [goalsData, subsData, tasksData, cardsData, resourcesData, habitsData] = await Promise.all([
+      const [goalsRes, subsRes, tasksRes, cardsRes, resourcesRes, habitsRes] = await Promise.allSettled([
         dataService.goals.getGoals(),
         dataService.study.getSubjects(),
         dataService.tasks.getTasks(),
         dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([]),
-        dataService.resources ? dataService.resources.getResources() : Promise.resolve([]),
+        dataService.resources ? dataService.resources.getResources() : Promise.resolve([]) ,
         dataService.habits ? dataService.habits.getHabits() : Promise.resolve([])
       ]);
-      setGoals(goalsData);
-      setSubjects(subsData);
-      setTasks(tasksData);
-      setFlashcards(cardsData);
-      setResources(resourcesData);
-      setHabits(habitsData);
 
-      const topicArrays = await Promise.all(subsData.map((s) => dataService.study.getTopics(s.id)));
-      setTopics(topicArrays.flat());
+      if (goalsRes.status === 'fulfilled') {
+        setGoals(goalsRes.value);
+        setInitialLoadStatus('success');
+        setSyncStatus('idle');
+      } else {
+        console.error('Primary goals load failed:', goalsRes.reason);
+        throw goalsRes.reason;
+      }
+
+      if (subsRes.status === 'fulfilled') {
+        setSubjects(subsRes.value);
+        try {
+          const topicArrays = await Promise.all(subsRes.value.map((s) => dataService.study.getTopics(s.id).catch(() => [])));
+          setTopics(topicArrays.flat());
+        } catch {
+          // secondary topics
+        }
+      }
+
+      if (tasksRes.status === 'fulfilled') setTasks(tasksRes.value);
+      if (cardsRes.status === 'fulfilled') setFlashcards(cardsRes.value);
+      if (resourcesRes.status === 'fulfilled') setResources(resourcesRes.value);
+      if (habitsRes.status === 'fulfilled') setHabits(habitsRes.value);
+
     } catch (err) {
       console.error('Failed to load goals data:', err);
-    } finally {
-      setIsLoading(false);
+      setGoals((current) => {
+        if (current.length === 0) setInitialLoadStatus('error');
+        else setSyncStatus('error');
+        return current;
+      });
     }
   }, []);
 
   useEffect(() => {
-    loadGoals();
+    loadGoals(true);
     const unsubscribe = dataService.subscribe(() => {
-      loadGoals();
+      loadGoals(false);
     });
     return () => unsubscribe();
   }, [loadGoals]);
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await loadGoals(goals.length === 0);
+    setIsRetrying(false);
+  };
 
   const openCreateModal = () => {
     setGoalTitle('');
     setGoalDesc('');
     setGoalExpType('standard');
-    setGoalSubjectId(subjects[0]?.id || '');
+    setGoalSubjectId(activeSubjects[0]?.id || '');
     setGoalHorizon('medium_term');
     setGoalCat('academic');
     setGoalTargetDate('2026-12-31');
@@ -130,7 +163,7 @@ export const GoalsPage: React.FC = () => {
     setGoalTitle(g.title);
     setGoalDesc(g.description || '');
     setGoalExpType(g.experienceType || 'standard');
-    setGoalSubjectId(g.subjectId || (subjects[0]?.id ?? ''));
+    setGoalSubjectId(g.subjectId || (activeSubjects[0]?.id ?? ''));
     setGoalHorizon(g.horizon);
     setGoalCat(g.category);
     setGoalTargetDate(g.targetDate);
@@ -144,6 +177,7 @@ export const GoalsPage: React.FC = () => {
   const handleSaveGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    const prevGoals = goals;
 
     try {
       if (editingGoal) {
@@ -184,6 +218,7 @@ export const GoalsPage: React.FC = () => {
         addToast({ title: 'Goal Horizon Established', description: created.title, type: 'success' });
       }
     } catch (err) {
+      setGoals(prevGoals);
       if (err instanceof ValidationError) setFormError(err.message);
       else setFormError(err instanceof Error ? err.message : 'Error saving goal');
     }
@@ -191,17 +226,22 @@ export const GoalsPage: React.FC = () => {
 
   const handleDeleteGoal = async () => {
     if (!deletingGoalId) return;
+    const prevGoals = goals;
+    const id = deletingGoalId;
+    setGoals((prev) => prev.filter((g) => g.id !== id));
+    setDeletingGoalId(null);
+
     try {
-      await dataService.goals.deleteGoal(deletingGoalId);
-      setGoals((prev) => prev.filter((g) => g.id !== deletingGoalId));
-      setDeletingGoalId(null);
+      await dataService.goals.deleteGoal(id);
       addToast({ title: 'Goal Horizon Removed', type: 'info' });
     } catch {
+      setGoals(prevGoals);
       addToast({ title: 'Could not delete goal', type: 'error' });
     }
   };
 
   const handleToggleMilestone = async (goalId: string, milestoneId: string) => {
+    const prevGoals = goals;
     try {
       const updated = await dataService.goals.toggleMilestone(goalId, milestoneId);
       setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
@@ -211,6 +251,7 @@ export const GoalsPage: React.FC = () => {
         type: 'success'
       });
     } catch {
+      setGoals(prevGoals);
       addToast({ title: 'Could not toggle milestone', type: 'error' });
     }
   };
@@ -219,12 +260,14 @@ export const GoalsPage: React.FC = () => {
     e.preventDefault();
     const title = newMilestoneTitles[goalId]?.trim();
     if (!title) return;
+    const prevGoals = goals;
 
     try {
       const updated = await dataService.goals.addMilestone(goalId, { title });
       setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
       setNewMilestoneTitles((prev) => ({ ...prev, [goalId]: '' }));
     } catch (err) {
+      setGoals(prevGoals);
       addToast({
         title: 'Error adding milestone',
         description: err instanceof Error ? err.message : 'Invalid milestone',
@@ -234,10 +277,12 @@ export const GoalsPage: React.FC = () => {
   };
 
   const handleDeleteMilestone = async (goalId: string, milestoneId: string) => {
+    const prevGoals = goals;
     try {
       const updated = await dataService.goals.deleteMilestone(goalId, milestoneId);
       setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
     } catch {
+      setGoals(prevGoals);
       addToast({ title: 'Could not remove milestone', type: 'error' });
     }
   };
@@ -255,11 +300,49 @@ export const GoalsPage: React.FC = () => {
         }
       />
 
-      {isLoading ? (
+      {syncStatus === 'error' && goals.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 14px',
+            backgroundColor: 'var(--status-warning-bg)',
+            border: '1px solid var(--status-warning)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: 'var(--space-md)',
+            fontSize: 'var(--text-caption)',
+            color: 'var(--text-primary)',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={14} color="var(--color-amber-500)" />
+            <span>Couldn't sync latest goals with server. Displaying last saved version.</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+            Retry Sync
+          </Button>
+        </div>
+      )}
+
+      {initialLoadStatus === 'loading' && goals.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <Skeleton height="200px" />
           <Skeleton height="200px" />
         </div>
+      ) : initialLoadStatus === 'error' && goals.length === 0 ? (
+        <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
+          <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+            We couldn't load your goal horizons.
+          </div>
+          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
+            A network or server connectivity error occurred.
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+            Retry
+          </Button>
+        </Card>
       ) : goals.length === 0 ? (
         <EmptyState
           icon={Target}
@@ -480,14 +563,14 @@ export const GoalsPage: React.FC = () => {
               ]}
             />
 
-            {subjects.length > 0 && (
+            {activeSubjects.length > 0 && (
               <CustomSelect
                 label="Associated Study Subject"
                 value={goalSubjectId}
                 onChange={setGoalSubjectId}
                 options={[
                   { value: '', label: 'General / No Subject' },
-                  ...subjects.map((s) => ({ value: s.id, label: s.name }))
+                  ...activeSubjects.map((s: StudySubject) => ({ value: s.id, label: s.name }))
                 ]}
               />
             )}

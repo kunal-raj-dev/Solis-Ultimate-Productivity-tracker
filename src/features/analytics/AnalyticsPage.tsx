@@ -66,16 +66,16 @@ export const AnalyticsPage: React.FC = () => {
   const loadAllAnalyticsData = useCallback(async () => {
     try {
       const [
-        loadedSubjects,
-        loadedSessions,
-        loadedPlan,
-        loadedFocus,
-        loadedTasks,
-        loadedHabits,
-        loadedGoals,
-        loadedCards,
-        loadedReflections
-      ] = await Promise.all([
+        subRes,
+        sessRes,
+        planRes,
+        focusRes,
+        taskRes,
+        habitRes,
+        goalRes,
+        cardRes,
+        refRes
+      ] = await Promise.allSettled([
         dataService.study.getSubjects(),
         dataService.study.getRecentSessions(),
         dataService.study.getTodayPlan(),
@@ -87,20 +87,26 @@ export const AnalyticsPage: React.FC = () => {
         dataService.reflections ? dataService.reflections.getReflections(10) : Promise.resolve([])
       ]);
 
-      setSubjects(loadedSubjects);
-      setSessions(loadedSessions);
-      setPlanItems(loadedPlan);
-      setFocusSessions(loadedFocus);
-      setTasks(loadedTasks);
-      setHabits(loadedHabits);
-      setGoals(loadedGoals);
-      setFlashcards(loadedCards);
-      setReflections(loadedReflections);
+      if (subRes.status === 'fulfilled') {
+        setSubjects(subRes.value);
+        try {
+          const allTopicPromises = subRes.value.map((s: StudySubject) => dataService.study.getTopics(s.id).catch(() => []));
+          const topicArrays = await Promise.all(allTopicPromises);
+          setTopics(topicArrays.flat());
+        } catch {
+          // secondary topics
+        }
+      }
 
-      // Load topics for all subjects
-      const allTopicPromises = loadedSubjects.map((s: StudySubject) => dataService.study.getTopics(s.id));
-      const topicArrays = await Promise.all(allTopicPromises);
-      setTopics(topicArrays.flat());
+      if (sessRes.status === 'fulfilled') setSessions(sessRes.value);
+      if (planRes.status === 'fulfilled') setPlanItems(planRes.value);
+      if (focusRes.status === 'fulfilled') setFocusSessions(focusRes.value);
+      if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
+      if (habitRes.status === 'fulfilled') setHabits(habitRes.value);
+      if (goalRes.status === 'fulfilled') setGoals(goalRes.value);
+      if (cardRes.status === 'fulfilled') setFlashcards(cardRes.value);
+      if (refRes.status === 'fulfilled') setReflections(refRes.value);
+
     } catch (err) {
       console.error('Failed to load intelligence data:', err);
     } finally {
@@ -110,6 +116,10 @@ export const AnalyticsPage: React.FC = () => {
 
   useEffect(() => {
     loadAllAnalyticsData();
+    const unsubscribe = dataService.subscribe(() => {
+      loadAllAnalyticsData();
+    });
+    return () => unsubscribe();
   }, [loadAllAnalyticsData]);
 
   // Derived Pure Intelligence Report

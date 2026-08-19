@@ -46,7 +46,6 @@ export const NotesPage: React.FC = () => {
   const [topics, setTopics] = useState<StudyTopic[]>([]);
   const [resources, setResources] = useState<StudyResource[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
 
@@ -64,7 +63,13 @@ export const NotesPage: React.FC = () => {
   const [newTagInput, setNewTagInput] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
 
+  const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [isRetrying, setIsRetrying] = useState(false);
+
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const saveVersionRef = useRef<number>(0);
+  const latestAcknowledgedVersionRef = useRef<number>(0);
   const hasInitializedSelectionRef = useRef(false);
 
   const handleCreateFlashcardFromNote = async (cardData: any) => {
@@ -83,9 +88,12 @@ export const NotesPage: React.FC = () => {
     addToast({ title: 'Citation Appended', description: `Referenced "${res.title}" in active canvas.`, type: 'info' });
   };
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isInitial = false) => {
+    if (isInitial) setInitialLoadStatus('loading');
+    else setSyncStatus('syncing');
+
     try {
-      const [notesData, subjectsData, resourcesData] = await Promise.all([
+      const [notesRes, subjectsRes, resourcesRes] = await Promise.allSettled([
         dataService.notes.getNotes({
           searchQuery,
           category: filterCategory === 'all' ? undefined : (filterCategory as NoteCategory),
@@ -95,46 +103,64 @@ export const NotesPage: React.FC = () => {
         dataService.resources ? dataService.resources.getResources() : Promise.resolve([])
       ]);
 
-      setNotes(notesData);
-      setSubjects(subjectsData);
-      setResources(resourcesData);
+      if (notesRes.status === 'fulfilled') {
+        const notesData = notesRes.value;
+        setNotes(notesData);
+        setInitialLoadStatus('success');
+        setSyncStatus('idle');
 
-      // Handle initial note selection without dependency loop
-      const paramAction = searchParams.get('action');
-      const paramSubjectId = searchParams.get('subjectId');
-      const paramTitle = searchParams.get('title');
+        // Handle initial note selection without dependency loop
+        const paramAction = searchParams.get('action');
+        const paramSubjectId = searchParams.get('subjectId');
+        const paramTitle = searchParams.get('title');
 
-      if ((paramAction === 'new' || paramTitle) && !hasInitializedSelectionRef.current) {
-        hasInitializedSelectionRef.current = true;
-        // Create intent from Quick Actions / Focus Pod / Topics
-        handleCreateNote(paramTitle || 'Untitled Note', paramSubjectId || '');
-      } else if (!hasInitializedSelectionRef.current && notesData.length > 0) {
-        hasInitializedSelectionRef.current = true;
-        const initialNote = notesData[0];
-        setSelectedNote(initialNote);
-        setTitle(initialNote.title);
-        setContent(initialNote.content);
-        setCategory(initialNote.category);
-        setSubjectId(initialNote.subjectId || '');
-        setTags(initialNote.tags || []);
-        if (initialNote.subjectId) {
-          dataService.study.getTopics(initialNote.subjectId).then(setTopics).catch(() => {});
+        if ((paramAction === 'new' || paramTitle) && !hasInitializedSelectionRef.current) {
+          hasInitializedSelectionRef.current = true;
+          handleCreateNote(paramTitle || 'Untitled Note', paramSubjectId || '');
+        } else if (!hasInitializedSelectionRef.current && notesData.length > 0) {
+          hasInitializedSelectionRef.current = true;
+          const initialNote = notesData[0];
+          setSelectedNote(initialNote);
+          setTitle(initialNote.title);
+          setContent(initialNote.content);
+          setCategory(initialNote.category);
+          setSubjectId(initialNote.subjectId || '');
+          setTags(initialNote.tags || []);
+          if (initialNote.subjectId) {
+            dataService.study.getTopics(initialNote.subjectId).then(setTopics).catch(() => {});
+          }
         }
+      } else {
+        console.error('Failed to load primary notes:', notesRes.reason);
+        throw notesRes.reason;
       }
+
+      if (subjectsRes.status === 'fulfilled') setSubjects(subjectsRes.value);
+      if (resourcesRes.status === 'fulfilled') setResources(resourcesRes.value);
+
     } catch (err) {
       console.error('Failed to load notes data:', err);
-    } finally {
-      setIsLoading(false);
+      setNotes((current) => {
+        if (current.length === 0) setInitialLoadStatus('error');
+        else setSyncStatus('error');
+        return current;
+      });
     }
   }, [searchQuery, filterCategory, filterSubjectId, searchParams]);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
     const unsubscribe = dataService.subscribe(() => {
-      loadData();
+      loadData(false);
     });
     return () => unsubscribe();
   }, [loadData]);
+
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await loadData(notes.length === 0);
+    setIsRetrying(false);
+  };
 
   const handleSelectNote = (note: Note) => {
     setSelectedNote(note);
@@ -183,6 +209,8 @@ export const NotesPage: React.FC = () => {
 
       setNotes((prev) => [newNote, ...prev]);
       handleSelectNote(newNote);
+      setInitialLoadStatus('success');
+      setSyncStatus('idle');
       addToast({ title: 'New note created', type: 'info' });
     } catch (err) {
       addToast({
@@ -194,22 +222,27 @@ export const NotesPage: React.FC = () => {
   };
 
   const handleDeleteNote = async (id: string) => {
-    try {
-      localStorage.removeItem(`solis_note_draft_${id}`);
-      await dataService.notes.deleteNote(id);
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-      if (selectedNote?.id === id) {
-        const remaining = notes.filter((n) => n.id !== id);
-        if (remaining.length > 0) {
-          handleSelectNote(remaining[0]);
-        } else {
-          setSelectedNote(null);
-          setTitle('');
-          setContent('');
-        }
+    const prevNotes = notes;
+    const prevSelected = selectedNote;
+    localStorage.removeItem(`solis_note_draft_${id}`);
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    if (selectedNote?.id === id) {
+      const remaining = notes.filter((n) => n.id !== id);
+      if (remaining.length > 0) {
+        handleSelectNote(remaining[0]);
+      } else {
+        setSelectedNote(null);
+        setTitle('');
+        setContent('');
       }
+    }
+
+    try {
+      await dataService.notes.deleteNote(id);
       addToast({ title: 'Note removed', type: 'info' });
     } catch (err) {
+      setNotes(prevNotes);
+      setSelectedNote(prevSelected);
       addToast({
         title: 'Could not delete note',
         description: formatErrorMessage(err),
@@ -218,10 +251,13 @@ export const NotesPage: React.FC = () => {
     }
   };
 
-  // Debounced auto-save with draft backup
+  // Debounced auto-save with sequence/version tracking and local draft backup
   const triggerAutoSave = (updatedFields: Partial<Note>) => {
     if (!selectedNote) return;
     setSaveStatus('saving');
+
+    saveVersionRef.current += 1;
+    const currentVersion = saveVersionRef.current;
 
     // Immediate local draft backup
     try {
@@ -230,7 +266,8 @@ export const NotesPage: React.FC = () => {
         JSON.stringify({
           title: updatedFields.title ?? title,
           content: updatedFields.content ?? content,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          version: currentVersion
         })
       );
     } catch {
@@ -244,8 +281,12 @@ export const NotesPage: React.FC = () => {
     autoSaveTimerRef.current = setTimeout(async () => {
       try {
         await dataService.notes.updateNote(selectedNote.id, updatedFields);
-        localStorage.removeItem(`solis_note_draft_${selectedNote.id}`);
-        setSaveStatus('saved');
+        // Only mark saved and remove draft if this response is not superseded by a newer edit
+        if (currentVersion >= latestAcknowledgedVersionRef.current) {
+          latestAcknowledgedVersionRef.current = currentVersion;
+          localStorage.removeItem(`solis_note_draft_${selectedNote.id}`);
+          setSaveStatus('saved');
+        }
       } catch (err) {
         setSaveStatus('unsaved');
         addToast({
@@ -380,11 +421,42 @@ export const NotesPage: React.FC = () => {
         />
 
         {/* Notes Stream */}
-        {isLoading ? (
+        {syncStatus === 'error' && notes.length > 0 && (
+          <div
+            style={{
+              padding: '6px 10px',
+              backgroundColor: 'var(--status-warning-bg)',
+              border: '1px solid var(--status-warning)',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 'var(--text-micro)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '6px'
+            }}
+          >
+            <span>Sync hiccup — Showing saved draft</span>
+            <button onClick={handleRetry} style={{ background: 'none', border: 'none', color: 'var(--color-coral-500)', cursor: 'pointer', fontWeight: 600, fontSize: 'var(--text-micro)' }}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {initialLoadStatus === 'loading' && notes.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <Skeleton height="80px" />
             <Skeleton height="80px" />
             <Skeleton height="80px" />
+          </div>
+        ) : initialLoadStatus === 'error' && notes.length === 0 ? (
+          <div style={{ padding: '24px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+            <p style={{ color: 'var(--status-error)', fontSize: 'var(--text-body-sm)', fontWeight: 600 }}>
+              Could not load knowledge notes.
+            </p>
+            <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying} style={{ marginTop: '8px' }}>
+              Retry
+            </Button>
           </div>
         ) : notes.length === 0 ? (
           <div style={{ padding: '24px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>

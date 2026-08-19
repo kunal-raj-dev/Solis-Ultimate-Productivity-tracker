@@ -97,7 +97,18 @@ export const DashboardPage: React.FC = () => {
 
   const loadDashboardData = useCallback(async () => {
     try {
-      const [taskList, planList, subList, noteList, habitList, sessList, focusList, dailySum, rtnList, refList] = await Promise.all([
+      const [
+        taskRes,
+        planRes,
+        subRes,
+        noteRes,
+        habitRes,
+        sessRes,
+        focusRes,
+        dailySumRes,
+        rtnRes,
+        refRes
+      ] = await Promise.allSettled([
         dataService.tasks.getTasks(),
         dataService.study.getTodayPlan(),
         dataService.study.getSubjects(),
@@ -110,19 +121,25 @@ export const DashboardPage: React.FC = () => {
         dataService.reflections ? dataService.reflections.getReflections(5) : Promise.resolve([])
       ]);
 
-      setTasks(taskList);
-      setStudyPlan(planList);
-      setSubjects(subList);
-      setNotes(noteList);
-      setHabits(habitList);
-      setRecentSessions(sessList);
-      setRecentFocus(focusList);
-      setSummary(dailySum);
-      setRoutines(rtnList);
-      setReflections(refList);
+      if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
+      if (planRes.status === 'fulfilled') setStudyPlan(planRes.value);
+      if (subRes.status === 'fulfilled') {
+        setSubjects(subRes.value);
+        try {
+          const topicArrays = await Promise.all(subRes.value.map((s) => dataService.study.getTopics(s.id).catch(() => [])));
+          setTopics(topicArrays.flat());
+        } catch {
+          // secondary
+        }
+      }
+      if (noteRes.status === 'fulfilled') setNotes(noteRes.value);
+      if (habitRes.status === 'fulfilled') setHabits(habitRes.value);
+      if (sessRes.status === 'fulfilled') setRecentSessions(sessRes.value);
+      if (focusRes.status === 'fulfilled') setRecentFocus(focusRes.value);
+      if (dailySumRes.status === 'fulfilled') setSummary(dailySumRes.value);
+      if (rtnRes.status === 'fulfilled') setRoutines(rtnRes.value);
+      if (refRes.status === 'fulfilled') setReflections(refRes.value);
 
-      const topicArrays = await Promise.all(subList.map((s) => dataService.study.getTopics(s.id)));
-      setTopics(topicArrays.flat());
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
@@ -144,14 +161,22 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleToggleTask = async (id: string) => {
+    const prevTasks = tasks;
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'completed' ? 'todo' : 'completed';
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t)));
+
     try {
       const updated = await dataService.tasks.toggleTaskCompletion(id);
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
       addToast({
         title: updated.status === 'completed' ? 'Task Completed' : 'Task Reopened',
         description: updated.title,
         type: 'success'
       });
     } catch {
+      setTasks(prevTasks);
       addToast({
         title: 'Update failed',
         type: 'error'
@@ -160,14 +185,17 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleToggleHabit = async (id: string) => {
+    const prevHabits = habits;
     try {
       const updated = await dataService.habits.toggleHabitToday(id);
+      setHabits((prev) => prev.map((h) => (h.id === id ? updated : h)));
       addToast({
         title: updated.completedToday ? 'Ritual Recorded' : 'Ritual Reset',
         description: `${updated.title} — Current streak: ${updated.currentStreak} days`,
         type: 'info'
       });
     } catch {
+      setHabits(prevHabits);
       addToast({
         title: 'Habit update failed',
         type: 'error'

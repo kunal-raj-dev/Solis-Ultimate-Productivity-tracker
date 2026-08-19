@@ -51,7 +51,14 @@ export const WeeklyReviewPage: React.FC = () => {
 
   const loadData = useCallback(async () => {
     try {
-      const [sessList, focusList, taskList, noteList, subList, habitList] = await Promise.all([
+      const [
+        sessRes,
+        focusRes,
+        taskRes,
+        noteRes,
+        subRes,
+        habitRes
+      ] = await Promise.allSettled([
         dataService.study.getRecentSessions(),
         dataService.focus.getRecentSessions(),
         dataService.tasks.getTasks(),
@@ -60,12 +67,13 @@ export const WeeklyReviewPage: React.FC = () => {
         dataService.habits.getHabits()
       ]);
 
-      setSessions(sessList);
-      setFocusSessions(focusList);
-      setTasks(taskList);
-      setNotes(noteList);
-      setSubjects(subList);
-      setHabits(habitList);
+      if (sessRes.status === 'fulfilled') setSessions(sessRes.value);
+      if (focusRes.status === 'fulfilled') setFocusSessions(focusRes.value);
+      if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
+      if (noteRes.status === 'fulfilled') setNotes(noteRes.value);
+      if (subRes.status === 'fulfilled') setSubjects(subRes.value);
+      if (habitRes.status === 'fulfilled') setHabits(habitRes.value);
+
     } catch (err) {
       console.error('Failed to load review data:', err);
     }
@@ -73,6 +81,10 @@ export const WeeklyReviewPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    const unsubscribe = dataService.subscribe(() => {
+      loadData();
+    });
+    return () => unsubscribe();
   }, [loadData]);
 
   // Derived intelligence

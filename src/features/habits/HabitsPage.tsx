@@ -28,7 +28,9 @@ export const HabitsPage: React.FC = () => {
 
   const [habits, setHabits] = useState<Habit[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -46,30 +48,54 @@ export const HabitsPage: React.FC = () => {
 
   const past7Days = getPastNDaysISO(7);
 
-  const loadHabits = useCallback(async () => {
+  const loadHabits = useCallback(async (isInitial = false) => {
+    if (isInitial) setInitialLoadStatus('loading');
+    else setSyncStatus('syncing');
+
     try {
-      const [habitsData, goalsData] = await Promise.all([
+      const [habitsRes, goalsRes] = await Promise.allSettled([
         dataService.habits.getHabits(),
         dataService.goals.getGoals()
       ]);
-      setHabits(habitsData);
-      setGoals(goalsData);
+
+      if (habitsRes.status === 'fulfilled') {
+        setHabits(habitsRes.value);
+        setInitialLoadStatus('success');
+        setSyncStatus('idle');
+      } else {
+        console.error('Primary habits fetch failed:', habitsRes.reason);
+        throw habitsRes.reason;
+      }
+
+      if (goalsRes.status === 'fulfilled') {
+        setGoals(goalsRes.value);
+      }
     } catch (err) {
       console.error('Failed to load habits:', err);
-    } finally {
-      setIsLoading(false);
+      setHabits((current) => {
+        if (current.length === 0) setInitialLoadStatus('error');
+        else setSyncStatus('error');
+        return current;
+      });
     }
   }, []);
 
   useEffect(() => {
-    loadHabits();
+    loadHabits(true);
     const unsubscribe = dataService.subscribe(() => {
-      loadHabits();
+      loadHabits(false);
     });
     return () => unsubscribe();
   }, [loadHabits]);
 
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await loadHabits(habits.length === 0);
+    setIsRetrying(false);
+  };
+
   const handleToggleDay = async (habitId: string, dateStr: string) => {
+    const prevHabits = habits;
     try {
       const updated = await dataService.habits.toggleHabitDate(habitId, dateStr);
       setHabits((prev) => prev.map((h) => (h.id === habitId ? updated : h)));
@@ -82,6 +108,7 @@ export const HabitsPage: React.FC = () => {
         });
       }
     } catch {
+      setHabits(prevHabits);
       addToast({ title: 'Could not update habit record', type: 'error' });
     }
   };
@@ -111,6 +138,7 @@ export const HabitsPage: React.FC = () => {
   const handleSaveHabit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    const prevHabits = habits;
 
     const targetGoal = goals.find((g) => g.id === habitGoalId);
 
@@ -143,6 +171,7 @@ export const HabitsPage: React.FC = () => {
         addToast({ title: 'Ritual Created', description: created.title, type: 'success' });
       }
     } catch (err) {
+      setHabits(prevHabits);
       if (err instanceof ValidationError) setFormError(err.message);
       else setFormError(err instanceof Error ? err.message : 'Error saving habit');
     }
@@ -150,12 +179,16 @@ export const HabitsPage: React.FC = () => {
 
   const handleDeleteHabit = async () => {
     if (!deletingHabitId) return;
+    const prevHabits = habits;
+    const id = deletingHabitId;
+    setHabits((prev) => prev.filter((h) => h.id !== id));
+    setDeletingHabitId(null);
+
     try {
-      await dataService.habits.deleteHabit(deletingHabitId);
-      setHabits((prev) => prev.filter((h) => h.id !== deletingHabitId));
-      setDeletingHabitId(null);
+      await dataService.habits.deleteHabit(id);
       addToast({ title: 'Habit Removed', type: 'info' });
     } catch {
+      setHabits(prevHabits);
       addToast({ title: 'Could not delete habit', type: 'error' });
     }
   };
@@ -173,12 +206,50 @@ export const HabitsPage: React.FC = () => {
         }
       />
 
-      {isLoading ? (
+      {syncStatus === 'error' && habits.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 14px',
+            backgroundColor: 'var(--status-warning-bg)',
+            border: '1px solid var(--status-warning)',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: 'var(--space-md)',
+            fontSize: 'var(--text-caption)',
+            color: 'var(--text-primary)',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Flame size={14} color="var(--color-amber-500)" />
+            <span>Couldn't sync latest rituals with server. Displaying last saved version.</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+            Retry Sync
+          </Button>
+        </div>
+      )}
+
+      {initialLoadStatus === 'loading' && habits.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Skeleton height="120px" />
           <Skeleton height="120px" />
           <Skeleton height="120px" />
         </div>
+      ) : initialLoadStatus === 'error' && habits.length === 0 ? (
+        <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
+          <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+            We couldn't load your habit constellation.
+          </div>
+          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
+            A network or server connectivity error occurred.
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+            Retry
+          </Button>
+        </Card>
       ) : habits.length === 0 ? (
         <EmptyState
           icon={Flame}
