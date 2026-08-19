@@ -529,14 +529,22 @@ export const DashboardPage: React.FC = () => {
               </div>
 
               <div className="solis-momentum-score-sculpture">
-                {summary?.momentumScore ?? 84}
-                <span>%</span>
+                {Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0)) ? (
+                  <>
+                    {summary?.momentumScore ?? 0}
+                    <span>%</span>
+                  </>
+                ) : (
+                  <span>—</span>
+                )}
               </div>
 
               <div style={{ color: 'var(--color-charcoal-300)', fontSize: 'var(--text-body-md)', marginTop: '8px', lineHeight: 1.5 }}>
-                {summary?.momentumScore && summary.momentumScore >= 80
-                  ? "You're moving the important things forward with calm distinction."
-                  : 'Consistent study blocks and small rituals accumulate lasting flow.'}
+                {Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0))
+                  ? summary?.momentumScore && summary.momentumScore >= 80
+                    ? "You're moving the important things forward with calm distinction."
+                    : 'Consistent study blocks and small rituals accumulate lasting flow.'
+                  : 'Your daily rhythm is forming. Complete your first study block to track momentum.'}
               </div>
             </div>
 
@@ -965,11 +973,11 @@ export const DashboardPage: React.FC = () => {
               <strong>{Math.min(100, Math.round(((summary?.totalStudyMinutes || 0) / 180) * 100))}%</strong>
             </div>
             <div style={{ padding: '10px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Deep Focus Concentration (25% weight)</span>
+              <span>Deep Focus Concentration (20% weight)</span>
               <strong>{scoreDetails.focusScore}%</strong>
             </div>
             <div style={{ padding: '10px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Ritual Consistency (15% weight)</span>
+              <span>Ritual Consistency (20% weight)</span>
               <strong>{scoreDetails.habitScore}%</strong>
             </div>
           </div>

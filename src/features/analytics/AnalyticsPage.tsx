@@ -262,7 +262,11 @@ export const AnalyticsPage: React.FC = () => {
               <Target size={16} color="var(--color-amber-500)" />
             </div>
             <div className="solis-metric-card__value-row">
-              <span className="solis-metric-card__value">{report.execution.planAdherenceRate}%</span>
+              <span className="solis-metric-card__value">
+                {report.execution.plannedStudyMinutes > 0 || report.execution.actualStudyMinutes > 0
+                  ? `${report.execution.planAdherenceRate}%`
+                  : '—'}
+              </span>
             </div>
             <div className="solis-metric-card__subtext">
               {report.execution.planningRealismVerdict === 'calibrated'
@@ -286,7 +290,9 @@ export const AnalyticsPage: React.FC = () => {
               <span className="solis-metric-card__unit">sessions</span>
             </div>
             <div className="solis-metric-card__subtext">
-              {report.attention.averageFocusDurationMinutes}m average duration • {report.attention.completionRate}% completion rate.
+              {report.attention.completedFocusSessions > 0
+                ? `${report.attention.averageFocusDurationMinutes}m average duration • ${report.attention.completionRate}% completion rate.`
+                : 'Complete focus sessions to measure flow depth.'}
             </div>
           </div>
 
@@ -297,10 +303,14 @@ export const AnalyticsPage: React.FC = () => {
               <Sparkles size={16} color="var(--color-lavender-500)" />
             </div>
             <div className="solis-metric-card__value-row">
-              <span className="solis-metric-card__value">{report.mastery.averageMasteryScore}%</span>
+              <span className="solis-metric-card__value">
+                {topics.length > 0 ? `${report.mastery.averageMasteryScore}%` : '—'}
+              </span>
             </div>
             <div className="solis-metric-card__subtext">
-              {report.mastery.masteredCount} Mastered • {report.mastery.learningCount} Learning • {report.mastery.unstudiedCount} Unstudied topics.
+              {topics.length > 0
+                ? `${report.mastery.masteredCount} Mastered • ${report.mastery.learningCount} Learning • ${report.mastery.unstudiedCount} Unstudied topics.`
+                : 'Add subjects and syllabus topics to begin tracking mastery.'}
             </div>
           </div>
         </div>

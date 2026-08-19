@@ -5,8 +5,8 @@ export interface ProductivityMetric {
   label: string;
   value: number | string;
   unit?: string;
-  changePercentage: number;
-  trend: 'up' | 'down' | 'neutral';
+  changePercentage?: number | null;
+  trend?: 'up' | 'down' | 'neutral' | null;
   timeframe: 'today' | 'this_week' | 'this_month';
 }
 

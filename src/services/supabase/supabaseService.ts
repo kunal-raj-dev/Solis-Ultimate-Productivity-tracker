@@ -1470,19 +1470,28 @@ export class SupabaseDataService implements IDataService {
     },
 
     getProductivityMetrics: async (): Promise<ProductivityMetric[]> => {
-      const summary = await this.analytics.getDailySummary();
-      const { breakdown } = calculateDailySummary({
-        tasks: [],
-        studySessions: [],
-        focusSessions: [],
-        habits: []
+      const [tasks, studySessions, focusSessions, habits, user] = await Promise.all([
+        this.tasks.getTasks(),
+        this.study.getRecentSessions(),
+        this.focus.getRecentSessions(),
+        this.habits.getHabits(),
+        this.auth.getCurrentUser()
+      ]);
+
+      const { summary, breakdown } = calculateDailySummary({
+        tasks,
+        studySessions,
+        focusSessions,
+        habits,
+        dailyStudyGoalMinutes: user?.preferences?.dailyStudyGoalMinutes || 180,
+        targetFocusMinutes: 120
       });
 
       return [
-        { id: 'm1', label: 'Tasks Velocity', value: `${breakdown.taskScore}%`, changePercentage: 12, trend: 'up', timeframe: 'today' },
-        { id: 'm2', label: 'Study Volume', value: `${summary.totalStudyMinutes}m`, changePercentage: 25, trend: 'up', timeframe: 'today' },
-        { id: 'm3', label: 'Deep Focus Rate', value: `${breakdown.focusScore}%`, changePercentage: 8, trend: 'up', timeframe: 'today' },
-        { id: 'm4', label: 'Ritual Consistency', value: `${breakdown.habitScore}%`, changePercentage: 0, trend: 'neutral', timeframe: 'today' }
+        { id: 'm1', label: 'Tasks Velocity', value: `${breakdown.taskScore}%`, changePercentage: null, trend: null, timeframe: 'today' },
+        { id: 'm2', label: 'Study Volume', value: `${summary.totalStudyMinutes}m`, changePercentage: null, trend: null, timeframe: 'today' },
+        { id: 'm3', label: 'Deep Focus Rate', value: `${breakdown.focusScore}%`, changePercentage: null, trend: null, timeframe: 'today' },
+        { id: 'm4', label: 'Ritual Consistency', value: `${breakdown.habitScore}%`, changePercentage: null, trend: null, timeframe: 'today' }
       ];
     },
 

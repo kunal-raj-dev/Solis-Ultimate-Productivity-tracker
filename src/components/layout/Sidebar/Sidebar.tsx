@@ -43,8 +43,11 @@ export const Sidebar: React.FC = () => {
   const { addToast } = useToast();
   const navigate = useNavigate();
 
-  const momentumScore = summary?.momentumScore ?? 84;
-  const pendingTasks = summary ? Math.max(0, summary.totalTasksCount - summary.completedTasksCount) : 3;
+  const hasMomentumData = Boolean(
+    summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0)
+  );
+  const momentumScore = summary?.momentumScore ?? 0;
+  const pendingTasks = summary ? Math.max(0, summary.totalTasksCount - summary.completedTasksCount) : 0;
 
   const handleLogout = async () => {
     try {
@@ -114,17 +117,17 @@ export const Sidebar: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Flame size={14} color="var(--color-coral-500)" />
             <span style={{ fontSize: 'var(--text-micro)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
-              Momentum
+              {hasMomentumData ? 'Momentum' : 'Rhythm Forming'}
             </span>
           </div>
           <span style={{ fontSize: 'var(--text-caption)', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {momentumScore}%
+            {hasMomentumData ? `${momentumScore}%` : '—'}
           </span>
         </div>
         <div className="solis-sidebar__momentum-bar">
           <div
             className="solis-sidebar__momentum-fill"
-            style={{ width: `${momentumScore}%` }}
+            style={{ width: hasMomentumData ? `${momentumScore}%` : '0%' }}
           />
         </div>
       </div>
