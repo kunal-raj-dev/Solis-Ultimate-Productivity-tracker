@@ -489,13 +489,13 @@ export const StudyPage: React.FC = () => {
         <ParallaxLayer speed={0.04} isAbsolute>
           <AtmosphericOrb color="amber" sizePx={260} top="-30px" right="-20px" opacity={0.3} />
         </ParallaxLayer>
-        <ParallaxLayer speed={1.0}>
+        <ParallaxLayer speed={0}>
           <SectionHeader
             tag={<Badge variant="amber">Study Architecture</Badge>}
             title="Study Sessions & Planning"
             subtitle="Manage subject syllabi, log focused cognitive blocks, and track weekly hour targets."
             actions={
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <Button
                   variant="outline"
                   size="md"

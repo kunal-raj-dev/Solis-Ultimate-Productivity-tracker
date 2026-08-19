@@ -51,7 +51,7 @@
 /* Floating Time Display */
 .solis-focus-time-display {
   font-family: var(--font-display);
-  font-size: clamp(5.5rem, 16vw, 10rem);
+  font-size: clamp(4.2rem, 14vw, 9.5rem);
   font-weight: 300;
   line-height: 0.9;
   letter-spacing: -0.05em;
