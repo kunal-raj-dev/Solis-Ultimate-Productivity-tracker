@@ -9,6 +9,7 @@ import { CommandPalette } from '../components/layout/CommandPalette/CommandPalet
 import { OfflineBanner } from '../components/feedback/OfflineBanner/OfflineBanner';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { FocusProvider } from '../context/FocusContext';
+import { MiniFocusPlayer } from '../components/layout/MiniFocusPlayer/MiniFocusPlayer';
 import { isFocusRoute } from '../constants/navigation';
 import { cn } from '../utils/classNames';
 import './AppLayout.css';
@@ -43,6 +44,7 @@ export const AppLayout: React.FC = () => {
           </div>
 
           {!isFocus && <MobileNav />}
+          {!isFocus && <MiniFocusPlayer />}
 
           <CommandPalette
             isOpen={isCommandOpen}

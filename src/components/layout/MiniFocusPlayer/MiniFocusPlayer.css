@@ -1,0 +1,206 @@
+/* ==========================================================================
+   MINI FOCUS PLAYER — Design System 2.0 (Tactile Docked State)
+   ========================================================================== */
+
+.solis-mini-player {
+  position: fixed;
+  bottom: var(--space-lg);
+  right: var(--space-xl);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-width: 320px;
+  max-width: 440px;
+  height: 48px;
+  padding: 0 var(--space-md) 0 var(--space-sm);
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-floating);
+  cursor: pointer;
+  user-select: none;
+  animation: solisMiniSlideUp var(--duration-swift) var(--ease-spatial);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.solis-mini-player:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-floating), 0 0 20px rgba(230, 90, 65, 0.12);
+  border-color: var(--border-strong);
+}
+
+.solis-mini-player:active {
+  transform: scale(0.99);
+}
+
+/* Left Metadata Section */
+.solis-mini-player__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  flex: 1;
+}
+
+.solis-mini-player__indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.solis-mini-player__indicator--pulsing {
+  background-color: var(--color-coral-500);
+  box-shadow: 0 0 0 0 rgba(230, 90, 65, 0.7);
+  animation: solisPulseCoral 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+.solis-mini-player__indicator--paused {
+  background-color: var(--color-amber-500);
+  box-shadow: 0 0 6px rgba(229, 142, 38, 0.4);
+}
+
+.solis-mini-player__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.solis-mini-player__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.solis-mini-player__status-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.solis-mini-player__title {
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+  line-height: 1.3;
+}
+
+/* Right Controls Section */
+.solis-mini-player__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.solis-mini-player__time {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  background: var(--bg-surface-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.solis-mini-player__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-mini-player__btn--play {
+  width: 28px;
+  height: 28px;
+  background: var(--bg-surface-secondary);
+  color: var(--text-primary);
+}
+
+.solis-mini-player__btn--play:hover {
+  background: var(--color-coral-500);
+  color: #FFFFFF;
+}
+
+.solis-play-icon-offset {
+  margin-left: 2px;
+}
+
+.solis-mini-player__btn--expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-surface-secondary);
+  color: var(--text-secondary);
+}
+
+.solis-mini-player__btn--expand:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+@keyframes solisMiniSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes solisPulseCoral {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(230, 90, 65, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(230, 90, 65, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(230, 90, 65, 0);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .solis-mini-player {
+    bottom: calc(var(--mobile-nav-height) + var(--space-xs));
+    left: var(--space-sm);
+    right: var(--space-sm);
+    max-width: none;
+    min-width: 0;
+  }
+  .solis-mini-player__title {
+    max-width: 110px;
+  }
+  .solis-mini-player__expand-label {
+    display: none;
+  }
+}

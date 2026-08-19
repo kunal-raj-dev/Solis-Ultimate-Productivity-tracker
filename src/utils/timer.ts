@@ -41,6 +41,16 @@ export function calculateTimerRemaining(
 }
 
 /**
+ * Formats total seconds into MM:SS display string.
+ */
+export function formatTime(seconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+/**
  * Synthesizes a tranquil acoustic singing bowl / chime using Web Audio API.
  * Zero external audio assets required.
  */
