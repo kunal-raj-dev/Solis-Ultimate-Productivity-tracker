@@ -34,3 +34,6 @@ dist-ssr
 coverage/
 .vitest/
 *.tsbuildinfo
+
+# Antigravity agent configuration
+.agents/
