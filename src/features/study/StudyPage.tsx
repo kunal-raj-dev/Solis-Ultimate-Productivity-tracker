@@ -118,6 +118,7 @@ export const StudyPage: React.FC = () => {
   const [planMinutes, setPlanMinutes] = useState('45');
   const [planTime, setPlanTime] = useState('02:00 PM');
   const [planError, setPlanError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -273,7 +274,11 @@ export const StudyPage: React.FC = () => {
   const handleArchiveSubject = async (id: string) => {
     try {
       await dataService.study.archiveSubject(id);
-      addToast({ title: 'Subject Archived', type: 'info' });
+      addToast({
+        title: 'Subject Archived',
+        description: 'Moved to archived view. All syllabus topics, notes, and sessions remain preserved.',
+        type: 'info'
+      });
     } catch {
       addToast({ title: 'Could not archive subject', type: 'error' });
     }
@@ -282,7 +287,11 @@ export const StudyPage: React.FC = () => {
   const handleRestoreSubject = async (id: string) => {
     try {
       await dataService.study.restoreSubject(id);
-      addToast({ title: 'Subject Restored', type: 'success' });
+      addToast({
+        title: 'Subject Restored',
+        description: 'Restored to active study view and focus selections.',
+        type: 'success'
+      });
     } catch {
       addToast({ title: 'Could not restore subject', type: 'error' });
     }
@@ -291,6 +300,7 @@ export const StudyPage: React.FC = () => {
   const handleLogSession = async (e: React.FormEvent) => {
     e.preventDefault();
     setSessionError(null);
+    setIsSubmitting(true);
 
     const selectedSub = subjects.find((s) => s.id === sessionSubjectId);
     const subjectName = selectedSub ? selectedSub.name : 'General Study';
@@ -335,12 +345,15 @@ export const StudyPage: React.FC = () => {
     } catch (err) {
       if (err instanceof ValidationError) setSessionError(err.message);
       else setSessionError(err instanceof Error ? err.message : 'Failed to log session');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleCreateSubject = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubError(null);
+    setIsSubmitting(true);
 
     try {
       const created = await dataService.study.createSubject({
@@ -363,6 +376,8 @@ export const StudyPage: React.FC = () => {
     } catch (err) {
       if (err instanceof ValidationError) setSubError(err.message);
       else setSubError(err instanceof Error ? err.message : 'Failed to create subject');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -417,6 +432,7 @@ export const StudyPage: React.FC = () => {
   const handleCreatePlanItem = async (e: React.FormEvent) => {
     e.preventDefault();
     setPlanError(null);
+    setIsSubmitting(true);
 
     const selectedSub = subjects.find((s) => s.id === planSubjectId);
 
@@ -440,6 +456,8 @@ export const StudyPage: React.FC = () => {
     } catch (err) {
       if (err instanceof ValidationError) setPlanError(err.message);
       else setPlanError(err instanceof Error ? err.message : 'Failed to add plan item');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -545,9 +563,10 @@ export const StudyPage: React.FC = () => {
                 borderRadius: 'var(--radius-full)',
                 fontWeight: 600,
                 fontSize: 'var(--text-body-sm)',
-                border: '1px solid var(--border-subtle)',
-                background: subjectViewTab === 'active' ? 'var(--color-coral-500)' : 'var(--bg-surface)',
-                color: subjectViewTab === 'active' ? '#fff' : 'var(--text-secondary)',
+                border: '1px solid',
+                borderColor: subjectViewTab === 'active' ? 'var(--color-coral-500)' : 'var(--border-subtle)',
+                background: subjectViewTab === 'active' ? 'var(--color-coral-500)' : 'var(--bg-surface-secondary)',
+                color: subjectViewTab === 'active' ? '#FFFFFF' : 'var(--text-secondary)',
                 cursor: 'pointer'
               }}
             >
@@ -561,9 +580,10 @@ export const StudyPage: React.FC = () => {
                 borderRadius: 'var(--radius-full)',
                 fontWeight: 600,
                 fontSize: 'var(--text-body-sm)',
-                border: '1px solid var(--border-subtle)',
-                background: subjectViewTab === 'archived' ? 'var(--color-coral-500)' : 'var(--bg-surface)',
-                color: subjectViewTab === 'archived' ? '#fff' : 'var(--text-secondary)',
+                border: '1px solid',
+                borderColor: subjectViewTab === 'archived' ? 'var(--color-coral-500)' : 'var(--border-subtle)',
+                background: subjectViewTab === 'archived' ? 'var(--color-coral-500)' : 'var(--bg-surface-secondary)',
+                color: subjectViewTab === 'archived' ? '#FFFFFF' : 'var(--text-secondary)',
                 cursor: 'pointer'
               }}
             >
@@ -584,6 +604,11 @@ export const StudyPage: React.FC = () => {
             <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
               No {subjectViewTab} subjects found
             </div>
+            <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              {subjectViewTab === 'active'
+                ? 'Create your first study subject to map syllabi and track focus volume.'
+                : 'No archived subjects in your repository.'}
+            </div>
           </Card>
         ) : (
           <div className="solis-subject-worlds-grid">
@@ -591,12 +616,18 @@ export const StudyPage: React.FC = () => {
               <div
                 key={subject.id}
                 className={`solis-subject-world-tile solis-subject-world-tile--${subject.color || 'coral'}`}
+                style={{ opacity: subject.status === 'archived' ? 0.85 : 1 }}
               >
                 <div>
                   <div className="solis-subject-world-header">
-                    <Badge variant={(subject.color as BadgeVariant) || 'coral'}>
-                      {subject.code || 'CORE'}
-                    </Badge>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Badge variant={(subject.color as BadgeVariant) || 'coral'}>
+                        {subject.code || 'CORE'}
+                      </Badge>
+                      {subject.status === 'archived' && (
+                        <Badge variant="neutral">Archived</Badge>
+                      )}
+                    </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <button
                         onClick={() => handleOpenTopicsModal(subject)}
@@ -608,7 +639,7 @@ export const StudyPage: React.FC = () => {
                       {subject.status === 'archived' ? (
                         <button
                           onClick={() => handleRestoreSubject(subject.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--color-sage-600)', cursor: 'pointer', padding: '4px' }}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-sage-500)', cursor: 'pointer', padding: '4px' }}
                           title="Restore subject"
                         >
                           <RotateCcw size={16} />
@@ -649,13 +680,24 @@ export const StudyPage: React.FC = () => {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
                     <span>{subject.notesCount} thoughts synthesized</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenTopicsModal(subject)}
-                    >
-                      Syllabus Roadmap →
-                    </Button>
+                    {subject.status === 'archived' ? (
+                      <Button
+                        variant="subtle"
+                        size="sm"
+                        leftIcon={<RotateCcw size={13} />}
+                        onClick={() => handleRestoreSubject(subject.id)}
+                      >
+                        Unarchive
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenTopicsModal(subject)}
+                      >
+                        Syllabus Roadmap →
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1169,7 +1211,7 @@ export const StudyPage: React.FC = () => {
             <Button variant="ghost" type="button" onClick={() => setIsLogSessionModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="accent" type="submit" leftIcon={<Sparkles size={14} />}>
+            <Button variant="accent" type="submit" isLoading={isSubmitting} leftIcon={<Sparkles size={14} />}>
               Save Study Log
             </Button>
           </div>
@@ -1237,7 +1279,7 @@ export const StudyPage: React.FC = () => {
             <Button variant="ghost" type="button" onClick={() => setIsAddSubjectModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="accent" type="submit">
+            <Button variant="accent" type="submit" isLoading={isSubmitting}>
               Save Subject
             </Button>
           </div>
@@ -1304,7 +1346,7 @@ export const StudyPage: React.FC = () => {
             <Button variant="ghost" type="button" onClick={() => setIsAddPlanModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="accent" type="submit">
+            <Button variant="accent" type="submit" isLoading={isSubmitting}>
               Add to Queue
             </Button>
           </div>
