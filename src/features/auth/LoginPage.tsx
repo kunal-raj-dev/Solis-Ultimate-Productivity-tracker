@@ -9,7 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import './AuthPages.css';
 
 export const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('kunal@solis.space');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,6 +93,7 @@ export const LoginPage: React.FC = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
+          autoComplete="username"
           leftIcon={<Mail size={16} />}
           required
           autoFocus
@@ -103,7 +104,8 @@ export const LoginPage: React.FC = () => {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
+          placeholder="Enter your password"
+          autoComplete="current-password"
           leftIcon={<Lock size={16} />}
           required
         />

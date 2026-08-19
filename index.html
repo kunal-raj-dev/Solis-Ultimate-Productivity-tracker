@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <meta name="description" content="Solis — A calm, cinematic study and productivity operating system designed for intentional focus and continuous momentum." />
-    <meta name="theme-color" content="#FAF8F5" />
+    <meta name="theme-color" content="#141211" />
     <title>Solis — Study & Productivity Operating System</title>
 
     <!-- Synchronous Theme Hydration Script (Zero FOUC) -->
@@ -14,13 +14,13 @@
         try {
           var saved = localStorage.getItem('solis-theme');
           var root = document.documentElement;
-          var isDark = false;
+          var isDark = true; // Default to Deep Charcoal (Night) for new users
           if (saved === 'dark') {
             isDark = true;
           } else if (saved === 'light') {
             isDark = false;
-          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            isDark = true;
+          } else if (saved === 'system') {
+            isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
           }
           if (isDark) {
             root.classList.add('dark');
@@ -32,6 +32,8 @@
             root.classList.remove('dark');
             root.setAttribute('data-theme', 'light');
             root.style.colorScheme = 'light';
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#FAF8F5');
           }
         } catch (e) {}
       })();

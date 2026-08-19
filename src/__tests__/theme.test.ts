@@ -107,6 +107,35 @@ describe('Solis Theme System & Night Mode Semantic Synchronization', () => {
     vi.restoreAllMocks();
   });
 
+  it('defaults to Night mode (Deep Charcoal) when no saved preference exists in storage', () => {
+    // No saved preference in storage
+    const saved = mockLocalStorage.getItem('solis-theme');
+    expect(saved).toBeNull();
+
+    // Initial theme calculation engine
+    const initialTheme: ThemeMode = saved === 'dark' ? 'dark' : saved === 'light' ? 'light' : saved === 'system' ? 'system' : 'dark';
+    const state = applyThemeEngine(initialTheme, root, meta);
+
+    expect(state.theme).toBe('dark');
+    expect(state.isDark).toBe(true);
+    expect(root.classList.contains('dark')).toBe(true);
+    expect(root.getAttribute('data-theme')).toBe('dark');
+    expect(meta.getAttribute('content')).toBe('#141211');
+  });
+
+  it('preserves returning user stored Day preference', () => {
+    mockLocalStorage.setItem('solis-theme', 'light');
+    const saved = mockLocalStorage.getItem('solis-theme') as ThemeMode;
+    const initialTheme: ThemeMode = saved === 'dark' ? 'dark' : saved === 'light' ? 'light' : saved === 'system' ? 'system' : 'dark';
+    const state = applyThemeEngine(initialTheme, root, meta);
+
+    expect(state.theme).toBe('light');
+    expect(state.isDark).toBe(false);
+    expect(root.classList.contains('dark')).toBe(false);
+    expect(root.getAttribute('data-theme')).toBe('light');
+    expect(meta.getAttribute('content')).toBe('#FAF8F5');
+  });
+
   it('correctly applies light theme (Warm Ivory) to DOM attributes', () => {
     const state = applyThemeEngine('light', root, meta);
     expect(state.theme).toBe('light');

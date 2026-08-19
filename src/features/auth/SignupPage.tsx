@@ -95,7 +95,8 @@ export const SignupPage: React.FC = () => {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Kunal Sharma"
+          placeholder="e.g. Alex Morgan"
+          autoComplete="name"
           leftIcon={<User size={16} />}
           required
           autoFocus
@@ -107,6 +108,7 @@ export const SignupPage: React.FC = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
+          autoComplete="username"
           leftIcon={<Mail size={16} />}
           required
         />
@@ -117,6 +119,7 @@ export const SignupPage: React.FC = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Minimum 6 characters"
+          autoComplete="new-password"
           leftIcon={<Lock size={16} />}
           required
         />

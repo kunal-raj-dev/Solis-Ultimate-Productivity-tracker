@@ -14,9 +14,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     try {
       const saved = localStorage.getItem('solis-theme') as ThemeMode;
-      return saved || 'light';
+      if (saved === 'dark') return 'dark';
+      if (saved === 'light') return 'light';
+      if (saved === 'system') return 'system';
+      return 'dark'; // Default to Deep Charcoal (Night) for new users
     } catch {
-      return 'light';
+      return 'dark';
     }
   });
 
@@ -25,13 +28,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const saved = localStorage.getItem('solis-theme') as ThemeMode;
       if (saved === 'dark') return true;
       if (saved === 'light') return false;
-      if (typeof window !== 'undefined' && window.matchMedia) {
+      if (saved === 'system' && typeof window !== 'undefined' && window.matchMedia) {
         return window.matchMedia('(prefers-color-scheme: dark)').matches;
       }
+      return true; // Default to Deep Charcoal (Night)
     } catch {
-      // fallback
+      return true;
     }
-    return false;
   });
 
   const applyTheme = useCallback((activeTheme: ThemeMode) => {

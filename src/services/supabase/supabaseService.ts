@@ -1129,13 +1129,15 @@ export class SupabaseDataService implements IDataService {
       if (cached) return cached;
 
       const userId = await this.getRequiredUserId();
-      const [habitsRes, recordsRes] = await Promise.all([
-        supabase.from('habits').select('*, goals (id, title)').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('habit_records').select('*').eq('user_id', userId)
+      const [habitsRes, recordsRes, goalsRes] = await Promise.all([
+        supabase.from('habits').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+        supabase.from('habit_records').select('*').eq('user_id', userId),
+        supabase.from('goals').select('id, title').eq('user_id', userId)
       ]);
 
       if (habitsRes.error) throw habitsRes.error;
       const records = recordsRes.data || [];
+      const goalsMap = new Map((goalsRes.data || []).map((g: any) => [g.id, g.title]));
 
       const result = (habitsRes.data || []).map((h: any) => {
         const history: Record<string, boolean> = {};
@@ -1144,7 +1146,8 @@ export class SupabaseDataService implements IDataService {
             history[rec.completion_date] = rec.completed;
           }
         }
-        return mapHabit(h, history, h.goals?.title);
+        const resolvedGoalTitle = h.goal_id ? goalsMap.get(h.goal_id) : undefined;
+        return mapHabit(h, history, resolvedGoalTitle);
       });
 
       queryCache.set(cacheKey, result);
@@ -1169,13 +1172,13 @@ export class SupabaseDataService implements IDataService {
           color: habit.color || 'coral',
           goal_id: habit.goalId || null
         })
-        .select('*, goals (id, title)')
+        .select('*')
         .single();
 
       if (error || !data) throw error || new Error('Failed to create habit');
 
       this.notify();
-      return mapHabit(data, {}, data.goals?.title);
+      return mapHabit(data, {}, habit.goalTitle);
     },
 
     updateHabit: async (id: string, updates: Partial<Habit>): Promise<Habit> => {
@@ -1194,7 +1197,7 @@ export class SupabaseDataService implements IDataService {
         .update(payload)
         .eq('id', id)
         .eq('user_id', userId)
-        .select('*, goals (id, title)')
+        .select('*')
         .single();
 
       if (error || !data) throw error || new Error('Failed to update habit');

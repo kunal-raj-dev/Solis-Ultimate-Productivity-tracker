@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
@@ -36,9 +36,9 @@ export const SettingsPage: React.FC = () => {
   const { addToast } = useToast();
   const navigate = useNavigate();
 
-  const [name, setName] = useState(user?.name || 'Kunal');
-  const [email, setEmail] = useState(user?.email || 'kunal@solis.space');
-  const [focusField, setFocusField] = useState(user?.focusField || 'Computer Science & Architecture');
+  const [name, setName] = useState(user?.name || 'Scholar');
+  const [email, setEmail] = useState(user?.email || '');
+  const [focusField, setFocusField] = useState(user?.focusField || 'General Mastery');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [focusDuration, setFocusDuration] = useState('25');
   const [breakDuration, setBreakDuration] = useState('5');
@@ -48,6 +48,14 @@ export const SettingsPage: React.FC = () => {
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(loadNotificationPreferences);
   const [isExporting, setIsExporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.email) setEmail(user.email);
+      if (user.focusField) setFocusField(user.focusField);
+    }
+  }, [user]);
 
   const handleExportFullBackup = async () => {
     setIsExporting(true);
