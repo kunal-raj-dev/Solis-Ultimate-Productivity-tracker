@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   mapProfile,
   mapTask,
@@ -64,6 +64,9 @@ describe('Supabase Data Mappers & Model Isolation', () => {
   });
 
   it('derives habit streaks dynamically from immutable history records during mapping', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-17T12:00:00.000Z'));
+
     const habitRow = {
       id: 'hab_uuid_1',
       title: 'Morning Deep Study Block',
@@ -82,8 +85,12 @@ describe('Supabase Data Mappers & Model Isolation', () => {
 
     const mapped = mapHabit(habitRow, history);
     expect(mapped.id).toBe('hab_uuid_1');
-    expect(mapped.currentStreak).toBeGreaterThanOrEqual(1);
+    expect(mapped.currentStreak).toBe(3);
+    expect(mapped.longestStreak).toBe(3);
+    expect(mapped.completedToday).toBe(true);
     expect(mapped.history).toEqual(history);
+
+    vi.useRealTimers();
   });
 
   it('derives goal progress percentage dynamically from milestones during mapping', () => {
