@@ -367,14 +367,16 @@ export const TasksPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', flex: 1, maxWidth: '480px' }}>
-            <Input
-              placeholder="Search statements, tags, or notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              leftIcon={<Search size={14} />}
-            />
-            <div style={{ minWidth: '170px' }}>
+          <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px', maxWidth: '520px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 180px', minWidth: '150px' }}>
+              <Input
+                placeholder="Search statements, tags, or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                leftIcon={<Search size={14} />}
+              />
+            </div>
+            <div style={{ flex: '0 0 auto', minWidth: '130px' }}>
               <CustomSelect
                 variant="subtle"
                 value={sortBy}

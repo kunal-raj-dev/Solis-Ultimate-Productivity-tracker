@@ -70,3 +70,44 @@
   border-top: 1px solid var(--border-subtle);
   background-color: var(--bg-surface-subtle);
 }
+
+@media (max-width: 600px) {
+  .solis-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .solis-modal-dialog {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 92vh;
+    max-width: 100%;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    animation: solisSheetSlideUp var(--duration-swift) var(--ease-spatial);
+  }
+
+  .solis-modal-header {
+    padding: var(--space-md) var(--space-lg) var(--space-xs);
+  }
+
+  .solis-modal-body {
+    padding: var(--space-xs) var(--space-lg) var(--space-md);
+  }
+
+  .solis-modal-footer {
+    padding: var(--space-sm) var(--space-lg) calc(var(--space-md) + var(--safe-area-bottom));
+    flex-wrap: wrap;
+  }
+}
+
+@keyframes solisSheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

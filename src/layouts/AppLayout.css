@@ -20,19 +20,25 @@
 
 .solis-app-view {
   flex: 1;
-  padding: var(--space-lg) var(--space-md) calc(var(--mobile-nav-height) + var(--space-xl));
+  padding: var(--space-md) var(--space-sm) calc(var(--mobile-nav-height) + var(--safe-area-bottom) + var(--space-xl));
   max-width: var(--max-content-width);
   width: 100%;
   margin: 0 auto;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 600px) {
+  .solis-app-view {
+    padding: var(--space-lg) var(--space-lg) calc(var(--mobile-nav-height) + var(--safe-area-bottom) + var(--space-xl));
+  }
+}
+
+@media (min-width: 1024px) {
   .solis-app-view {
     padding: var(--space-xl) var(--space-xl) var(--space-2xl);
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1440px) {
   .solis-app-view {
     padding: var(--space-2xl) var(--space-2xl) var(--space-3xl);
   }

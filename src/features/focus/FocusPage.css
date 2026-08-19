@@ -51,7 +51,7 @@
 /* Floating Time Display */
 .solis-focus-time-display {
   font-family: var(--font-display);
-  font-size: clamp(4.2rem, 14vw, 9.5rem);
+  font-size: clamp(3.2rem, 16vw, 9.5rem);
   font-weight: 300;
   line-height: 0.9;
   letter-spacing: -0.05em;
@@ -107,6 +107,25 @@
   border-radius: var(--radius-full);
   margin-top: var(--space-lg);
   backdrop-filter: blur(8px);
+}
+
+@media (max-width: 600px) {
+  .solis-focus-sanctuary {
+    padding: var(--space-lg) var(--space-sm);
+    min-height: calc(100vh - 120px);
+  }
+  .solis-soundscape-bar {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .solis-focus-actions {
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    width: 100%;
+  }
 }
 
 .solis-locked-outcome-pill {

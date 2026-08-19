@@ -26,20 +26,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch }) => {
           className="solis-app-header__search-btn"
           onClick={onOpenSearch}
           title="Search workspace (Cmd + K)"
+          aria-label="Search workspace"
         >
           <Search size={14} />
-          <span>Find tasks, sessions, notes...</span>
+          <span className="solis-app-header__search-label">Find tasks, sessions, notes...</span>
           <span className="solis-app-header__kbd">⌘K</span>
         </button>
 
-        <Button
-          variant="accent"
-          size="sm"
-          leftIcon={<Flame size={15} />}
-          onClick={() => navigate('/app/focus')}
-        >
-          Focus Space
-        </Button>
+        <div className="solis-app-header__focus-wrapper">
+          <Button
+            variant="accent"
+            size="sm"
+            leftIcon={<Flame size={15} />}
+            onClick={() => navigate('/app/focus')}
+          >
+            Focus Space
+          </Button>
+        </div>
 
         <AccountMenu />
       </div>

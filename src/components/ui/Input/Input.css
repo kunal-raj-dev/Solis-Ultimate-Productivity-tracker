@@ -70,3 +70,9 @@
 .solis-input-helper--error {
   color: var(--status-error);
 }
+
+@media (max-width: 768px) {
+  .solis-input {
+    font-size: 16px;
+  }
+}

@@ -71,3 +71,35 @@
 .solis-app-header__user-btn:hover {
   background-color: var(--bg-surface-hover);
 }
+
+/* Header Responsiveness */
+@media (max-width: 768px) {
+  .solis-app-header {
+    padding: 0 var(--space-md);
+  }
+  .solis-app-header__search-label {
+    display: none;
+  }
+  .solis-app-header__kbd {
+    display: none;
+  }
+  .solis-app-header__search-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-full);
+  }
+  .solis-app-header__focus-wrapper {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .solis-app-header {
+    padding: 0 var(--space-sm);
+  }
+  .solis-app-header__date {
+    font-size: var(--text-caption);
+  }
+}

@@ -15,8 +15,19 @@
    -------------------------------------------------------------------------- */
 .solis-subject-worlds-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: var(--space-lg);
+}
+
+@media (max-width: 480px) {
+  .solis-subject-worlds-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .solis-subject-world-tile {
+    padding: var(--space-lg) var(--space-md);
+  }
 }
 
 .solis-subject-world-tile {

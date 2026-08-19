@@ -188,19 +188,36 @@
   }
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
+/* Mobile & Tablet Responsive (when MobileNav is present) */
+@media (max-width: 1023px) {
   .solis-mini-player {
-    bottom: calc(var(--mobile-nav-height) + var(--space-xs));
+    bottom: calc(var(--mobile-nav-height) + var(--safe-area-bottom) + var(--space-xs));
     left: var(--space-sm);
     right: var(--space-sm);
     max-width: none;
     min-width: 0;
   }
   .solis-mini-player__title {
-    max-width: 110px;
+    max-width: 120px;
   }
   .solis-mini-player__expand-label {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .solis-mini-player {
+    left: var(--space-2xs);
+    right: var(--space-2xs);
+    height: 44px;
+    padding: 0 var(--space-sm) 0 var(--space-xs);
+    gap: var(--space-xs);
+  }
+  .solis-mini-player__title {
+    max-width: 90px;
+    font-size: var(--text-micro);
+  }
+  .solis-mini-player__time {
+    font-size: var(--text-caption);
   }
 }

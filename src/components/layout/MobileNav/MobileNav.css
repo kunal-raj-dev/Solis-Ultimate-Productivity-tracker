@@ -7,7 +7,8 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--mobile-nav-height);
+  height: calc(var(--mobile-nav-height) + var(--safe-area-bottom));
+  padding: 0 var(--space-xs) var(--safe-area-bottom);
   background-color: var(--nav-bg-scrolled);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -16,7 +17,6 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 var(--space-xs);
   z-index: var(--z-header);
 }
 

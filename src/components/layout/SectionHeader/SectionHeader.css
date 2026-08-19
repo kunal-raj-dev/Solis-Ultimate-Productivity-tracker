@@ -43,6 +43,7 @@
   align-items: center;
   gap: var(--space-xs);
   margin-top: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 @media (min-width: 768px) {

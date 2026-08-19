@@ -8,7 +8,8 @@ import {
   Check,
   X,
   BrainCircuit,
-  Bookmark
+  Bookmark,
+  ArrowLeft
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -25,6 +26,7 @@ import { StudySubject, StudyTopic } from '../../types/study';
 import { StudyResource } from '../../types/resource';
 import { formatFriendlyDate } from '../../utils/date';
 import { formatErrorMessage } from '../../utils/errors';
+import { cn } from '../../utils/classNames';
 import './NotesPage.css';
 
 const CATEGORIES: { value: NoteCategory; label: string }[] = [
@@ -46,6 +48,7 @@ export const NotesPage: React.FC = () => {
   const [topics, setTopics] = useState<StudyTopic[]>([]);
   const [resources, setResources] = useState<StudyResource[]>([]);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [mobileView, setMobileView] = useState<'index' | 'editor'>('index');
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
 
@@ -195,6 +198,7 @@ export const NotesPage: React.FC = () => {
     setSubjectId(note.subjectId || '');
     setTags(note.tags || []);
     setSaveStatus('saved');
+    setMobileView('editor');
   };
 
   const handleCreateNote = async (initialTitle?: string, initialSubId?: string) => {
@@ -209,6 +213,7 @@ export const NotesPage: React.FC = () => {
 
       setNotes((prev) => [newNote, ...prev]);
       handleSelectNote(newNote);
+      setMobileView('editor');
       setInitialLoadStatus('success');
       setSyncStatus('idle');
       addToast({ title: 'New note created', type: 'info' });
@@ -234,6 +239,7 @@ export const NotesPage: React.FC = () => {
         setSelectedNote(null);
         setTitle('');
         setContent('');
+        setMobileView('index');
       }
     }
 
@@ -350,7 +356,7 @@ export const NotesPage: React.FC = () => {
   }));
 
   return (
-    <div className="solis-notes-studio">
+    <div className={cn('solis-notes-studio', mobileView === 'editor' ? 'solis-notes-studio--editor' : 'solis-notes-studio--index')}>
       {/* --------------------------------------------------------------------
           LEFT PANE: KNOWLEDGE INDEX
           -------------------------------------------------------------------- */}
@@ -510,6 +516,16 @@ export const NotesPage: React.FC = () => {
           <>
             {/* Canvas Meta Topbar */}
             <div className="solis-notes-canvas__topbar">
+              <button
+                type="button"
+                className="solis-notes-canvas__back-btn"
+                onClick={() => setMobileView('index')}
+                aria-label="Back to Knowledge Index"
+              >
+                <ArrowLeft size={15} />
+                <span>Notes</span>
+              </button>
+
               <div className="solis-notes-canvas__meta">
                 <div style={{ width: '150px' }}>
                   <CustomSelect

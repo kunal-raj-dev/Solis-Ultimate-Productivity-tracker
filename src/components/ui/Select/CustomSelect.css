@@ -221,3 +221,15 @@
 .solis-custom-select-option__check {
   color: var(--color-coral-500);
 }
+
+@media (max-width: 768px) {
+  .solis-custom-select-trigger {
+    font-size: 16px;
+    height: 44px;
+  }
+
+  .solis-custom-select-option {
+    padding: 10px 14px;
+    min-height: 44px;
+  }
+}

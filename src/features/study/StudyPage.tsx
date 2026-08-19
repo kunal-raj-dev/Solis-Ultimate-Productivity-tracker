@@ -822,7 +822,7 @@ export const StudyPage: React.FC = () => {
         )}
 
         {initialLoadStatus === 'loading' && subjects.length === 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
             <Skeleton height="180px" />
             <Skeleton height="180px" />
             <Skeleton height="180px" />
@@ -1161,7 +1161,7 @@ export const StudyPage: React.FC = () => {
         </div>
 
         {reviews.length > 0 ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))', gap: '14px' }}>
             {reviews.map((rev) => (
               <div
                 key={rev.id}
@@ -1221,7 +1221,7 @@ export const StudyPage: React.FC = () => {
       </div>
 
       {/* Grid: Study Plan Queue (Left) + Recent Sessions (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
         {/* Today's Study Queue */}
         <Card>
           <CardHeader>

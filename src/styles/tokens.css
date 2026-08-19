@@ -119,9 +119,16 @@
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 72px;
   --header-height: 64px;
-  --mobile-nav-height: 68px;
+  --mobile-nav-height: 64px;
   --max-content-width: 1280px;
   --max-readable-width: 760px;
+
+  /* Device Safe Areas & Accessibility Touch Tokens */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --min-touch-target: 44px;
 
   --z-base: 1;
   --z-sticky: 100;

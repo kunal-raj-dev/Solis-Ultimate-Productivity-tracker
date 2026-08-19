@@ -453,7 +453,7 @@ export const GoalsPage: React.FC = () => {
                     Milestones Checklist
                   </h4>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '10px', marginBottom: '12px' }}>
                     {goal.milestones.map((m) => (
                       <div
                         key={m.id}
