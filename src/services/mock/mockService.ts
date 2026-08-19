@@ -170,6 +170,25 @@ export class MockDataService implements IDataService {
       await delay(40);
       this._user = null;
       this.notify();
+    },
+
+    requestPasswordReset: async (email: string): Promise<void> => {
+      await delay(60);
+      if (!email || !email.includes('@')) {
+        throw new Error('Please provide a valid email address.');
+      }
+      // Mock always resolves neutrally
+    },
+
+    updatePassword: async (password: string): Promise<void> => {
+      await delay(60);
+      if (!password || password.length < 6) {
+        throw new Error('Password must be at least 6 characters.');
+      }
+      if (this._user) {
+        this._user = { ...this._user, updatedAt: new Date().toISOString() };
+      }
+      this.notify();
     }
   };
 

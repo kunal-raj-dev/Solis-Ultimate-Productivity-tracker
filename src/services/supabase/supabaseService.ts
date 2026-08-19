@@ -218,6 +218,34 @@ export class SupabaseDataService implements IDataService {
     logout: async (): Promise<void> => {
       await supabase.auth.signOut();
       this.notify();
+    },
+
+    requestPasswordReset: async (email: string): Promise<void> => {
+      const redirectUrl = typeof window !== 'undefined' && window.location?.origin
+        ? `${window.location.origin}/auth/reset-password`
+        : 'https://solis-ultimate-productivity-tracker.vercel.app/auth/reset-password';
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectUrl
+      });
+
+      if (error) {
+        // Do not throw on user-not-found to prevent account enumeration
+        const msg = error.message?.toLowerCase() || '';
+        if (msg.includes('user not found') || msg.includes('not found') || (error as any).status === 404) {
+          return;
+        }
+        throw error;
+      }
+    },
+
+    updatePassword: async (password: string): Promise<void> => {
+      const { error } = await supabase.auth.updateUser({
+        password
+      });
+
+      if (error) throw error;
+      this.notify();
     }
   };
 

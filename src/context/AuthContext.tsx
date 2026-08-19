@@ -16,6 +16,8 @@ interface AuthContextValue {
   login: (credentials: LoginCredentials) => Promise<void>;
   signup: (credentials: SignupCredentials) => Promise<void>;
   logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -146,6 +148,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const requestPasswordReset = async (email: string) => {
+    setAuthError(null);
+    try {
+      await dataService.auth.requestPasswordReset(email);
+    } catch (err) {
+      if (isMountedRef.current) {
+        const formatted = formatAuthError(err);
+        setAuthError(formatted.userMessage);
+        throw new Error(formatted.userMessage);
+      }
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    setAuthError(null);
+    try {
+      await dataService.auth.updatePassword(password);
+    } catch (err) {
+      if (isMountedRef.current) {
+        const formatted = formatAuthError(err);
+        setAuthError(formatted.userMessage);
+        throw new Error(formatted.userMessage);
+      }
+    }
+  };
+
   const clearError = () => setAuthError(null);
 
   const isLoading = authStatus === 'initializing';
@@ -163,6 +191,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
+        requestPasswordReset,
+        updatePassword,
         clearError
       }}
     >

@@ -16,6 +16,8 @@ export interface IAuthService {
   login(credentials: LoginCredentials): Promise<AuthSession>;
   signup(credentials: SignupCredentials): Promise<AuthSession>;
   logout(): Promise<void>;
+  requestPasswordReset(email: string): Promise<void>;
+  updatePassword(password: string): Promise<void>;
 }
 
 export interface ITaskService {

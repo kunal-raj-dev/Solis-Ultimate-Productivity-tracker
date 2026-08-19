@@ -114,26 +114,16 @@ export const LoginPage: React.FC = () => {
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
           />
-          <button
-            type="button"
+          <Link
+            to="/auth/forgot-password"
             style={{
               fontSize: 'var(--text-caption)',
               color: 'var(--text-secondary)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
               textDecoration: 'underline'
-            }}
-            onClick={() => {
-              addToast({
-                title: 'Password reset instructions',
-                description: 'Please contact support or check your email settings in Supabase.',
-                type: 'info'
-              });
             }}
           >
             Forgot?
-          </button>
+          </Link>
         </div>
 
         <Button
