@@ -176,3 +176,19 @@
 .solis-retention-dot--filled {
   background: var(--color-coral-500);
 }
+
+/* --------------------------------------------------------------------------
+   05 // CONTEXTUAL ACTION MENU & POPOVER
+   -------------------------------------------------------------------------- */
+.solis-menu-item {
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.solis-menu-item:hover {
+  background-color: var(--bg-surface-hover) !important;
+}
+
+.solis-menu-item--destructive:hover {
+  background-color: var(--status-error-bg) !important;
+  color: var(--status-error) !important;
+}

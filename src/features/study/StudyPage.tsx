@@ -16,7 +16,9 @@ import {
   FileEdit,
   BrainCircuit,
   Repeat,
-  Bookmark
+  Bookmark,
+  MoreVertical,
+  Edit2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
@@ -48,30 +50,34 @@ import {
 import { Flashcard, ReviewQueueItem, CardRating } from '../../types/learning';
 import { StudyResource, ReadingStatus } from '../../types/resource';
 import { ValidationError } from '../../utils/validation';
-import { queryCache } from '../../services/cache';
 import './StudyPage.css';
 
 export const StudyPage: React.FC = () => {
-  const { addToast } = useToast();
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
-  const cachedSubjects = queryCache.get<StudySubject[]>('subjects:false');
-  const cachedSessions = queryCache.get<StudySession[]>('study_sessions_recent');
-  const cachedPlan = queryCache.get<StudyPlanItem[]>('study_plan_today');
-
-  const [subjects, setSubjects] = useState<StudySubject[]>(() => cachedSubjects || []);
-  const [sessions, setSessions] = useState<StudySession[]>(() => cachedSessions || []);
-  const [studyPlan, setStudyPlan] = useState<StudyPlanItem[]>(() => cachedPlan || []);
+  const [subjects, setSubjects] = useState<StudySubject[]>([]);
+  const [allTopics, setAllTopics] = useState<StudyTopic[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [studyPlan, setStudyPlan] = useState<StudyPlanItem[]>([]);
   const [reviews, setReviews] = useState<ReviewQueueItem[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [resources, setResources] = useState<StudyResource[]>([]);
-  const [allTopics, setAllTopics] = useState<StudyTopic[]>([]);
-  const [isLoading, setIsLoading] = useState(() => !cachedSubjects && !cachedPlan);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+
+  // Subject View State: 'active' | 'archived'
   const [subjectViewTab, setSubjectViewTab] = useState<'active' | 'archived'>('active');
 
   // Modals
-  const [isLogSessionModalOpen, setIsLogSessionModalOpen] = useState(false);
   const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
+  const [isEditSubjectModalOpen, setIsEditSubjectModalOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<StudySubject | null>(null);
+  const [deletingSubject, setDeletingSubject] = useState<StudySubject | null>(null);
+  const [activeActionMenuSubjectId, setActiveActionMenuSubjectId] = useState<string | null>(null);
+  const [showAddSubjectOptions, setShowAddSubjectOptions] = useState(false);
+
+  const [isLogSessionModalOpen, setIsLogSessionModalOpen] = useState(false);
   const [isAddPlanModalOpen, setIsAddPlanModalOpen] = useState(false);
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -111,6 +117,14 @@ export const StudyPage: React.FC = () => {
   const [subTargetHours, setSubTargetHours] = useState('10');
   const [subError, setSubError] = useState<string | null>(null);
 
+  // Edit Subject Form
+  const [editSubName, setEditSubName] = useState('');
+  const [editSubCode, setEditSubCode] = useState('');
+  const [editSubDesc, setEditSubDesc] = useState('');
+  const [editSubColor, setEditSubColor] = useState('coral');
+  const [editSubTargetHours, setEditSubTargetHours] = useState('10');
+  const [editSubError, setEditSubError] = useState<string | null>(null);
+
   // Add Plan Form
   const [planTitle, setPlanTitle] = useState('');
   const [planSubjectId, setPlanSubjectId] = useState('');
@@ -120,6 +134,7 @@ export const StudyPage: React.FC = () => {
   const [planError, setPlanError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Stable loadData with NO identity thrashing
   const loadData = useCallback(async () => {
     try {
       const [subList, sesList, planList, revList, cardList, resList] = await Promise.all([
@@ -141,16 +156,18 @@ export const StudyPage: React.FC = () => {
       setAllTopics(topicArrays.flat());
 
       const activeSubs = subList.filter((s) => s.status !== 'archived');
-      if (activeSubs.length > 0 && !sessionSubjectId) {
-        setSessionSubjectId(activeSubs[0].id);
-        setPlanSubjectId(activeSubs[0].id);
+      if (activeSubs.length > 0) {
+        setSessionSubjectId((prev) => prev || activeSubs[0].id);
+        setPlanSubjectId((prev) => prev || activeSubs[0].id);
       }
+      setIsError(false);
     } catch (err) {
       console.error('Failed to load study data:', err);
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
-  }, [sessionSubjectId]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -159,6 +176,20 @@ export const StudyPage: React.FC = () => {
     });
     return () => unsubscribe();
   }, [loadData]);
+
+  // Click outside listener for subject action menus
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.solis-subject-action-menu-container')) {
+        setActiveActionMenuSubjectId(null);
+      }
+    };
+    if (activeActionMenuSubjectId) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [activeActionMenuSubjectId]);
 
   const displayedSubjects = subjects.filter((s) =>
     subjectViewTab === 'active' ? s.status !== 'archived' : s.status === 'archived'
@@ -274,6 +305,7 @@ export const StudyPage: React.FC = () => {
   const handleArchiveSubject = async (id: string) => {
     try {
       await dataService.study.archiveSubject(id);
+      setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'archived' } : s)));
       addToast({
         title: 'Subject Archived',
         description: 'Moved to archived view. All syllabus topics, notes, and sessions remain preserved.',
@@ -287,13 +319,75 @@ export const StudyPage: React.FC = () => {
   const handleRestoreSubject = async (id: string) => {
     try {
       await dataService.study.restoreSubject(id);
+      setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'active' } : s)));
       addToast({
         title: 'Subject Restored',
-        description: 'Restored to active study view and focus selections.',
+        description: 'Restored to active study workspace and focus selectors.',
         type: 'success'
       });
     } catch {
       addToast({ title: 'Could not restore subject', type: 'error' });
+    }
+  };
+
+  const handleOpenEditSubject = (subject: StudySubject) => {
+    setEditingSubject(subject);
+    setEditSubName(subject.name);
+    setEditSubCode(subject.code || 'CORE');
+    setEditSubDesc(subject.description || '');
+    setEditSubColor(subject.color || 'coral');
+    setEditSubTargetHours(String(subject.targetHoursPerWeek || 10));
+    setEditSubError(null);
+    setIsEditSubjectModalOpen(true);
+  };
+
+  const handleEditSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSubject) return;
+    setEditSubError(null);
+    setIsSubmitting(true);
+
+    try {
+      const updated = await dataService.study.updateSubject(editingSubject.id, {
+        name: editSubName.trim(),
+        code: editSubCode.trim().toUpperCase() || 'CORE',
+        description: editSubDesc.trim() || undefined,
+        color: editSubColor,
+        targetHoursPerWeek: parseFloat(editSubTargetHours) || 10
+      });
+
+      setSubjects((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+      setIsEditSubjectModalOpen(false);
+      setEditingSubject(null);
+      addToast({
+        title: 'Subject Updated',
+        description: updated.name,
+        type: 'success'
+      });
+    } catch (err) {
+      if (err instanceof ValidationError) setEditSubError(err.message);
+      else setEditSubError(err instanceof Error ? err.message : 'Failed to update subject');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDeleteSubject = async () => {
+    if (!deletingSubject) return;
+    setIsSubmitting(true);
+    try {
+      await dataService.study.deleteSubject(deletingSubject.id);
+      setSubjects((prev) => prev.filter((s) => s.id !== deletingSubject.id));
+      setDeletingSubject(null);
+      addToast({
+        title: 'Subject Deleted',
+        description: 'Subject and syllabus removed. Associated notes and logs remain preserved.',
+        type: 'info'
+      });
+    } catch {
+      addToast({ title: 'Could not delete subject', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -357,19 +451,23 @@ export const StudyPage: React.FC = () => {
 
     try {
       const created = await dataService.study.createSubject({
-        name: subName,
-        code: subCode.toUpperCase(),
+        name: subName.trim(),
+        code: subCode.trim().toUpperCase() || 'CORE',
         description: subDesc.trim() || undefined,
         color: subColor,
         targetHoursPerWeek: parseFloat(subTargetHours) || 10
       });
 
+      setSubjects((prev) => [...prev.filter((s) => s.id !== created.id), created]);
       setIsAddSubjectModalOpen(false);
+      setShowAddSubjectOptions(false);
       setSubName('');
       setSubCode('');
       setSubDesc('');
+      setSubColor('coral');
+      setSubTargetHours('10');
       addToast({
-        title: 'Subject Added',
+        title: 'Subject Created',
         description: `${created.name} (${created.code})`,
         type: 'success'
       });
@@ -593,22 +691,68 @@ export const StudyPage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
             <Skeleton height="180px" />
             <Skeleton height="180px" />
             <Skeleton height="180px" />
           </div>
+        ) : isError ? (
+          <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
+            <AlertCircle size={28} color="var(--status-error)" style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+              We couldn't load your study subjects.
+            </div>
+            <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
+              A network or synchronization error occurred.
+            </div>
+            <Button variant="outline" size="sm" onClick={() => loadData()}>
+              Retry
+            </Button>
+          </Card>
         ) : displayedSubjects.length === 0 ? (
-          <Card className="depth-1" style={{ textAlign: 'center', padding: '32px 16px' }}>
-            <BookOpen size={24} color="var(--text-muted)" style={{ margin: '0 auto 8px' }} />
-            <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
-              No {subjectViewTab} subjects found
-            </div>
-            <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              {subjectViewTab === 'active'
-                ? 'Create your first study subject to map syllabi and track focus volume.'
-                : 'No archived subjects in your repository.'}
-            </div>
+          <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 20px' }}>
+            <BookOpen size={28} color="var(--text-muted)" style={{ margin: '0 auto 10px' }} />
+            {subjectViewTab === 'active' ? (
+              subjects.filter((s) => s.status === 'archived').length > 0 ? (
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
+                    No active subjects right now.
+                  </div>
+                  <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
+                    You have {subjects.filter((s) => s.status === 'archived').length} archived subject(s) preserved in your repository.
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <Button variant="outline" size="sm" onClick={() => setSubjectViewTab('archived')}>
+                      View Archived ({subjects.filter((s) => s.status === 'archived').length})
+                    </Button>
+                    <Button variant="accent" size="sm" leftIcon={<Plus size={14} />} onClick={() => setIsAddSubjectModalOpen(true)}>
+                      Add Subject
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
+                    No active subjects yet.
+                  </div>
+                  <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
+                    Create your first subject to begin building your study system.
+                  </div>
+                  <Button variant="accent" size="sm" leftIcon={<Plus size={14} />} onClick={() => setIsAddSubjectModalOpen(true)}>
+                    + Add Subject
+                  </Button>
+                </div>
+              )
+            ) : (
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
+                  No archived subjects
+                </div>
+                <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  Active subjects you archive will be stored here with full syllabus and notes history.
+                </div>
+              </div>
+            )}
           </Card>
         ) : (
           <div className="solis-subject-worlds-grid">
@@ -628,30 +772,176 @@ export const StudyPage: React.FC = () => {
                         <Badge variant="neutral">Archived</Badge>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+
+                    {/* Contextual Action Menu */}
+                    <div className="solis-subject-action-menu-container" style={{ position: 'relative' }}>
                       <button
-                        onClick={() => handleOpenTopicsModal(subject)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                        title="Manage syllabus roadmap"
+                        type="button"
+                        onClick={() => setActiveActionMenuSubjectId(activeActionMenuSubjectId === subject.id ? null : subject.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          borderRadius: 'var(--radius-sm)',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                        aria-label={`Subject actions for ${subject.name}`}
+                        title="Subject Actions"
                       >
-                        <Layers size={16} />
+                        <MoreVertical size={16} />
                       </button>
-                      {subject.status === 'archived' ? (
-                        <button
-                          onClick={() => handleRestoreSubject(subject.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--color-sage-500)', cursor: 'pointer', padding: '4px' }}
-                          title="Restore subject"
+
+                      {activeActionMenuSubjectId === subject.id && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: '100%',
+                            marginTop: '4px',
+                            backgroundColor: 'var(--bg-surface-elevated)',
+                            border: '1px solid var(--border-default)',
+                            borderRadius: 'var(--radius-md)',
+                            boxShadow: 'var(--shadow-dropdown)',
+                            padding: '4px',
+                            zIndex: 50,
+                            minWidth: '180px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '2px'
+                          }}
                         >
-                          <RotateCcw size={16} />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleArchiveSubject(subject.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                          title="Archive subject"
-                        >
-                          <Archive size={16} />
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActionMenuSubjectId(null);
+                              handleOpenTopicsModal(subject);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '8px 10px',
+                              background: 'none',
+                              border: 'none',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: 'var(--text-caption)',
+                              color: 'var(--text-primary)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              width: '100%'
+                            }}
+                          >
+                            <Layers size={14} color="var(--text-secondary)" />
+                            <span>Manage Syllabus</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActionMenuSubjectId(null);
+                              handleOpenEditSubject(subject);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '8px 10px',
+                              background: 'none',
+                              border: 'none',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: 'var(--text-caption)',
+                              color: 'var(--text-primary)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              width: '100%'
+                            }}
+                          >
+                            <Edit2 size={14} color="var(--text-secondary)" />
+                            <span>Edit Subject</span>
+                          </button>
+
+                          {subject.status === 'archived' ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenuSubjectId(null);
+                                handleRestoreSubject(subject.id);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 10px',
+                                background: 'none',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: 'var(--text-caption)',
+                                color: 'var(--color-sage-500)',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                width: '100%'
+                              }}
+                            >
+                              <RotateCcw size={14} color="var(--color-sage-500)" />
+                              <span>Restore to Active</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenuSubjectId(null);
+                                handleArchiveSubject(subject.id);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 10px',
+                                background: 'none',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: 'var(--text-caption)',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                                width: '100%'
+                              }}
+                            >
+                              <Archive size={14} color="var(--text-secondary)" />
+                              <span>Archive Subject</span>
+                            </button>
+                          )}
+
+                          <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '2px 0' }} />
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveActionMenuSubjectId(null);
+                              setDeletingSubject(subject);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              padding: '8px 10px',
+                              background: 'none',
+                              border: 'none',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: 'var(--text-caption)',
+                              color: 'var(--status-error)',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              width: '100%'
+                            }}
+                          >
+                            <Trash2 size={14} color="var(--status-error)" />
+                            <span>Delete Subject</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1222,7 +1512,7 @@ export const StudyPage: React.FC = () => {
       <Modal
         isOpen={isAddSubjectModalOpen}
         onClose={() => setIsAddSubjectModalOpen(false)}
-        title="Add Subject to Syllabus"
+        title="Create Study Subject"
       >
         <form onSubmit={handleCreateSubject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {subError && (
@@ -1240,40 +1530,100 @@ export const StudyPage: React.FC = () => {
             autoFocus
           />
 
-          <Input
-            label="Description / Scope"
-            placeholder="e.g. Fault-tolerant state machines, quorum invariants"
-            value={subDesc}
-            onChange={(e) => setSubDesc(e.target.value)}
-          />
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAddSubjectOptions(!showAddSubjectOptions)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-coral-500)',
+                fontSize: 'var(--text-caption)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              {showAddSubjectOptions ? '− Hide Additional Options' : '+ Additional Options (Course Code, Target, Color)'}
+            </button>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-            <Input
-              label="Course Code"
-              placeholder="e.g. CS 440"
-              value={subCode}
-              onChange={(e) => setSubCode(e.target.value)}
-            />
-            <Input
-              label="Weekly Goal (Hours)"
-              type="number"
-              value={subTargetHours}
-              onChange={(e) => setSubTargetHours(e.target.value)}
-              required
-            />
+            {showAddSubjectOptions && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                <Input
+                  label="Description / Scope"
+                  placeholder="e.g. Fault-tolerant state machines, quorum invariants"
+                  value={subDesc}
+                  onChange={(e) => setSubDesc(e.target.value)}
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                  <Input
+                    label="Course Code"
+                    placeholder="e.g. CS 440"
+                    value={subCode}
+                    onChange={(e) => setSubCode(e.target.value)}
+                  />
+                  <Input
+                    label="Weekly Goal (Hours)"
+                    type="number"
+                    value={subTargetHours}
+                    onChange={(e) => setSubTargetHours(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Subject color
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    {[
+                      { id: 'coral', label: 'Coral', color: 'var(--color-coral-500)' },
+                      { id: 'amber', label: 'Amber', color: 'var(--color-amber-500)' },
+                      { id: 'lavender', label: 'Lavender', color: 'var(--color-lavender-500)' },
+                      { id: 'sage', label: 'Sage', color: 'var(--color-sage-500)' }
+                    ].map((c) => {
+                      const isSelected = subColor === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSubColor(c.id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            padding: '8px 10px',
+                            borderRadius: 'var(--radius-md)',
+                            border: isSelected ? `2px solid ${c.color}` : '1px solid var(--border-subtle)',
+                            background: isSelected ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-secondary)',
+                            color: 'var(--text-primary)',
+                            fontSize: 'var(--text-caption)',
+                            fontWeight: isSelected ? 600 : 400,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '50%',
+                              backgroundColor: c.color,
+                              display: 'inline-block'
+                            }}
+                          />
+                          <span>{c.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-
-          <CustomSelect
-            label="Accent Palette"
-            value={subColor}
-            onChange={setSubColor}
-            options={[
-              { value: 'coral', label: 'Coral Flame' },
-              { value: 'amber', label: 'Golden Amber' },
-              { value: 'lavender', label: 'Twilight Lavender' },
-              { value: 'sage', label: 'Calm Sage' }
-            ]}
-          />
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
             <Button variant="ghost" type="button" onClick={() => setIsAddSubjectModalOpen(false)}>
@@ -1284,6 +1634,169 @@ export const StudyPage: React.FC = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Edit Subject Modal */}
+      <Modal
+        isOpen={isEditSubjectModalOpen}
+        onClose={() => {
+          setIsEditSubjectModalOpen(false);
+          setEditingSubject(null);
+        }}
+        title="Edit Subject"
+      >
+        <form onSubmit={handleEditSubject} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {editSubError && (
+            <div style={{ color: 'var(--status-error)', fontSize: 'var(--text-caption)' }}>
+              {editSubError}
+            </div>
+          )}
+
+          <Input
+            label="Subject Title"
+            value={editSubName}
+            onChange={(e) => setEditSubName(e.target.value)}
+            required
+            autoFocus
+          />
+
+          <Input
+            label="Description / Scope"
+            value={editSubDesc}
+            onChange={(e) => setEditSubDesc(e.target.value)}
+          />
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            <Input
+              label="Course Code"
+              value={editSubCode}
+              onChange={(e) => setEditSubCode(e.target.value)}
+            />
+            <Input
+              label="Weekly Goal (Hours)"
+              type="number"
+              value={editSubTargetHours}
+              onChange={(e) => setEditSubTargetHours(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              Subject color
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              {[
+                { id: 'coral', label: 'Coral', color: 'var(--color-coral-500)' },
+                { id: 'amber', label: 'Amber', color: 'var(--color-amber-500)' },
+                { id: 'lavender', label: 'Lavender', color: 'var(--color-lavender-500)' },
+                { id: 'sage', label: 'Sage', color: 'var(--color-sage-500)' }
+              ].map((c) => {
+                const isSelected = editSubColor === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setEditSubColor(c.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '8px 10px',
+                      borderRadius: 'var(--radius-md)',
+                      border: isSelected ? `2px solid ${c.color}` : '1px solid var(--border-subtle)',
+                      background: isSelected ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-secondary)',
+                      color: 'var(--text-primary)',
+                      fontSize: 'var(--text-caption)',
+                      fontWeight: isSelected ? 600 : 400,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: c.color,
+                        display: 'inline-block'
+                      }}
+                    />
+                    <span>{c.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+            <Button
+              variant="ghost"
+              type="button"
+              onClick={() => {
+                setIsEditSubjectModalOpen(false);
+                setEditingSubject(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="accent" type="submit" isLoading={isSubmitting}>
+              Update Subject
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Subject Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(deletingSubject)}
+        onClose={() => setDeletingSubject(null)}
+        title="Delete Subject"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+            Are you sure you want to permanently delete <strong>{deletingSubject?.name}</strong>?
+          </p>
+          <div
+            style={{
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--bg-surface-secondary)',
+              border: '1px solid var(--border-subtle)',
+              fontSize: 'var(--text-caption)',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.5
+            }}
+          >
+            <strong>Consequences:</strong>
+            <ul style={{ paddingLeft: '18px', marginTop: '6px' }}>
+              <li>The subject and its syllabus roadmap will be deleted.</li>
+              <li>Your notes, flashcards, and completed study logs will remain safely in your library.</li>
+              <li>To keep the syllabus roadmap and course structure, choose <em>Archive Instead</em>.</li>
+            </ul>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                if (deletingSubject) {
+                  handleArchiveSubject(deletingSubject.id);
+                  setDeletingSubject(null);
+                }
+              }}
+            >
+              Archive Instead
+            </Button>
+            <Button variant="ghost" type="button" onClick={() => setDeletingSubject(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" type="button" isLoading={isSubmitting} onClick={handleConfirmDeleteSubject}>
+              Delete Subject
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Add Plan Modal */}
