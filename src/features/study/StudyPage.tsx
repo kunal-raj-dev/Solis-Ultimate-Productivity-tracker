@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Plus,
   BookOpen,
@@ -56,6 +56,7 @@ export const StudyPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
+  // Canonical Entity State
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [allTopics, setAllTopics] = useState<StudyTopic[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
@@ -63,11 +64,24 @@ export const StudyPage: React.FC = () => {
   const [reviews, setReviews] = useState<ReviewQueueItem[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [resources, setResources] = useState<StudyResource[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
+
+  // Distinct Data Loading & Background Sync Status
+  const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Mutation Version & Timestamp Tracker (prevents out-of-order responses & stale background snapshots from overwriting local state)
+  const mutationTimestampsRef = useRef<Map<string, number>>(new Map());
 
   // Subject View State: 'active' | 'archived'
   const [subjectViewTab, setSubjectViewTab] = useState<'active' | 'archived'>('active');
+
+  // Single Source of Truth Derivations
+  const activeSubjects = useMemo(() => subjects.filter((s) => s.status !== 'archived'), [subjects]);
+  const archivedSubjects = useMemo(() => subjects.filter((s) => s.status === 'archived'), [subjects]);
+  const activeCount = activeSubjects.length;
+  const archivedCount = archivedSubjects.length;
+  const displayedSubjects = subjectViewTab === 'active' ? activeSubjects : archivedSubjects;
 
   // Modals
   const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
@@ -134,45 +148,107 @@ export const StudyPage: React.FC = () => {
   const [planError, setPlanError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Stable loadData with NO identity thrashing
-  const loadData = useCallback(async () => {
+  // Resilient loadData with dependency classification and race condition protection
+  const loadData = useCallback(async (isInitial = false) => {
+    if (isInitial) {
+      setInitialLoadStatus('loading');
+    } else {
+      setSyncStatus('syncing');
+    }
+
     try {
-      const [subList, sesList, planList, revList, cardList, resList] = await Promise.all([
-        dataService.study.getSubjects(true), // get all including archived
-        dataService.study.getRecentSessions(),
-        dataService.study.getTodayPlan(),
-        dataService.reviews ? dataService.reviews.getDueReviewItems() : Promise.resolve([]),
-        dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([]),
-        dataService.resources ? dataService.resources.getResources() : Promise.resolve([])
+      // 1. Critical Request: Canonical Subjects
+      const subjectsPromise = dataService.study.getSubjects(true);
+
+      // 2. Enriched Subject View Data
+      const sessionsPromise = dataService.study.getRecentSessions().catch(() => []);
+      const planPromise = dataService.study.getTodayPlan().catch(() => []);
+
+      // 3. Optional Secondary Data (failures must never block the primary workspace)
+      const reviewsPromise = dataService.reviews ? dataService.reviews.getDueReviewItems().catch(() => []) : Promise.resolve([]);
+      const flashcardsPromise = dataService.flashcards ? dataService.flashcards.getFlashcards().catch(() => []) : Promise.resolve([]);
+      const resourcesPromise = dataService.resources ? dataService.resources.getResources().catch(() => []) : Promise.resolve([]);
+
+      const [subRes, sesRes, planRes, revRes, cardRes, resRes] = await Promise.allSettled([
+        subjectsPromise,
+        sessionsPromise,
+        planPromise,
+        reviewsPromise,
+        flashcardsPromise,
+        resourcesPromise
       ]);
-      setSubjects(subList);
-      setSessions(sesList);
-      setStudyPlan(planList);
-      setReviews(revList);
-      setFlashcards(cardList);
-      setResources(resList);
 
-      const topicArrays = await Promise.all(subList.map((s) => dataService.study.getTopics(s.id)));
-      setAllTopics(topicArrays.flat());
+      if (subRes.status === 'fulfilled') {
+        const serverSubs = subRes.value;
 
-      const activeSubs = subList.filter((s) => s.status !== 'archived');
-      if (activeSubs.length > 0) {
-        setSessionSubjectId((prev) => prev || activeSubs[0].id);
-        setPlanSubjectId((prev) => prev || activeSubs[0].id);
+        // Reconcile with mutation timestamp tracking: never overwrite newer local mutations with older server snapshots
+        setSubjects((prev) => {
+          const now = Date.now();
+          const merged = [...serverSubs];
+
+          for (const localSub of prev) {
+            const lastMut = mutationTimestampsRef.current.get(localSub.id);
+            if (lastMut && now - lastMut < 4000) {
+              const serverIdx = merged.findIndex((s) => s.id === localSub.id);
+              if (serverIdx >= 0) {
+                if (localSub.status !== merged[serverIdx].status) {
+                  merged[serverIdx] = { ...merged[serverIdx], status: localSub.status };
+                }
+              } else if (localSub.status !== 'archived') {
+                merged.push(localSub);
+              }
+            }
+          }
+          return merged;
+        });
+
+        const activeSubs = serverSubs.filter((s) => s.status !== 'archived');
+        if (activeSubs.length > 0) {
+          setSessionSubjectId((prev) => prev || activeSubs[0].id);
+          setPlanSubjectId((prev) => prev || activeSubs[0].id);
+        }
+
+        // Secondary Topic Enrichment (non-blocking)
+        try {
+          const topicArrays = await Promise.all(
+            serverSubs.map((s) => dataService.study.getTopics(s.id).catch(() => []))
+          );
+          setAllTopics(topicArrays.flat());
+        } catch {
+          // Topics enrichment degradation
+        }
+
+        setInitialLoadStatus('success');
+        setSyncStatus('idle');
+      } else {
+        console.error('[StudyStudio] Subjects critical fetch failed:', subRes.reason);
+        throw subRes.reason;
       }
-      setIsError(false);
+
+      // Populate enriched/secondary data if fulfilled
+      if (sesRes.status === 'fulfilled') setSessions(sesRes.value);
+      if (planRes.status === 'fulfilled') setStudyPlan(planRes.value);
+      if (revRes.status === 'fulfilled') setReviews(revRes.value);
+      if (cardRes.status === 'fulfilled') setFlashcards(cardRes.value);
+      if (resRes.status === 'fulfilled') setResources(resRes.value);
+
     } catch (err) {
-      console.error('Failed to load study data:', err);
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
+      console.error('[StudyStudio] Data load error:', err);
+      setSubjects((currentSubs) => {
+        if (currentSubs.length === 0) {
+          setInitialLoadStatus('error');
+        } else {
+          setSyncStatus('error');
+        }
+        return currentSubs;
+      });
     }
   }, []);
 
   useEffect(() => {
-    loadData();
+    loadData(true);
     const unsubscribe = dataService.subscribe(() => {
-      loadData();
+      loadData(false);
     });
     return () => unsubscribe();
   }, [loadData]);
@@ -191,9 +267,11 @@ export const StudyPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeActionMenuSubjectId]);
 
-  const displayedSubjects = subjects.filter((s) =>
-    subjectViewTab === 'active' ? s.status !== 'archived' : s.status === 'archived'
-  );
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await loadData(subjects.length === 0);
+    setIsRetrying(false);
+  };
 
   const handleOpenTopicsModal = async (subject: StudySubject) => {
     setSelectedSubjectForTopics(subject);
@@ -303,29 +381,39 @@ export const StudyPage: React.FC = () => {
   };
 
   const handleArchiveSubject = async (id: string) => {
+    const prevSubjects = subjects;
+    mutationTimestampsRef.current.set(id, Date.now());
+    setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'archived' } : s)));
+
     try {
       await dataService.study.archiveSubject(id);
-      setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'archived' } : s)));
+      setSyncStatus('idle');
       addToast({
         title: 'Subject Archived',
         description: 'Moved to archived view. All syllabus topics, notes, and sessions remain preserved.',
         type: 'info'
       });
     } catch {
+      setSubjects(prevSubjects);
       addToast({ title: 'Could not archive subject', type: 'error' });
     }
   };
 
   const handleRestoreSubject = async (id: string) => {
+    const prevSubjects = subjects;
+    mutationTimestampsRef.current.set(id, Date.now());
+    setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'active' } : s)));
+
     try {
       await dataService.study.restoreSubject(id);
-      setSubjects((prev) => prev.map((s) => (s.id === id ? { ...s, status: 'active' } : s)));
+      setSyncStatus('idle');
       addToast({
         title: 'Subject Restored',
         description: 'Restored to active study workspace and focus selectors.',
         type: 'success'
       });
     } catch {
+      setSubjects(prevSubjects);
       addToast({ title: 'Could not restore subject', type: 'error' });
     }
   };
@@ -346,9 +434,11 @@ export const StudyPage: React.FC = () => {
     if (!editingSubject) return;
     setEditSubError(null);
     setIsSubmitting(true);
+    const prevSubjects = subjects;
+    const targetId = editingSubject.id;
 
     try {
-      const updated = await dataService.study.updateSubject(editingSubject.id, {
+      const updated = await dataService.study.updateSubject(targetId, {
         name: editSubName.trim(),
         code: editSubCode.trim().toUpperCase() || 'CORE',
         description: editSubDesc.trim() || undefined,
@@ -356,7 +446,10 @@ export const StudyPage: React.FC = () => {
         targetHoursPerWeek: parseFloat(editSubTargetHours) || 10
       });
 
+      mutationTimestampsRef.current.set(updated.id, Date.now());
       setSubjects((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+      setSyncStatus('idle');
+
       setIsEditSubjectModalOpen(false);
       setEditingSubject(null);
       addToast({
@@ -365,6 +458,7 @@ export const StudyPage: React.FC = () => {
         type: 'success'
       });
     } catch (err) {
+      setSubjects(prevSubjects);
       if (err instanceof ValidationError) setEditSubError(err.message);
       else setEditSubError(err instanceof Error ? err.message : 'Failed to update subject');
     } finally {
@@ -374,17 +468,23 @@ export const StudyPage: React.FC = () => {
 
   const handleConfirmDeleteSubject = async () => {
     if (!deletingSubject) return;
+    const id = deletingSubject.id;
+    const prevSubjects = subjects;
+    mutationTimestampsRef.current.set(id, Date.now());
+    setSubjects((prev) => prev.filter((s) => s.id !== id));
     setIsSubmitting(true);
+
     try {
-      await dataService.study.deleteSubject(deletingSubject.id);
-      setSubjects((prev) => prev.filter((s) => s.id !== deletingSubject.id));
+      await dataService.study.deleteSubject(id);
       setDeletingSubject(null);
+      setSyncStatus('idle');
       addToast({
         title: 'Subject Deleted',
         description: 'Subject and syllabus removed. Associated notes and logs remain preserved.',
         type: 'info'
       });
     } catch {
+      setSubjects(prevSubjects);
       addToast({ title: 'Could not delete subject', type: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -458,7 +558,11 @@ export const StudyPage: React.FC = () => {
         targetHoursPerWeek: parseFloat(subTargetHours) || 10
       });
 
+      mutationTimestampsRef.current.set(created.id, Date.now());
       setSubjects((prev) => [...prev.filter((s) => s.id !== created.id), created]);
+      setInitialLoadStatus('success');
+      setSyncStatus('idle');
+
       setIsAddSubjectModalOpen(false);
       setShowAddSubjectOptions(false);
       setSubName('');
@@ -668,7 +772,7 @@ export const StudyPage: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              Active Subjects ({subjects.filter((s) => s.status !== 'archived').length})
+              Active Subjects ({activeCount})
             </button>
             <button
               onClick={() => setSubjectViewTab('archived')}
@@ -685,27 +789,54 @@ export const StudyPage: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              Archived ({subjects.filter((s) => s.status === 'archived').length})
+              Archived ({archivedCount})
             </button>
           </div>
         </div>
 
-        {isLoading ? (
+        {/* Non-blocking background sync warning if data exists in memory */}
+        {syncStatus === 'error' && subjects.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 14px',
+              backgroundColor: 'var(--status-warning-bg)',
+              border: '1px solid var(--status-warning)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: 'var(--space-md)',
+              fontSize: 'var(--text-caption)',
+              color: 'var(--text-primary)',
+              gap: '12px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={14} color="var(--color-amber-500)" />
+              <span>Couldn't sync latest changes with server. Displaying last saved version.</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
+              Retry Sync
+            </Button>
+          </div>
+        )}
+
+        {initialLoadStatus === 'loading' && subjects.length === 0 ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
             <Skeleton height="180px" />
             <Skeleton height="180px" />
             <Skeleton height="180px" />
           </div>
-        ) : isError ? (
+        ) : initialLoadStatus === 'error' && subjects.length === 0 ? (
           <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
             <AlertCircle size={28} color="var(--status-error)" style={{ margin: '0 auto 8px' }} />
             <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
               We couldn't load your study subjects.
             </div>
             <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
-              A network or synchronization error occurred.
+              A network or server connectivity error occurred.
             </div>
-            <Button variant="outline" size="sm" onClick={() => loadData()}>
+            <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
               Retry
             </Button>
           </Card>
@@ -713,17 +844,17 @@ export const StudyPage: React.FC = () => {
           <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 20px' }}>
             <BookOpen size={28} color="var(--text-muted)" style={{ margin: '0 auto 10px' }} />
             {subjectViewTab === 'active' ? (
-              subjects.filter((s) => s.status === 'archived').length > 0 ? (
+              archivedCount > 0 ? (
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
                     No active subjects right now.
                   </div>
                   <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
-                    You have {subjects.filter((s) => s.status === 'archived').length} archived subject(s) preserved in your repository.
+                    You have {archivedCount} archived subject(s) preserved in your repository.
                   </div>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                     <Button variant="outline" size="sm" onClick={() => setSubjectViewTab('archived')}>
-                      View Archived ({subjects.filter((s) => s.status === 'archived').length})
+                      View Archived ({archivedCount})
                     </Button>
                     <Button variant="accent" size="sm" leftIcon={<Plus size={14} />} onClick={() => setIsAddSubjectModalOpen(true)}>
                       Add Subject
