@@ -8,6 +8,7 @@ import { AtmosphereCanvas } from '../components/layout/AtmosphereCanvas/Atmosphe
 import { CommandPalette } from '../components/layout/CommandPalette/CommandPalette';
 import { OfflineBanner } from '../components/feedback/OfflineBanner/OfflineBanner';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { FocusProvider } from '../context/FocusContext';
 import { isFocusRoute } from '../constants/navigation';
 import { cn } from '../utils/classNames';
 import './AppLayout.css';
@@ -27,26 +28,28 @@ export const AppLayout: React.FC = () => {
 
   return (
     <ProtectedRoute>
-      <div className={cn('solis-app-shell', isFocus && 'solis-app-shell--focus')}>
-        <AtmosphereCanvas intensity="subtle" />
-        
-        {!isFocus && <Sidebar />}
+      <FocusProvider>
+        <div className={cn('solis-app-shell', isFocus && 'solis-app-shell--focus')}>
+          <AtmosphereCanvas intensity="subtle" />
+          
+          {!isFocus && <Sidebar />}
 
-        <div className="solis-app-main-wrapper">
-          <OfflineBanner />
-          {!isFocus && <AppHeader onOpenSearch={() => setIsCommandOpen(true)} />}
-          <main className={cn('solis-app-view', isFocus && 'solis-app-view--focus')}>
-            <Outlet />
-          </main>
+          <div className="solis-app-main-wrapper">
+            <OfflineBanner />
+            {!isFocus && <AppHeader onOpenSearch={() => setIsCommandOpen(true)} />}
+            <main className={cn('solis-app-view', isFocus && 'solis-app-view--focus')}>
+              <Outlet />
+            </main>
+          </div>
+
+          {!isFocus && <MobileNav />}
+
+          <CommandPalette
+            isOpen={isCommandOpen}
+            onClose={() => setIsCommandOpen(false)}
+          />
         </div>
-
-        {!isFocus && <MobileNav />}
-
-        <CommandPalette
-          isOpen={isCommandOpen}
-          onClose={() => setIsCommandOpen(false)}
-        />
-      </div>
+      </FocusProvider>
     </ProtectedRoute>
   );
 };

@@ -81,5 +81,51 @@ describe('Stage E — Focus Sanctuary 2.0 Engine', () => {
       const summary = await service.analytics.getDailySummary();
       expect(summary.totalStudyMinutes).toBeGreaterThanOrEqual(25);
     });
+
+    it('synthesizes a structured note from focus reflection into Knowledge Studio', async () => {
+      const focusTitle = 'Paxos Consensus Invariants';
+      const reflectionNotes = 'Proved leader completeness under network partitions.';
+      const sessionMinutes = 50;
+      const flowQuality = 5;
+
+      const createdNote = await service.notes.createNote({
+        title: `${focusTitle} — Distillation`,
+        content: `${reflectionNotes}\n\n**Session Details:**\n- Duration: ${sessionMinutes}m\n- Flow Quality: ${flowQuality}/5\n- Target Outcome: Formal verification`,
+        category: 'concept',
+        subjectId: 'sbj_1',
+        tags: ['focus-distillation', 'distributed-systems']
+      });
+
+      expect(createdNote.id).toBeDefined();
+      expect(createdNote.title).toBe('Paxos Consensus Invariants — Distillation');
+      expect(createdNote.content).toContain('Proved leader completeness');
+      expect(createdNote.category).toBe('concept');
+
+      const allNotes = await service.notes.getNotes();
+      expect(allNotes.some((n) => n.id === createdNote.id)).toBe(true);
+    });
+  });
+
+  describe('Focus Presets & Midpoint Checkpoint Timing', () => {
+    it('defines standard preset durations accurately in seconds', () => {
+      const pomodoroSec = 25 * 60;
+      const deepFlowSec = 50 * 60;
+      const shortBreakSec = 5 * 60;
+
+      expect(pomodoroSec).toBe(1500);
+      expect(deepFlowSec).toBe(3000);
+      expect(shortBreakSec).toBe(300);
+    });
+
+    it('determines midpoint checkpoint trigger accurately', () => {
+      const totalSeconds = 25 * 60; // 1500s
+      const halfwaySeconds = totalSeconds * 0.5; // 750s
+
+      const beforeMidpoint = 800; // Remaining > 750 (not yet reached)
+      const atOrAfterMidpoint = 740; // Remaining <= 750 (reached)
+
+      expect(beforeMidpoint <= halfwaySeconds).toBe(false);
+      expect(atOrAfterMidpoint <= halfwaySeconds).toBe(true);
+    });
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -22,313 +22,83 @@ import { SegmentedControl } from '../../components/ui/SegmentedControl/Segmented
 import { ParallaxScene, ParallaxLayer, AtmosphericOrb } from '../../components/parallax';
 import { PostFocusReflectionModal } from '../../components/features/Focus/PostFocusReflectionModal';
 import { useToast } from '../../context/ToastContext';
-import { dataService } from '../../services/dataService';
-import { StudySubject } from '../../types/study';
+import { useFocus, FocusPreset } from '../../context/FocusContext';
 import { SoundscapeType } from '../../types/focus';
 import { formatSecondsToTimer } from '../../utils/formatters';
-import { playFocusCompletionChime, calculateTimerRemaining } from '../../utils/timer';
-import { soundscapeEngine, SOUNDSCAPE_PRESETS } from '../../utils/focus/soundscapeEngine';
+import { SOUNDSCAPE_PRESETS } from '../../utils/focus/soundscapeEngine';
 import './FocusPage.css';
-
-type FocusPreset = 'pomodoro' | 'deep_flow' | 'short_break' | 'custom';
-type TimerStatus = 'idle' | 'running' | 'paused' | 'completed' | 'cancelled';
 
 export const FocusPage: React.FC = () => {
   const { addToast } = useToast();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Query params
-  const paramSubjectId = searchParams.get('subjectId');
-  const paramPlanId = searchParams.get('planId');
-  const paramTitle = searchParams.get('title');
+  const {
+    preset,
+    totalDurationSeconds,
+    secondsRemaining,
+    status,
+    focusTitle,
+    targetOutcome,
+    selectedSubjectId,
+    soundscape,
+    soundscapeVolume,
+    isMuted,
+    checkpointAcknowledged,
+    isReflectionModalOpen,
+    completedSessionMinutes,
+    subjects,
+    selectedSubject,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    cancelTimer,
+    completeTimer,
+    selectPreset,
+    setFocusTitle,
+    setTargetOutcome,
+    setSelectedSubjectId,
+    setSelectedPlanItemId,
+    setSoundscape,
+    setSoundscapeVolume,
+    toggleMute,
+    setCheckpointAcknowledged,
+    setIsReflectionModalOpen,
+    testAudioChime,
+    saveReflection
+  } = useFocus();
 
-  const [preset, setPreset] = useState<FocusPreset>('pomodoro');
-  const [totalDurationSeconds, setTotalDurationSeconds] = useState(25 * 60);
-  const [status, setStatus] = useState<TimerStatus>('idle');
+  // Query params setup on entry
+  useEffect(() => {
+    const paramSubjectId = searchParams.get('subjectId');
+    const paramPlanId = searchParams.get('planId');
+    const paramTitle = searchParams.get('title');
 
-  // Study context & Subject Worlds
-  const [subjects, setSubjects] = useState<StudySubject[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(paramSubjectId || '');
-  const [selectedPlanItemId] = useState<string>(paramPlanId || '');
-
-  // Soundscape Synthetic Engine State
-  const [soundscape, setSoundscape] = useState<SoundscapeType>('none');
-  const [soundscapeVolume, setSoundscapeVolume] = useState(0.5);
-  const [isMuted, setIsMuted] = useState(false);
-
-  // Intent Lock & Checkpoint State
-  const [focusTitle, setFocusTitle] = useState(paramTitle || 'Deep Study & Architectural Flow');
-  const [targetOutcome, setTargetOutcome] = useState('');
-  const [checkpointAcknowledged, setCheckpointAcknowledged] = useState(false);
-
-  // Timestamp anchors for correctness
-  const [targetEndTimeMs, setTargetEndTimeMs] = useState<number | null>(null);
-  const [pausedRemainingMs, setPausedRemainingMs] = useState<number | null>(null);
-  const [secondsRemaining, setSecondsRemaining] = useState(25 * 60);
-
-  // Post-Focus Auto-Reflection Modal
-  const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
-  const [completedSessionMinutes, setCompletedSessionMinutes] = useState(25);
+    if (paramSubjectId) setSelectedSubjectId(paramSubjectId);
+    if (paramPlanId) setSelectedPlanItemId(paramPlanId);
+    if (paramTitle) setFocusTitle(paramTitle);
+  }, [searchParams, setSelectedSubjectId, setSelectedPlanItemId, setFocusTitle]);
 
   // Custom preset modal
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customMinutesInput, setCustomMinutesInput] = useState('45');
-
-  // Screen reader announcement buffer
-  const [accessibleAnnouncement, setAccessibleAnnouncement] = useState('');
-
-  const animFrameRef = useRef<number | null>(null);
-
-  const loadHistoryAndSubjects = useCallback(async () => {
-    try {
-      const subs = await dataService.study.getSubjects();
-      setSubjects(subs);
-
-      if (!selectedSubjectId && subs.length > 0) {
-        setSelectedSubjectId(subs[0].id);
-      }
-    } catch (err) {
-      console.error('Failed to load focus subjects:', err);
-    }
-  }, [selectedSubjectId]);
-
-  useEffect(() => {
-    loadHistoryAndSubjects();
-    const unsubscribe = dataService.subscribe(() => {
-      loadHistoryAndSubjects();
-    });
-    return () => unsubscribe();
-  }, [loadHistoryAndSubjects]);
-
-  useEffect(() => {
-    return () => {
-      soundscapeEngine.stop();
-    };
-  }, []);
-
-  const handleSessionComplete = useCallback(async () => {
-    soundscapeEngine.stop();
-    setStatus('completed');
-    setSecondsRemaining(0);
-    setTargetEndTimeMs(null);
-    setPausedRemainingMs(null);
-
-    playFocusCompletionChime();
-    setAccessibleAnnouncement('Focus interval completed. Take a calm rest.');
-
-    const mins = Math.max(1, Math.round(totalDurationSeconds / 60));
-    setCompletedSessionMinutes(mins);
-    setIsReflectionModalOpen(true);
-  }, [totalDurationSeconds]);
-
-  // Precision RAF loop
-  useEffect(() => {
-    if (status !== 'running' || targetEndTimeMs === null) {
-      if (animFrameRef.current !== null) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      return;
-    }
-
-    const tick = () => {
-      const remainingSeconds = calculateTimerRemaining(
-        targetEndTimeMs,
-        pausedRemainingMs,
-        status,
-        totalDurationSeconds
-      );
-
-      // Bail out if seconds have not changed to eliminate 60-120 FPS React re-render thrashing
-      setSecondsRemaining((prev) => (prev !== remainingSeconds ? remainingSeconds : prev));
-
-      if (remainingSeconds <= 0) {
-        handleSessionComplete();
-      } else {
-        animFrameRef.current = requestAnimationFrame(tick);
-      }
-    };
-
-    animFrameRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      if (animFrameRef.current !== null) {
-        cancelAnimationFrame(animFrameRef.current);
-      }
-    };
-  }, [status, targetEndTimeMs, pausedRemainingMs, totalDurationSeconds, handleSessionComplete]);
 
   const handleSelectPreset = (newPreset: FocusPreset) => {
     if (newPreset === 'custom') {
       setIsCustomModalOpen(true);
       return;
     }
-
-    setStatus('idle');
-    setPreset(newPreset);
-    let sec = 25 * 60;
-    if (newPreset === 'deep_flow') sec = 50 * 60;
-    if (newPreset === 'short_break') sec = 5 * 60;
-
-    setTotalDurationSeconds(sec);
-    setSecondsRemaining(sec);
-    setTargetEndTimeMs(null);
-    setPausedRemainingMs(null);
-    setCheckpointAcknowledged(false);
-    setAccessibleAnnouncement(`Selected preset: ${newPreset}`);
+    selectPreset(newPreset);
   };
 
   const handleApplyCustom = (e: React.FormEvent) => {
     e.preventDefault();
     const mins = Math.max(1, Math.min(180, parseInt(customMinutesInput, 10) || 30));
-    const sec = mins * 60;
-
-    setStatus('idle');
-    setPreset('custom');
-    setTotalDurationSeconds(sec);
-    setSecondsRemaining(sec);
-    setTargetEndTimeMs(null);
-    setPausedRemainingMs(null);
-    setCheckpointAcknowledged(false);
+    selectPreset('custom', mins);
     setIsCustomModalOpen(false);
     addToast({ title: `Custom Focus set to ${mins}m`, type: 'info' });
   };
 
-  const handleStart = () => {
-    const now = Date.now();
-    let targetEnd: number;
-
-    if (status === 'paused' && pausedRemainingMs !== null) {
-      targetEnd = now + pausedRemainingMs;
-    } else {
-      targetEnd = now + totalDurationSeconds * 1000;
-      setCheckpointAcknowledged(false);
-    }
-
-    setTargetEndTimeMs(targetEnd);
-    setPausedRemainingMs(null);
-    setStatus('running');
-
-    if (soundscape !== 'none' && !isMuted) {
-      soundscapeEngine.setSoundscape(soundscape, soundscapeVolume);
-    }
-
-    setAccessibleAnnouncement('Focus timer started.');
-  };
-
-  const handlePause = () => {
-    if (status !== 'running' || targetEndTimeMs === null) return;
-    const now = Date.now();
-    const remainingMs = Math.max(0, targetEndTimeMs - now);
-
-    soundscapeEngine.stop();
-    setPausedRemainingMs(remainingMs);
-    setTargetEndTimeMs(null);
-    setStatus('paused');
-    setAccessibleAnnouncement('Focus timer paused.');
-  };
-
-  const handleReset = () => {
-    soundscapeEngine.stop();
-    setStatus('idle');
-    setSecondsRemaining(totalDurationSeconds);
-    setTargetEndTimeMs(null);
-    setPausedRemainingMs(null);
-    setCheckpointAcknowledged(false);
-    setAccessibleAnnouncement('Timer reset.');
-  };
-
-  const handleCancel = () => {
-    soundscapeEngine.stop();
-    setStatus('cancelled');
-    setSecondsRemaining(totalDurationSeconds);
-    setTargetEndTimeMs(null);
-    setPausedRemainingMs(null);
-    setCheckpointAcknowledged(false);
-    addToast({ title: 'Session cancelled', description: 'Session was not logged.', type: 'info' });
-    setAccessibleAnnouncement('Timer cancelled.');
-  };
-
-  const handleSoundscapeChange = (type: SoundscapeType) => {
-    setSoundscape(type);
-    if (status === 'running') {
-      if (type === 'none' || isMuted) {
-        soundscapeEngine.stop();
-      } else {
-        soundscapeEngine.setSoundscape(type, soundscapeVolume);
-      }
-    }
-  };
-
-  const handleVolumeChange = (vol: number) => {
-    setSoundscapeVolume(vol);
-    if (!isMuted && status === 'running') {
-      soundscapeEngine.setVolume(vol);
-    }
-  };
-
-  const handleToggleMute = () => {
-    const nextMuted = !isMuted;
-    setIsMuted(nextMuted);
-    if (status === 'running') {
-      if (nextMuted) soundscapeEngine.stop();
-      else if (soundscape !== 'none') soundscapeEngine.setSoundscape(soundscape, soundscapeVolume);
-    }
-  };
-
-  const testAudioChime = () => {
-    playFocusCompletionChime();
-    addToast({ title: 'Acoustic chime test', description: 'Tranquil harmonic resonance.', type: 'info' });
-  };
-
-  const handleSaveReflectionFromModal = async (data: {
-    flowQuality: number;
-    interruptionsCount: number;
-    notes?: string;
-    synthesizeNote: boolean;
-  }) => {
-    try {
-      const selectedSub = subjects.find((s) => s.id === selectedSubjectId);
-      await dataService.focus.saveFocusSession({
-        mode: preset === 'pomodoro' ? 'pomodoro' : preset === 'deep_flow' ? 'deep_flow' : 'custom_timer',
-        durationMinutes: completedSessionMinutes,
-        subjectId: selectedSubjectId || undefined,
-        subjectName: selectedSub?.name,
-        planItemId: selectedPlanItemId || undefined,
-        topic: focusTitle || 'Deep Focus Pod Session',
-        title: focusTitle || 'Deep Focus Pod Session',
-        completed: true,
-        interruptionsCount: data.interruptionsCount,
-        flowQuality: data.flowQuality,
-        soundscapeType: soundscape,
-        targetOutcome: targetOutcome || undefined,
-        notes: data.notes
-      });
-
-      if (data.synthesizeNote && data.notes) {
-        await dataService.notes.createNote({
-          title: `${focusTitle} — Distillation`,
-          content: `${data.notes}\n\n**Session Details:**\n- Duration: ${completedSessionMinutes}m\n- Flow Quality: ${data.flowQuality}/5\n- Target Outcome: ${targetOutcome || 'N/A'}`,
-          category: 'concept',
-          subjectId: selectedSubjectId || undefined,
-          tags: ['focus-distillation', selectedSub?.name || 'general']
-        });
-      }
-
-      addToast({
-        title: 'Focus Session Completed & Recorded',
-        description: `${focusTitle} (${completedSessionMinutes}m) logged.`,
-        type: 'success'
-      });
-      handleReset();
-    } catch (err) {
-      console.error('Failed to save focus reflection:', err);
-      addToast({ title: 'Failed to record session', type: 'error' });
-    }
-  };
-
-  const selectedSub = subjects.find((s) => s.id === selectedSubjectId);
   const subjectOptions = [
     { value: '', label: 'No Subject Associated' },
     ...subjects.filter((s) => s.status !== 'archived').map((s) => ({
@@ -344,7 +114,17 @@ export const FocusPage: React.FC = () => {
       ? 'sage'
       : status === 'paused'
       ? 'lavender'
-      : (selectedSub?.color as any) || (status === 'running' ? 'coral' : 'amber');
+      : (selectedSubject?.color as any) || (status === 'running' ? 'coral' : 'amber');
+
+  // Screen Reader live announcement
+  const accessibleAnnouncement =
+    status === 'running'
+      ? `Focus session running: ${formatSecondsToTimer(secondsRemaining)} remaining`
+      : status === 'paused'
+      ? 'Focus session paused'
+      : status === 'completed'
+      ? 'Focus session completed. Reflection window open.'
+      : '';
 
   return (
     <div style={{ paddingBottom: 'var(--space-3xl)' }}>
@@ -356,7 +136,7 @@ export const FocusPage: React.FC = () => {
       {/* FULL ENVIRONMENT FOCUS SANCTUARY */}
       <div className={`solis-focus-sanctuary solis-focus-sanctuary--${status}`}>
         <ParallaxScene style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <ParallaxLayer speed={0.05} isAbsolute>
+          <ParallaxLayer speed={0.04} isAbsolute>
             <AtmosphericOrb
               color={worldOrbColor}
               sizePx={480}
@@ -366,7 +146,7 @@ export const FocusPage: React.FC = () => {
             />
           </ParallaxLayer>
 
-          <ParallaxLayer speed={1.0} style={{ width: '100%', maxWidth: '640px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <ParallaxLayer speed={0} style={{ width: '100%', maxWidth: '640px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {/* Top Sanctuary Navigation Zone */}
             <div
               style={{
@@ -417,7 +197,7 @@ export const FocusPage: React.FC = () => {
               <Headphones size={15} style={{ color: soundscape !== 'none' ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.4)' }} />
               <select
                 value={soundscape}
-                onChange={(e) => handleSoundscapeChange(e.target.value as SoundscapeType)}
+                onChange={(e) => setSoundscape(e.target.value as SoundscapeType)}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -429,9 +209,9 @@ export const FocusPage: React.FC = () => {
                 }}
               >
                 <option value="none" style={{ background: '#161413', color: '#fff' }}>🔇 Silent Focus</option>
-                {SOUNDSCAPE_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id} style={{ background: '#161413', color: '#fff' }}>
-                    🎵 {preset.label}
+                {SOUNDSCAPE_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id} style={{ background: '#161413', color: '#fff' }}>
+                    🎵 {p.label}
                   </option>
                 ))}
               </select>
@@ -444,13 +224,13 @@ export const FocusPage: React.FC = () => {
                     max="1"
                     step="0.05"
                     value={soundscapeVolume}
-                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                    onChange={(e) => setSoundscapeVolume(parseFloat(e.target.value))}
                     style={{ width: '70px', accentColor: 'var(--color-coral-500)', cursor: 'pointer' }}
                     aria-label="Soundscape Volume"
                   />
                   <button
                     type="button"
-                    onClick={handleToggleMute}
+                    onClick={toggleMute}
                     style={{
                       background: 'transparent',
                       border: 'none',
@@ -579,7 +359,7 @@ export const FocusPage: React.FC = () => {
                   size="lg"
                   className="tactile-press"
                   leftIcon={<Play size={18} />}
-                  onClick={handleStart}
+                  onClick={startTimer}
                   style={{ minWidth: '180px' }}
                 >
                   Enter Sanctuary
@@ -593,7 +373,7 @@ export const FocusPage: React.FC = () => {
                     size="lg"
                     className="tactile-press"
                     leftIcon={<Pause size={18} />}
-                    onClick={handlePause}
+                    onClick={pauseTimer}
                     style={{ minWidth: '140px', borderColor: 'rgba(255, 255, 255, 0.3)', color: '#fff' }}
                   >
                     Pause Flow
@@ -603,7 +383,7 @@ export const FocusPage: React.FC = () => {
                     size="md"
                     className="tactile-press"
                     leftIcon={<Check size={16} />}
-                    onClick={handleSessionComplete}
+                    onClick={completeTimer}
                     style={{ minWidth: '140px' }}
                   >
                     Complete
@@ -613,7 +393,7 @@ export const FocusPage: React.FC = () => {
                     size="md"
                     className="tactile-press"
                     leftIcon={<XCircle size={16} />}
-                    onClick={handleCancel}
+                    onClick={cancelTimer}
                     style={{ color: 'var(--color-charcoal-400)' }}
                   >
                     Abort
@@ -628,7 +408,7 @@ export const FocusPage: React.FC = () => {
                     size="lg"
                     className="tactile-press"
                     leftIcon={<Play size={18} />}
-                    onClick={handleStart}
+                    onClick={startTimer}
                     style={{ minWidth: '140px' }}
                   >
                     Resume Flow
@@ -638,7 +418,7 @@ export const FocusPage: React.FC = () => {
                     size="md"
                     className="tactile-press"
                     leftIcon={<Check size={16} />}
-                    onClick={handleSessionComplete}
+                    onClick={completeTimer}
                     style={{ minWidth: '140px', borderColor: 'rgba(255, 255, 255, 0.3)', color: '#fff' }}
                   >
                     Complete
@@ -648,7 +428,7 @@ export const FocusPage: React.FC = () => {
                     size="md"
                     className="tactile-press"
                     leftIcon={<RotateCcw size={16} />}
-                    onClick={handleReset}
+                    onClick={resetTimer}
                     style={{ color: 'var(--color-charcoal-400)' }}
                   >
                     Reset
@@ -672,7 +452,7 @@ export const FocusPage: React.FC = () => {
                     size="lg"
                     className="tactile-press"
                     leftIcon={<RotateCcw size={18} />}
-                    onClick={handleReset}
+                    onClick={resetTimer}
                   >
                     New Block
                   </Button>
@@ -688,10 +468,10 @@ export const FocusPage: React.FC = () => {
         isOpen={isReflectionModalOpen}
         onClose={() => setIsReflectionModalOpen(false)}
         sessionMinutes={completedSessionMinutes}
-        subjectName={selectedSub?.name}
+        subjectName={selectedSubject?.name}
         topicTitle={focusTitle}
         targetOutcome={targetOutcome}
-        onSaveSession={handleSaveReflectionFromModal}
+        onSaveSession={saveReflection}
       />
 
       {/* Custom Duration Modal */}
