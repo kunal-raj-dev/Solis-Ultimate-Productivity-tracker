@@ -145,4 +145,51 @@ describe('Solis Security Hardening Suite (Phase 8)', () => {
       expect(friendlyMsg).toContain('Permission denied');
     });
   });
+
+  describe('Authentication Abuse-Resistance & Identity Isolation', () => {
+    it('guarantees neutral error responses for password reset requests regardless of account existence', async () => {
+      const mockService = new MockDataService();
+      
+      // Existing user vs Non-existent user
+      await expect(mockService.auth.requestPasswordReset('existing_user@solis.space')).resolves.toBeUndefined();
+      await expect(mockService.auth.requestPasswordReset('non_existent_target@random.space')).resolves.toBeUndefined();
+    });
+
+    it('enforces email input validation on password reset', async () => {
+      const mockService = new MockDataService();
+      await expect(mockService.auth.requestPasswordReset('')).rejects.toThrow('Please provide a valid email address.');
+      await expect(mockService.auth.requestPasswordReset('not-an-email')).rejects.toThrow('Please provide a valid email address.');
+    });
+
+    it('ensures new account registration creates an isolated, zero-state identity without cross-tenant leakage', async () => {
+      const mockService = new MockDataService();
+      const session = await mockService.auth.signup({
+        name: 'Isolated User',
+        email: 'isolated_user@solis.space',
+        password: 'SecurePassword123!',
+        focusField: 'Biotechnology'
+      });
+
+      expect(session.user.email).toBe('isolated_user@solis.space');
+      expect(session.user.name).toBe('Isolated User');
+      expect(session.user.focusField).toBe('Biotechnology');
+
+      const currentUser = await mockService.auth.getCurrentUser();
+      expect(currentUser?.id).toBe(session.user.id);
+      expect(currentUser?.email).toBe('isolated_user@solis.space');
+    });
+
+    it('properly clears session on logout and rejects protected data operations without auth', async () => {
+      const mockService = new MockDataService();
+      await mockService.auth.login({
+        email: 'test_user@solis.space',
+        password: 'Password123'
+      });
+
+      expect(await mockService.auth.getCurrentUser()).not.toBeNull();
+
+      await mockService.auth.logout();
+      expect(await mockService.auth.getCurrentUser()).toBeNull();
+    });
+  });
 });

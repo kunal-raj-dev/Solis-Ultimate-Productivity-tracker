@@ -133,6 +133,7 @@ export const LoginPage: React.FC = () => {
           variant="primary"
           size="md"
           isLoading={isSubmitting}
+          disabled={isSubmitting || !email.trim() || !password}
           isFullWidth
           rightIcon={<ArrowRight size={16} />}
         >

@@ -6,7 +6,7 @@
 export interface FormattedAuthError {
   userMessage: string;
   code: string;
-  category: 'rate_limit' | 'unconfirmed' | 'invalid_credentials' | 'duplicate_user' | 'network' | 'generic';
+  category: 'rate_limit' | 'unconfirmed' | 'invalid_credentials' | 'duplicate_user' | 'validation' | 'auth_expired' | 'network' | 'generic';
 }
 
 export function formatAuthError(error: any): FormattedAuthError {
@@ -19,7 +19,7 @@ export function formatAuthError(error: any): FormattedAuthError {
   }
 
   const code: string = error.code || error.error_code || '';
-  const message: string = (error.message || error.msg || '').toLowerCase();
+  const message: string = (error.message || error.msg || (typeof error === 'string' ? error : '')).toLowerCase();
   const status: number = error.status || 0;
 
   // 1. Email Send Rate Limit (Supabase free tier 3 emails/hour quota)
@@ -36,10 +36,11 @@ export function formatAuthError(error: any): FormattedAuthError {
     };
   }
 
-  // 2. Request Rate Limit (Too many sign-in attempts)
+  // 2. Request Rate Limit (Too many sign-in attempts / HTTP 429)
   if (
     code === 'over_request_rate_limit' ||
     message.includes('too many requests') ||
+    message.includes('rate limit') ||
     status === 429
   ) {
     return {
@@ -62,7 +63,7 @@ export function formatAuthError(error: any): FormattedAuthError {
     };
   }
 
-  // 4. Invalid Login Credentials
+  // 4. Invalid Login Credentials (Account enumeration defense)
   if (
     code === 'invalid_credentials' ||
     code === 'invalid_grant' ||
@@ -90,11 +91,55 @@ export function formatAuthError(error: any): FormattedAuthError {
     };
   }
 
-  // 6. Network / Connectivity Failures
+  // 6. Password Policy / Validation
+  if (
+    code === 'weak_password' ||
+    message.includes('password should be at least') ||
+    message.includes('password is too short') ||
+    message.includes('weak password')
+  ) {
+    return {
+      userMessage: 'Password must be at least 6 characters.',
+      code: 'weak_password',
+      category: 'validation'
+    };
+  }
+
+  // 7. Session / JWT Expired
+  if (
+    code === 'jwt_expired' ||
+    code === 'bad_jwt' ||
+    code === 'session_not_found' ||
+    message.includes('jwt expired') ||
+    message.includes('session expired') ||
+    message.includes('token is expired')
+  ) {
+    return {
+      userMessage: 'Your authentication session has expired. Please sign in again.',
+      code: 'jwt_expired',
+      category: 'auth_expired'
+    };
+  }
+
+  // 8. Signups Disabled
+  if (
+    code === 'signup_disabled' ||
+    message.includes('signups not allowed')
+  ) {
+    return {
+      userMessage: 'New account registrations are temporarily closed.',
+      code: 'signup_disabled',
+      category: 'generic'
+    };
+  }
+
+  // 9. Network / Connectivity Failures
   if (
     message.includes('failed to fetch') ||
     message.includes('network error') ||
-    message.includes('timeout')
+    message.includes('networkerror') ||
+    message.includes('timeout') ||
+    message.includes('aborterror')
   ) {
     return {
       userMessage: 'Network connection failure. Please check your internet connection.',
@@ -103,9 +148,12 @@ export function formatAuthError(error: any): FormattedAuthError {
     };
   }
 
-  // Generic fallback preserving server message
+  // Generic fallback with information leakage sanitization
+  const rawMsg = error.message || (typeof error === 'string' ? error : 'Authentication error. Please try again.');
+  const sanitizedMsg = rawMsg.replace(/postgres:\/\/[^ ]+/gi, '[REDACTED_DB_URL]');
+
   return {
-    userMessage: error.message || 'Authentication error. Please try again.',
+    userMessage: sanitizedMsg,
     code: code || 'auth_error',
     category: 'generic'
   };

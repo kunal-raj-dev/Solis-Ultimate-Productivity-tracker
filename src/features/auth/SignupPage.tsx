@@ -143,6 +143,7 @@ export const SignupPage: React.FC = () => {
           variant="accent"
           size="md"
           isLoading={isSubmitting}
+          disabled={isSubmitting || !name.trim() || !email.trim() || !password}
           isFullWidth
           rightIcon={<ArrowRight size={16} />}
           leftIcon={<Sparkles size={16} />}
