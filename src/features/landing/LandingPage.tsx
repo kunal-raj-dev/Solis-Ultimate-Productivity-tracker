@@ -16,7 +16,7 @@ import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Container } from '../../components/layout/Container/Container';
 import { ScrollReveal } from '../../components/motion/ScrollReveal';
-import { ParallaxLayer } from '../../components/motion/ParallaxLayer';
+import { ParallaxLayer } from '../../components/parallax/ParallaxLayer';
 import { Progress } from '../../components/ui/Progress/Progress';
 import './LandingPage.css';
 

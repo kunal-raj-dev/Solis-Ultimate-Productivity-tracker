@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
-import { Badge } from '../../components/ui/Badge/Badge';
+import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
 import { Card } from '../../components/ui/Card/Card';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { Input } from '../../components/ui/Input/Input';
@@ -34,6 +34,7 @@ import {
   TaskTimeFilter,
   TaskSortField
 } from '../../types/task';
+import { StudySubject } from '../../types/study';
 import { PriorityLevel } from '../../types/common';
 import { formatFriendlyDate, getISODateString } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
@@ -42,6 +43,7 @@ export const TasksPage: React.FC = () => {
   const { addToast } = useToast();
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
 
@@ -55,12 +57,14 @@ export const TasksPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formCategory, setFormCategory] = useState<TaskCategory>('study');
   const [formPriority, setFormPriority] = useState<PriorityLevel>('medium');
+  const [formSubjectId, setFormSubjectId] = useState<string>('');
   const [formDueDate, setFormDueDate] = useState(getISODateString(new Date()));
   const [formDueTime, setFormDueTime] = useState('18:00');
   const [formEstimatedMinutes, setFormEstimatedMinutes] = useState('30');
@@ -73,13 +77,17 @@ export const TasksPage: React.FC = () => {
 
   const loadTasks = useCallback(async () => {
     try {
-      const data = await dataService.tasks.getTasks({
-        category: selectedCategory as any,
-        timeFilter: selectedTimeFilter,
-        search: searchQuery,
-        sortBy
-      });
+      const [data, subList] = await Promise.all([
+        dataService.tasks.getTasks({
+          category: selectedCategory as any,
+          timeFilter: selectedTimeFilter,
+          search: searchQuery,
+          sortBy
+        }),
+        dataService.study.getSubjects()
+      ]);
       setTasks(data);
+      setSubjects(subList);
     } catch (err) {
       console.error('Failed to load tasks:', err);
     } finally {
@@ -120,15 +128,18 @@ export const TasksPage: React.FC = () => {
   };
 
   const openCreateModal = () => {
+    setEditingTask(null);
     setFormTitle('');
     setFormDescription('');
     setFormCategory('study');
     setFormPriority('medium');
+    setFormSubjectId('');
     setFormDueDate(getISODateString(new Date()));
     setFormDueTime('18:00');
     setFormEstimatedMinutes('30');
     setFormTags('');
     setFormError(null);
+    setShowMoreOptions(false);
     setIsCreateModalOpen(true);
   };
 
@@ -138,11 +149,14 @@ export const TasksPage: React.FC = () => {
     setFormDescription(task.description || '');
     setFormCategory(task.category);
     setFormPriority(task.priority);
+    setFormSubjectId(task.subjectId || '');
     setFormDueDate(task.dueDate || getISODateString(new Date()));
     setFormDueTime(task.dueTime || '18:00');
     setFormEstimatedMinutes(String(task.estimatedMinutes || 30));
     setFormTags(task.tags.join(', '));
     setFormError(null);
+    setShowMoreOptions(Boolean(task.description || task.tags.length > 0 || task.subjectId));
+    setIsCreateModalOpen(true);
   };
 
   const handleSaveTask = async (e: React.FormEvent) => {
@@ -162,6 +176,7 @@ export const TasksPage: React.FC = () => {
           description: formDescription,
           category: formCategory,
           priority: formPriority,
+          subjectId: formSubjectId || undefined,
           dueDate: formDueDate,
           dueTime: formDueTime,
           estimatedMinutes: parseInt(formEstimatedMinutes, 10) || 30,
@@ -169,6 +184,7 @@ export const TasksPage: React.FC = () => {
         });
         setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
         setEditingTask(null);
+        setIsCreateModalOpen(false);
         addToast({ title: 'Task Updated', description: updated.title, type: 'success' });
       } else {
         const created = await dataService.tasks.createTask({
@@ -176,6 +192,7 @@ export const TasksPage: React.FC = () => {
           description: formDescription,
           category: formCategory,
           priority: formPriority,
+          subjectId: formSubjectId || undefined,
           dueDate: formDueDate,
           dueTime: formDueTime,
           estimatedMinutes: parseInt(formEstimatedMinutes, 10) || 30,
@@ -359,9 +376,11 @@ export const TasksPage: React.FC = () => {
             return (
               <Card
                 key={task.id}
+                className="depth-1"
                 style={{
                   padding: 'var(--space-md) var(--space-lg)',
-                  backgroundColor: task.status === 'completed' ? 'var(--bg-surface-subtle)' : '#FFFFFF'
+                  backgroundColor: task.status === 'completed' ? 'var(--bg-surface-subtle)' : 'var(--bg-surface-primary)',
+                  borderColor: 'var(--border-subtle)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
@@ -392,6 +411,14 @@ export const TasksPage: React.FC = () => {
                           {task.priority}
                         </Badge>
                         <Badge variant="neutral">{task.category}</Badge>
+                        {(() => {
+                          const linkedSub = subjects.find((s) => s.id === task.subjectId);
+                          return linkedSub ? (
+                            <Badge variant={(linkedSub.color as BadgeVariant) || 'coral'}>
+                              {linkedSub.name}
+                            </Badge>
+                          ) : null;
+                        })()}
                       </div>
 
                       {task.description && (
@@ -421,12 +448,13 @@ export const TasksPage: React.FC = () => {
                             style={{
                               fontSize: 'var(--text-micro)',
                               color: 'var(--text-muted)',
-                              background: 'var(--color-ivory-200)',
-                              padding: '1px 6px',
+                              background: 'var(--bg-surface-secondary)',
+                              padding: '2px 8px',
                               borderRadius: '4px',
+                              border: '1px solid var(--border-subtle)',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '2px'
+                              gap: '4px'
                             }}
                           >
                             <Tag size={10} />
@@ -517,9 +545,9 @@ export const TasksPage: React.FC = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              padding: '4px 8px',
-                              background: '#FFFFFF',
-                              borderRadius: '4px',
+                              padding: '6px 10px',
+                              background: 'var(--bg-surface-primary)',
+                              borderRadius: '6px',
                               border: '1px solid var(--border-subtle)'
                             }}
                           >
@@ -541,10 +569,10 @@ export const TasksPage: React.FC = () => {
                             </div>
                             <button
                               onClick={() => handleDeleteSubtask(task.id, sub.id)}
-                              style={{ color: 'var(--text-muted)', padding: '2px', display: 'flex' }}
-                              title="Delete subtask"
+                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                              aria-label={`Delete subtask ${sub.title}`}
                             >
-                              <X size={13} />
+                              <X size={14} />
                             </button>
                           </div>
                         ))}
@@ -554,14 +582,12 @@ export const TasksPage: React.FC = () => {
                     {/* Inline Add Subtask Input */}
                     <form onSubmit={(e) => handleAddSubtask(task.id, e)} style={{ display: 'flex', gap: '8px' }}>
                       <Input
-                        placeholder="Add subtask step..."
+                        placeholder="Add next actionable step..."
                         value={newSubtaskTitles[task.id] || ''}
-                        onChange={(e) =>
-                          setNewSubtaskTitles((prev) => ({ ...prev, [task.id]: e.target.value }))
-                        }
+                        onChange={(e) => setNewSubtaskTitles((prev) => ({ ...prev, [task.id]: e.target.value }))}
                       />
-                      <Button variant="secondary" size="sm" type="submit" leftIcon={<Plus size={14} />}>
-                        Add
+                      <Button variant="secondary" size="sm" type="submit">
+                        Add Step
                       </Button>
                     </form>
                   </div>
@@ -572,7 +598,7 @@ export const TasksPage: React.FC = () => {
         </div>
       )}
 
-      {/* Task Create / Edit Modal */}
+      {/* Task Create / Edit Modal with Progressive Disclosure & Subject Linkage */}
       <Modal
         isOpen={isCreateModalOpen || editingTask !== null}
         onClose={() => {
@@ -609,14 +635,7 @@ export const TasksPage: React.FC = () => {
             autoFocus
           />
 
-          <Textarea
-            label="Description / Context (Optional)"
-            placeholder="Key notes, references, requirements..."
-            value={formDescription}
-            onChange={(e) => setFormDescription(e.target.value)}
-          />
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
             <CustomSelect
               label="Domain Category"
               value={formCategory}
@@ -641,35 +660,99 @@ export const TasksPage: React.FC = () => {
                 { value: 'low', label: 'Low' }
               ]}
             />
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-            <Input
-              label="Due Date"
-              type="date"
-              value={formDueDate}
-              onChange={(e) => setFormDueDate(e.target.value)}
-            />
-            <Input
-              label="Due Time"
-              type="time"
-              value={formDueTime}
-              onChange={(e) => setFormDueTime(e.target.value)}
-            />
-            <Input
-              label="Est. Minutes"
-              type="number"
-              value={formEstimatedMinutes}
-              onChange={(e) => setFormEstimatedMinutes(e.target.value)}
+            <CustomSelect
+              label="Linked Subject (Optional)"
+              value={formSubjectId}
+              onChange={(val) => setFormSubjectId(val)}
+              options={[
+                { value: '', label: 'No Subject Link' },
+                ...subjects.map((s) => ({ value: s.id, label: s.name, badge: s.code }))
+              ]}
             />
           </div>
 
-          <Input
-            label="Tags (Comma separated)"
-            placeholder="Architecture, Raft, Core"
-            value={formTags}
-            onChange={(e) => setFormTags(e.target.value)}
-          />
+          {/* Progressive Disclosure: Additional Context & Presets */}
+          <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', marginTop: '2px' }}>
+            <button
+              type="button"
+              onClick={() => setShowMoreOptions((prev) => !prev)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-coral-500)',
+                fontSize: 'var(--text-body-sm)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {showMoreOptions ? '− Hide Additional Schedule & Context' : '+ Additional Context (Due Date, Presets, Tags, Notes)'}
+            </button>
+
+            {showMoreOptions && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '12px' }}>
+                <Textarea
+                  label="Description / Context (Optional)"
+                  placeholder="Key notes, references, requirements..."
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                  <Input
+                    label="Due Date"
+                    type="date"
+                    value={formDueDate}
+                    onChange={(e) => setFormDueDate(e.target.value)}
+                  />
+                  <Input
+                    label="Due Time"
+                    type="time"
+                    value={formDueTime}
+                    onChange={(e) => setFormDueTime(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Estimated Duration
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {[15, 30, 45, 60].map((mins) => (
+                      <Button
+                        key={mins}
+                        type="button"
+                        variant={formEstimatedMinutes === String(mins) ? 'accent' : 'subtle'}
+                        size="sm"
+                        onClick={() => setFormEstimatedMinutes(String(mins))}
+                      >
+                        {mins}m
+                      </Button>
+                    ))}
+                    <div style={{ width: '100px' }}>
+                      <Input
+                        type="number"
+                        placeholder="Custom"
+                        value={formEstimatedMinutes}
+                        onChange={(e) => setFormEstimatedMinutes(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Input
+                  label="Tags (Comma separated)"
+                  placeholder="Architecture, Raft, Core"
+                  value={formTags}
+                  onChange={(e) => setFormTags(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
             <Button
@@ -689,7 +772,7 @@ export const TasksPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal with shared Destructive Primitive */}
       <Modal
         isOpen={deletingTaskId !== null}
         onClose={() => setDeletingTaskId(null)}
@@ -703,9 +786,8 @@ export const TasksPage: React.FC = () => {
             Cancel
           </Button>
           <Button
-            variant="primary"
+            variant="destructive"
             onClick={handleDeleteTask}
-            style={{ backgroundColor: 'var(--status-error)', color: '#FFFFFF' }}
           >
             Confirm Delete
           </Button>
