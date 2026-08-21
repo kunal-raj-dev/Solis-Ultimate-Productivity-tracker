@@ -158,27 +158,36 @@ export interface AttentionIntelligenceInsight {
 // ----------------------------------------------------------------------------
 export type RecommendationType =
   | 'spaced_review'
+  | 'spaced_retrieval'
+  | 'retention_intervention'
+  | 'subject_rebalance'
   | 'neglect_rebalance'
   | 'plan_calibration'
   | 'continuity_resume'
+  | 'syllabus_continuation'
+  | 'concept_synthesis'
   | 'routine_continuation';
 
 export interface StudyRecommendation {
   id: string;
   type: RecommendationType;
-  priority: 'primary' | 'secondary';
+  priority: 'primary' | 'secondary' | 'routine';
   weight: number; // For deterministic ranking
   title: string;
   signal: string;   // What pattern was detected
   evidence: string; // The exact data backing it
   action: string;   // What the user should do
+  whyExplanation?: string;
+  actionLabel?: string;
   actionPayload?: {
-    type: 'start_focus' | 'open_study_plan' | 'open_topic_notes' | 'adjust_plan';
+    type: 'start_focus' | 'open_study_plan' | 'open_topic_notes' | 'adjust_plan' | 'drill_flashcards' | 'create_task';
     subjectId?: ID;
     subjectName?: string;
     topicId?: ID;
     topicTitle?: string;
     suggestedDurationMinutes?: number;
+    durationMinutes?: number;
+    targetRoute?: string;
   };
 }
 

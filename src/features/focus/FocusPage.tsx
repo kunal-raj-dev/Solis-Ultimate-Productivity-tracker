@@ -14,7 +14,7 @@ import {
   CheckCircle2,
   BookOpen
 } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { Modal } from '../../components/feedback/Modal/Modal';
@@ -72,16 +72,19 @@ export const FocusPage: React.FC = () => {
     saveReflection
   } = useFocus();
 
-  // Query params setup on entry
+  const location = useLocation();
+
+  // Query params & navigation state setup on entry
   useEffect(() => {
-    const paramSubjectId = searchParams.get('subjectId');
+    const locState = location.state as { subjectId?: string; topic?: string; durationMinutes?: number } | null;
+    const paramSubjectId = searchParams.get('subjectId') || locState?.subjectId;
     const paramPlanId = searchParams.get('planId');
-    const paramTitle = searchParams.get('title');
+    const paramTitle = searchParams.get('title') || searchParams.get('topicTitle') || locState?.topic;
 
     if (paramSubjectId) setSelectedSubjectId(paramSubjectId);
     if (paramPlanId) setSelectedPlanItemId(paramPlanId);
     if (paramTitle) setFocusTitle(paramTitle);
-  }, [searchParams, setSelectedSubjectId, setSelectedPlanItemId, setFocusTitle]);
+  }, [searchParams, location.state, setSelectedSubjectId, setSelectedPlanItemId, setFocusTitle]);
 
   // Custom preset modal
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);

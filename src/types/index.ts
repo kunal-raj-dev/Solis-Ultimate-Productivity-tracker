@@ -10,3 +10,5 @@ export * from './analytics';
 export * from './navigation';
 export * from './guide';
 export * from './activation';
+export * from './learning';
+export * from './learningIntelligence';

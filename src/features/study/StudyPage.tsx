@@ -51,7 +51,10 @@ import {
 } from '../../types/study';
 import { Flashcard, ReviewQueueItem, CardRating } from '../../types/learning';
 import { StudyResource, ReadingStatus } from '../../types/resource';
+import { Note } from '../../types/note';
 import { ValidationError } from '../../utils/validation';
+import { createLearningIntelligenceSnapshot } from '../../utils/intelligence';
+import { TopicIntelligenceDrawer } from './TopicIntelligenceDrawer';
 import './StudyPage.css';
 
 export const StudyPage: React.FC = () => {
@@ -67,6 +70,10 @@ export const StudyPage: React.FC = () => {
   const [reviews, setReviews] = useState<ReviewQueueItem[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [resources, setResources] = useState<StudyResource[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  // Topic Intelligence Drawer Target
+  const [selectedTopicIdForDrawer, setSelectedTopicIdForDrawer] = useState<string | null>(null);
 
   // Distinct Data Loading & Background Sync Status
   const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -85,6 +92,20 @@ export const StudyPage: React.FC = () => {
   const activeCount = activeSubjects.length;
   const archivedCount = archivedSubjects.length;
   const displayedSubjects = subjectViewTab === 'active' ? activeSubjects : archivedSubjects;
+
+  // Learning Intelligence Snapshot (Computation Boundary)
+  const learningSnapshot = useMemo(() => {
+    return createLearningIntelligenceSnapshot({
+      subjects,
+      topics: allTopics,
+      sessions,
+      flashcards,
+      reviews,
+      notes,
+      resources,
+      planItems: studyPlan
+    });
+  }, [subjects, allTopics, sessions, flashcards, reviews, notes, resources, studyPlan]);
 
   // Modals
   const [isAddSubjectModalOpen, setIsAddSubjectModalOpen] = useState(false);
@@ -171,14 +192,16 @@ export const StudyPage: React.FC = () => {
       const reviewsPromise = dataService.reviews ? dataService.reviews.getDueReviewItems().catch(() => []) : Promise.resolve([]);
       const flashcardsPromise = dataService.flashcards ? dataService.flashcards.getFlashcards().catch(() => []) : Promise.resolve([]);
       const resourcesPromise = dataService.resources ? dataService.resources.getResources().catch(() => []) : Promise.resolve([]);
+      const notesPromise = dataService.notes ? dataService.notes.getNotes().catch(() => []) : Promise.resolve([]);
 
-      const [subRes, sesRes, planRes, revRes, cardRes, resRes] = await Promise.allSettled([
+      const [subRes, sesRes, planRes, revRes, cardRes, resRes, noteRes] = await Promise.allSettled([
         subjectsPromise,
         sessionsPromise,
         planPromise,
         reviewsPromise,
         flashcardsPromise,
-        resourcesPromise
+        resourcesPromise,
+        notesPromise
       ]);
 
       if (subRes.status === 'fulfilled') {
@@ -234,6 +257,7 @@ export const StudyPage: React.FC = () => {
       if (revRes.status === 'fulfilled') setReviews(revRes.value);
       if (cardRes.status === 'fulfilled') setFlashcards(cardRes.value);
       if (resRes.status === 'fulfilled') setResources(resRes.value);
+      if (noteRes.status === 'fulfilled') setNotes(noteRes.value);
 
     } catch (err) {
       console.error('[StudyStudio] Data load error:', err);
@@ -1104,6 +1128,32 @@ export const StudyPage: React.FC = () => {
                     />
                   </div>
 
+                  {(() => {
+                    const health = learningSnapshot.subjectHealths.get(subject.id);
+                    if (!health || health.totalTopicsCount === 0) return null;
+                    return (
+                      <div className="solis-subject-learning-health">
+                        <div className="solis-subject-learning-health__header">
+                          <span className="solis-subject-learning-health__title">{health.overallStatusText}</span>
+                          <span className="solis-subject-learning-health__topics-count">
+                            {health.topicsAssessedCount}/{health.totalTopicsCount} assessed
+                          </span>
+                        </div>
+                        <div className="solis-subject-learning-health__pills">
+                          {health.strongCount > 0 && <span className="solis-health-pill solis-health-pill--strong">{health.strongCount} Strong</span>}
+                          {health.stableCount > 0 && <span className="solis-health-pill solis-health-pill--stable">{health.stableCount} Stable</span>}
+                          {health.developingCount > 0 && <span className="solis-health-pill solis-health-pill--developing">{health.developingCount} Dev</span>}
+                          {health.dueForReviewCount + health.needsAttentionCount + health.overdueCount > 0 && (
+                            <span className="solis-health-pill solis-health-pill--review">
+                              {health.dueForReviewCount + health.needsAttentionCount + health.overdueCount} Review
+                            </span>
+                          )}
+                          {health.notAssessedCount > 0 && <span className="solis-health-pill solis-health-pill--unassessed">{health.notAssessedCount} Unassessed</span>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
                     <span>{subject.notesCount} thoughts synthesized</span>
                     {subject.status === 'archived' ? (
@@ -1425,113 +1475,160 @@ export const StudyPage: React.FC = () => {
                 No topics defined for this subject yet.
               </div>
             ) : (
-              topicsList.map((topic) => (
-                <div
-                  key={topic.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    background: 'var(--bg-surface-secondary)',
-                    border: '1px solid var(--border-subtle)'
-                  }}
-                >
-                  <span style={{ fontSize: 'var(--text-body-sm)', fontWeight: 500 }}>
-                    {topic.title}
-                  </span>
+              topicsList.map((topic) => {
+                const mastery = learningSnapshot.masteryEvaluations.get(topic.id);
+                const retention = learningSnapshot.retentionSignals.get(topic.id);
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleTopicFocus(topic)}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-coral-500)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
-                      title={`Start Focus Block on ${topic.title}`}
-                    >
-                      <Flame size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTopicNote(topic)}
-                      style={{ background: 'none', border: 'none', color: 'var(--color-lavender-500)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
-                      title={`Draft Note on ${topic.title}`}
-                    >
-                      <FileEdit size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsTopicsModalOpen(false);
-                        handleOpenCardCreator(topic.subjectId, topic.id);
-                      }}
-                      style={{
-                        background: 'none',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '2px 6px',
-                        fontSize: 'var(--text-micro)',
-                        color: 'var(--color-coral-500)',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '2px'
-                      }}
-                      title="Create Active Recall Flashcard"
-                    >
-                      + Card
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsTopicsModalOpen(false);
-                        setResourceDefaultSubjectId(topic.subjectId);
-                        setResourceDefaultTopicId(topic.id);
-                        setIsResourceModalOpen(true);
-                      }}
-                      style={{
-                        background: 'none',
-                        border: '1px solid var(--border-subtle)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '2px 6px',
-                        fontSize: 'var(--text-micro)',
-                        color: 'var(--color-amber-500)',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '2px'
-                      }}
-                      title="Attach Study Resource"
-                    >
-                      + Resource
-                    </button>
-                    <button
-                      onClick={() => handleToggleMastery(topic)}
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: 'var(--radius-full)',
-                        fontSize: 'var(--text-micro)',
-                        fontWeight: 600,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background:
-                          topic.masteryLevel === 'mastered'
-                            ? 'var(--color-sage-500)'
-                            : topic.masteryLevel === 'learning'
-                            ? 'var(--color-amber-500)'
-                            : 'var(--bg-surface)',
-                        color: topic.masteryLevel === 'unstudied' ? 'var(--text-secondary)' : '#fff'
-                      }}
-                    >
-                      {topic.masteryLevel}
-                    </button>
-                    <button
-                      onClick={() => handleDeleteTopic(topic.id)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                return (
+                  <div
+                    key={topic.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      background: 'var(--bg-surface-secondary)',
+                      border: '1px solid var(--border-subtle)',
+                      gap: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: 'var(--text-body-sm)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {topic.title}
+                      </span>
+                      {mastery && mastery.state !== 'NOT_ASSESSED' && (
+                        <span
+                          className={`solis-health-pill solis-health-pill--${
+                            mastery.state === 'STRONG' ? 'strong' : mastery.state === 'STABLE' ? 'stable' : 'developing'
+                          }`}
+                          style={{ fontSize: '9px', padding: '1px 5px' }}
+                        >
+                          {mastery.state}
+                        </span>
+                      )}
+                      {retention && (retention.signal === 'DUE_FOR_REVIEW' || retention.signal === 'NEEDS_ATTENTION' || retention.signal === 'OVERDUE') && (
+                        <span className="solis-health-pill solis-health-pill--review" style={{ fontSize: '9px', padding: '1px 5px' }}>
+                          {retention.signal === 'DUE_FOR_REVIEW' ? 'Due' : retention.signal === 'NEEDS_ATTENTION' ? 'Recall Alert' : 'Overdue'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTopicIdForDrawer(topic.id);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '2px 6px',
+                          fontSize: 'var(--text-micro)',
+                          color: 'var(--color-coral-500)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}
+                        title="View Evidence & Learning Intelligence"
+                      >
+                        <Sparkles size={11} />
+                        Evidence
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTopicFocus(topic)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-coral-500)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                        title={`Start Focus Block on ${topic.title}`}
+                      >
+                        <Flame size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTopicNote(topic)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-lavender-500)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                        title={`Draft Note on ${topic.title}`}
+                      >
+                        <FileEdit size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsTopicsModalOpen(false);
+                          handleOpenCardCreator(topic.subjectId, topic.id);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '2px 6px',
+                          fontSize: 'var(--text-micro)',
+                          color: 'var(--color-coral-500)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px'
+                        }}
+                        title="Create Active Recall Flashcard"
+                      >
+                        + Card
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsTopicsModalOpen(false);
+                          setResourceDefaultSubjectId(topic.subjectId);
+                          setResourceDefaultTopicId(topic.id);
+                          setIsResourceModalOpen(true);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid var(--border-subtle)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '2px 6px',
+                          fontSize: 'var(--text-micro)',
+                          color: 'var(--color-amber-500)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '2px'
+                        }}
+                        title="Attach Study Resource"
+                      >
+                        + Resource
+                      </button>
+                      <button
+                        onClick={() => handleToggleMastery(topic)}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: 'var(--text-micro)',
+                          fontWeight: 600,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background:
+                            topic.masteryLevel === 'mastered'
+                              ? 'var(--color-sage-500)'
+                              : topic.masteryLevel === 'learning'
+                              ? 'var(--color-amber-500)'
+                              : 'var(--bg-surface)',
+                          color: topic.masteryLevel === 'unstudied' ? 'var(--text-secondary)' : '#fff'
+                        }}
+                        title="Manual mastery level baseline (Click to toggle)"
+                      >
+                        {topic.masteryLevel}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTopic(topic.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                        title="Delete Topic"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -2042,6 +2139,27 @@ export const StudyPage: React.FC = () => {
         onDeleteResource={handleDeleteResource}
         onStudyResource={handleStudyResource}
         onSynthesizeNote={handleSynthesizeNote}
+      />
+
+      {/* Evidence-Based Topic Intelligence Drawer */}
+      <TopicIntelligenceDrawer
+        isOpen={selectedTopicIdForDrawer !== null}
+        onClose={() => setSelectedTopicIdForDrawer(null)}
+        history={selectedTopicIdForDrawer ? learningSnapshot.topicHistories.get(selectedTopicIdForDrawer) : undefined}
+        mastery={selectedTopicIdForDrawer ? learningSnapshot.masteryEvaluations.get(selectedTopicIdForDrawer) : undefined}
+        retention={selectedTopicIdForDrawer ? learningSnapshot.retentionSignals.get(selectedTopicIdForDrawer) : undefined}
+        onStartFlashcardDrill={(topicId) => {
+          const topicCards = flashcards.filter((f) => f.topicId === topicId);
+          if (topicCards.length > 0) {
+            setActiveDeckCards(topicCards);
+            setIsReviewModalOpen(true);
+          } else {
+            addToast({ title: 'No flashcards created for this topic yet.', type: 'info' });
+          }
+        }}
+        onOpenNotes={(subjectId, topicId) => {
+          navigate(`/app/notes?subjectId=${subjectId}&topicId=${topicId}`);
+        }}
       />
     </div>
   );

@@ -522,8 +522,8 @@ export const DashboardPage: React.FC = () => {
                   Recommended Focus Step
                 </span>
               </div>
-              <Badge variant={topRecommendation.type === 'spaced_review' ? 'amber' : 'coral'}>
-                {topRecommendation.type === 'spaced_review' ? 'Spaced Review' : topRecommendation.type === 'neglect_rebalance' ? 'Neglect Rebalance' : 'Daily Flow'}
+              <Badge variant={topRecommendation.type === 'spaced_retrieval' ? 'amber' : 'coral'}>
+                {topRecommendation.type === 'spaced_retrieval' ? 'Spaced Retrieval' : topRecommendation.type === 'retention_intervention' ? 'Retention Alert' : 'Daily Flow'}
               </Badge>
             </div>
 
@@ -532,7 +532,7 @@ export const DashboardPage: React.FC = () => {
                 {topRecommendation.title}
               </div>
               <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                {topRecommendation.evidence}
+                {topRecommendation.whyExplanation || topRecommendation.evidence}
               </div>
             </div>
 
@@ -549,15 +549,17 @@ export const DashboardPage: React.FC = () => {
                         subjectId: topRecommendation.actionPayload.subjectId,
                         subjectName: topRecommendation.actionPayload.subjectName,
                         topic: topRecommendation.actionPayload.topicTitle,
-                        durationMinutes: topRecommendation.actionPayload.suggestedDurationMinutes || 30
+                        durationMinutes: topRecommendation.actionPayload.durationMinutes || 25
                       }
                     });
-                  } else {
+                  } else if (topRecommendation.actionPayload?.type === 'drill_flashcards') {
                     navigate('/app/study');
+                  } else {
+                    navigate(topRecommendation.actionPayload?.targetRoute || '/app/study');
                   }
                 }}
               >
-                {topRecommendation.action}
+                {topRecommendation.actionLabel || topRecommendation.action || 'Start Action'}
               </Button>
             </div>
           </div>

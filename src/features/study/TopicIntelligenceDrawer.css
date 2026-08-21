@@ -1,0 +1,345 @@
+/* ==========================================================================
+   SOLIS — TOPIC INTELLIGENCE DRAWER STYLES
+   Slide-over / drawer for evidence-based topic mastery & retention signals.
+   ========================================================================== */
+
+.solis-topic-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-modal, 100);
+  display: flex;
+  justify-content: flex-end;
+  animation: solis-fade-in 0.15s ease-out;
+}
+
+.solis-topic-drawer {
+  width: 100%;
+  max-width: 520px;
+  height: 100%;
+  background: var(--bg-surface-primary);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: solis-drawer-slide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes solis-drawer-slide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes solis-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.solis-topic-drawer__header {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface-primary);
+  z-index: 10;
+}
+
+.solis-topic-drawer__subject-tag {
+  margin-bottom: var(--space-2xs);
+}
+
+.solis-topic-drawer__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.solis-topic-drawer__close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.solis-topic-drawer__close:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-secondary);
+}
+
+.solis-topic-drawer__body {
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Status Badges Row */
+.solis-topic-drawer__status-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.solis-topic-drawer__status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.solis-topic-drawer__status-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.solis-topic-drawer__confidence-text {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Topic Badge Styles */
+.solis-topic-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.solis-topic-badge--strong {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.solis-topic-badge--stable {
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.solis-topic-badge--developing {
+  background: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.solis-topic-badge--emerging {
+  background: rgba(156, 39, 176, 0.15);
+  color: #AB47BC;
+  border: 1px solid rgba(156, 39, 176, 0.3);
+}
+
+.solis-topic-badge--unassessed {
+  background: var(--bg-surface-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Retention Badge Styles */
+.solis-retention-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+}
+
+.solis-retention-badge--fresh {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.solis-retention-badge--due {
+  background: rgba(255, 193, 7, 0.15);
+  color: #FFC107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.solis-retention-badge--attention {
+  background: rgba(230, 90, 65, 0.15);
+  color: var(--color-coral-500);
+  border: 1px solid rgba(230, 90, 65, 0.3);
+}
+
+.solis-retention-badge--overdue {
+  background: rgba(244, 67, 54, 0.15);
+  color: #F44336;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.solis-retention-badge--unstudied {
+  background: var(--bg-surface-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Explainability Box */
+.solis-topic-drawer__explanation-box {
+  background: var(--bg-surface-secondary);
+  border-left: 3px solid var(--color-coral-500);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.solis-topic-drawer__explanation-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+.solis-topic-drawer__explanation-title {
+  font-family: var(--font-display);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-topic-drawer__explanation-text {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.solis-topic-drawer__retention-note {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: var(--space-xs) 0 0 0;
+  padding-top: var(--space-xs);
+  border-top: 1px dashed var(--border-subtle);
+}
+
+/* Metrics Grid */
+.solis-topic-drawer__metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.solis-topic-drawer__metric-card {
+  padding: var(--space-md);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  position: relative;
+}
+
+.solis-topic-drawer__metric-icon {
+  color: var(--text-muted);
+  margin-bottom: var(--space-2xs);
+}
+
+.solis-topic-drawer__metric-value {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.solis-topic-drawer__metric-unit {
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.solis-topic-drawer__metric-label {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Section Headings */
+.solis-topic-drawer__section-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+/* Artifacts */
+.solis-topic-drawer__artifacts-row {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.solis-topic-drawer__artifact-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+/* Actions */
+.solis-topic-drawer__actions {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-topic-drawer__action-subtext {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.solis-topic-drawer__action-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  flex-direction: column;
+}
+
+@media (max-width: 600px) {
+  .solis-topic-drawer {
+    max-width: 100%;
+  }
+
+  .solis-topic-drawer__metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}

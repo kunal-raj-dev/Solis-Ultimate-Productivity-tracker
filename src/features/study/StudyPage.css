@@ -88,6 +88,78 @@
   margin-top: 4px;
 }
 
+/* Subject Learning Health Summary Breakdown */
+.solis-subject-learning-health {
+  margin: 10px 0 6px;
+  padding: 8px 10px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.solis-subject-learning-health__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.solis-subject-learning-health__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-subject-learning-health__topics-count {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.solis-subject-learning-health__pills {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.solis-health-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+}
+
+.solis-health-pill--strong {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4CAF50;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.solis-health-pill--stable {
+  background: rgba(33, 150, 243, 0.15);
+  color: #2196F3;
+  border: 1px solid rgba(33, 150, 243, 0.3);
+}
+
+.solis-health-pill--developing {
+  background: rgba(255, 152, 0, 0.15);
+  color: #FF9800;
+  border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+.solis-health-pill--review {
+  background: rgba(230, 90, 65, 0.15);
+  color: var(--color-coral-500);
+  border: 1px solid rgba(230, 90, 65, 0.3);
+}
+
+.solis-health-pill--unassessed {
+  background: var(--bg-surface-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
 /* --------------------------------------------------------------------------
    02 // LIVING STUDY TIMELINE & QUEUE
    -------------------------------------------------------------------------- */
