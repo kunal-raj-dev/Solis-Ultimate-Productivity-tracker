@@ -37,3 +37,4 @@ coverage/
 
 # Antigravity agent configuration
 .agents/
+.vercel
