@@ -36,7 +36,9 @@ import { ParallaxScene, ParallaxLayer, AtmosphericOrb } from '../../components/p
 import { FlashcardReviewModal } from '../../components/features/Flashcards/FlashcardReviewModal';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
+import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import {
   StudySubject,
@@ -55,6 +57,7 @@ import './StudyPage.css';
 export const StudyPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
 
   // Canonical Entity State
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
@@ -714,6 +717,8 @@ export const StudyPage: React.FC = () => {
             tag={<Badge variant="amber">Study Architecture</Badge>}
             title="Study Sessions & Planning"
             subtitle="Manage subject syllabi, log focused cognitive blocks, and track weekly hour targets."
+            guideId="study-studio"
+            onOpenGuide={openGuide}
             actions={
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <Button
@@ -1135,6 +1140,13 @@ export const StudyPage: React.FC = () => {
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-heading-3)' }}>
               Spaced Retrieval & Active Recall
             </h3>
+            <ContextualHelp
+              title="What is Active Recall?"
+              content="Active Recall tests your memory by prompting retrieval of concepts without looking at notes. Combined with SM-2 spaced repetition, it minimizes forgetting."
+              example="Testing flashcards on optimal intervals ensures long-term memory retention."
+              guideId="active-recall-flashcards"
+              onOpenGuide={openGuide}
+            />
             {reviews.length > 0 && (
               <Badge variant="coral">{reviews.length} Due</Badge>
             )}

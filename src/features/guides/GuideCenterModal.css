@@ -1,0 +1,176 @@
+/* ==========================================================================
+   SOLIS — GUIDE CENTER LAUNCHER MODAL V2
+   Simplified guide directory/launcher. No inline article viewer.
+   ========================================================================== */
+
+.solis-guide-launcher {
+  max-width: 580px !important;
+}
+
+.solis-guide-launcher__content {
+  display: flex;
+  flex-direction: column;
+  max-height: 75vh;
+}
+
+.solis-guide-launcher__header {
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.solis-guide-launcher__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solis-guide-launcher__title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.solis-guide-launcher__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-guide-launcher__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s ease;
+}
+
+.solis-guide-launcher__close:hover {
+  color: var(--text-primary);
+}
+
+.solis-guide-launcher__search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.solis-guide-launcher__search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.solis-guide-launcher__search-input {
+  width: 100%;
+  padding: 9px 14px 9px 36px;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.solis-guide-launcher__search-input:focus {
+  border-color: var(--color-coral-500);
+}
+
+.solis-guide-launcher__search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.solis-guide-launcher__categories {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.solis-guide-launcher__categories::-webkit-scrollbar {
+  display: none;
+}
+
+.solis-guide-launcher__cat-btn {
+  padding: 4px 10px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+.solis-guide-launcher__cat-btn:hover {
+  border-color: var(--color-coral-400);
+  color: var(--text-primary);
+}
+
+.solis-guide-launcher__cat-btn--active {
+  background: var(--color-coral-500);
+  color: #ffffff !important;
+  border-color: var(--color-coral-500);
+}
+
+.solis-guide-launcher__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm) var(--space-md);
+  min-height: 200px;
+}
+
+.solis-guide-launcher__no-results {
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.solis-guide-launcher__footer {
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.solis-guide-launcher__browse-all {
+  background: none;
+  border: none;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-coral-500);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  transition: all 0.12s ease;
+}
+
+.solis-guide-launcher__browse-all:hover {
+  background: var(--bg-surface-secondary);
+}
+
+@media (max-width: 600px) {
+  .solis-guide-launcher {
+    max-width: 100% !important;
+  }
+
+  .solis-guide-launcher__content {
+    max-height: 85vh;
+  }
+}

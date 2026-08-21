@@ -11,7 +11,8 @@ import {
   Lock,
   Headphones,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  BookOpen
 } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -19,9 +20,11 @@ import { Input } from '../../components/ui/Input/Input';
 import { Modal } from '../../components/feedback/Modal/Modal';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
+import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { ParallaxScene, ParallaxLayer, AtmosphericOrb } from '../../components/parallax';
 import { PostFocusReflectionModal } from '../../components/features/Focus/PostFocusReflectionModal';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { useFocus, FocusPreset } from '../../context/FocusContext';
 import { SoundscapeType } from '../../types/focus';
 import { formatSecondsToTimer } from '../../utils/formatters';
@@ -30,6 +33,7 @@ import './FocusPage.css';
 
 export const FocusPage: React.FC = () => {
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -179,17 +183,29 @@ export const FocusPage: React.FC = () => {
                 <span>Exit Sanctuary</span>
               </button>
 
-              <span
-                style={{
-                  fontFamily: 'var(--font-interface)',
-                  fontSize: 'var(--text-micro)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(255, 255, 255, 0.45)'
-                }}
-              >
-                Focus Room • Distraction Free
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<BookOpen size={14} />}
+                  onClick={() => openGuide('focus-sanctuary')}
+                  style={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                  title="Learn how Focus Sanctuary works"
+                >
+                  Guide
+                </Button>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-interface)',
+                    fontSize: 'var(--text-micro)',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255, 255, 255, 0.45)'
+                  }}
+                >
+                  Focus Room
+                </span>
+              </div>
             </div>
 
             {/* Soundscape Synthesizer Bar */}
@@ -248,7 +264,7 @@ export const FocusPage: React.FC = () => {
             </div>
 
             {/* Top preset switcher & Acoustic bell */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 'var(--space-md) 0 var(--space-lg)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 'var(--space-md) 0 var(--space-lg)', flexWrap: 'wrap', justifyContent: 'center' }}>
               <SegmentedControl
                 variant="contained"
                 value={preset}
@@ -259,6 +275,14 @@ export const FocusPage: React.FC = () => {
                   { value: 'short_break', label: 'Short Rest 5m' },
                   { value: 'custom', label: 'Custom' }
                 ]}
+              />
+
+              <ContextualHelp
+                title="Pomodoro vs Deep Flow"
+                content="Pomodoro (25m) provides low-friction starts and rapid feedback. Deep Flow (50m–90m) provides immersive, uninterrupted continuity for complex architectures and deep problem solving."
+                example="Use Pomodoro for flashcard drilling and problem sets; use Deep Flow for essays and coding."
+                guideId="pomodoro-vs-deep-flow"
+                onOpenGuide={openGuide}
               />
 
               <button

@@ -43,6 +43,11 @@ import { calculateDailySummary } from '../../utils/productivity';
 import { generateSolisIntelligenceReport } from '../../utils/intelligence';
 import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntelligence';
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
+import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
+import { NextBestActionCard } from '../../components/features/Activation/NextBestActionCard';
+import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
+import { useGuide } from '../../context/GuideContext';
+import { getActivationState, calculateNextBestAction } from '../../utils/activation';
 import { queryCache } from '../../services/cache';
 import './DashboardPage.css';
 
@@ -69,10 +74,30 @@ export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DailySummary | null>(() => queryCache.get<DailySummary>('daily_summary'));
   const [viewMode, setViewMode] = useState<'lists' | 'timeline'>('lists');
 
+  const { openGuide } = useGuide();
+
   // Modals
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
   const [isRoutinesModalOpen, setIsRoutinesModalOpen] = useState(false);
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('onboarding') === 'true') return true;
+    const state = getActivationState(user?.id);
+    return state !== 'completed' && state !== 'dismissed';
+  });
+  const [isNextActionDismissed, setIsNextActionDismissed] = useState(false);
+
+  const nextBestAction = useMemo(() => {
+    return calculateNextBestAction({
+      subjects: subjects.length,
+      tasks: tasks.length,
+      focusSessions: recentFocus.length,
+      notes: notes.length,
+      habits: habits.length
+    });
+  }, [subjects.length, tasks.length, recentFocus.length, notes.length, habits.length]);
 
   // Time Blocking Memo Calculations
   const timeBlocks = useMemo(() => {
@@ -360,6 +385,14 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="solis-daily-flow">
+      {/* ADAPTIVE NEXT BEST ACTION GUIDANCE */}
+      {!isNextActionDismissed && nextBestAction.id !== 'action_continue_flow' && (
+        <NextBestActionCard
+          action={nextBestAction}
+          onDismiss={() => setIsNextActionDismissed(true)}
+        />
+      )}
+
       {/* 01 // ARRIVAL SCENE & CONTINUITY */}
       <SceneContainer sceneNumber="01 // ARRIVAL" sceneTitle="Daily Rhythm & Focus Field">
         <div className="solis-arrival-content">
@@ -547,6 +580,13 @@ export const DashboardPage: React.FC = () => {
                 <span style={{ fontSize: 'var(--text-caption)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-charcoal-300)' }}>
                   State of Momentum
                 </span>
+                <ContextualHelp
+                  title="What is Momentum?"
+                  content="Momentum is a composite daily measure (0–100%) tracking intentional task completion, study target hours, and deep focus consistency."
+                  example="Completing 3 planned tasks and a 45m focus session accumulates high momentum."
+                  guideId="what-is-solis"
+                  onOpenGuide={openGuide}
+                />
                 <button
                   onClick={() => setIsScoreModalOpen(true)}
                   style={{ color: 'var(--color-charcoal-300)', padding: '2px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
@@ -1023,6 +1063,20 @@ export const DashboardPage: React.FC = () => {
         onToggleRoutine={handleToggleRoutine}
         onDeleteRoutine={handleDeleteRoutine}
         onSyncToday={handleSyncRoutinesToday}
+      />
+
+      {/* Activation & First-Time Onboarding Modal */}
+      <ActivationWelcomeModal
+        isOpen={isActivationModalOpen}
+        onClose={() => setIsActivationModalOpen(false)}
+        counts={{
+          subjects: subjects.length,
+          tasks: tasks.length,
+          focusSessions: recentFocus.length,
+          notes: notes.length,
+          habits: habits.length
+        }}
+        userId={user?.id}
       />
     </div>
   );

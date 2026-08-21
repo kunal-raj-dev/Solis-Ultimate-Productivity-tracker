@@ -1,0 +1,161 @@
+.solis-activation-modal {
+  padding: var(--space-md);
+  background: var(--bg-surface-primary);
+  border-radius: var(--radius-lg);
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.solis-activation-header {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+
+.solis-activation-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--color-coral-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs);
+}
+
+.solis-activation-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2xs) 0;
+}
+
+.solis-activation-subtitle {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.solis-activation-loop-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin: var(--space-lg) 0;
+}
+
+.solis-activation-loop-card {
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-xs);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.solis-activation-loop-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-coral-500);
+  margin-bottom: 2px;
+}
+
+.solis-activation-loop-stage {
+  font-family: var(--font-display);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.solis-activation-loop-env {
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+}
+
+.solis-activation-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: var(--space-md) 0 var(--space-lg) 0;
+}
+
+.solis-activation-check-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.solis-activation-check-item--done {
+  opacity: 0.85;
+  background: var(--bg-surface-primary);
+}
+
+.solis-activation-check-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.solis-activation-check-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--border-subtle);
+  color: transparent;
+  flex-shrink: 0;
+}
+
+.solis-activation-check-status--done {
+  border-color: var(--status-success);
+  background: var(--status-success-bg);
+  color: var(--status-success);
+}
+
+.solis-activation-check-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-activation-check-desc {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.solis-activation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+@media (max-width: 640px) {
+  .solis-activation-loop-grid {
+    grid-template-columns: 1fr;
+  }
+}

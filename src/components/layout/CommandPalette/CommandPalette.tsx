@@ -20,6 +20,7 @@ import {
   WorkspaceDataSources
 } from '../../../utils/commandSearch';
 import { useTheme } from '../../../context/ThemeContext';
+import { useGuide } from '../../../context/GuideContext';
 import { dataService } from '../../../services/dataService';
 import './CommandPalette.css';
 
@@ -31,6 +32,7 @@ export interface CommandPaletteProps {
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { openGuide } = useGuide();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
   }, [isOpen]);
 
   const quickActions: CommandItem[] = [
+    {
+      id: 'action-open-guides',
+      title: 'Open Guide Center & Help',
+      subtitle: 'Browse 18 structured guides on study mastery',
+      type: 'action',
+      shortcut: '?',
+      onSelect: () => openGuide()
+    },
     {
       id: 'action-new-task',
       title: 'Create New Task',
@@ -110,13 +120,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
   const handleSelect = useCallback(
     (item: CommandItem) => {
       onClose();
-      if (item.onSelect) {
+      if (item.guideId) {
+        openGuide(item.guideId);
+      } else if (item.id === 'nav-guides') {
+        openGuide();
+      } else if (item.onSelect) {
         item.onSelect();
       } else if (item.actionUrl) {
         navigate(item.actionUrl);
       }
     },
-    [navigate, onClose]
+    [navigate, onClose, openGuide]
   );
 
   const handleKeyDown = useCallback(
@@ -155,6 +169,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
 
   const renderIcon = (item: CommandItem) => {
     switch (item.type) {
+      case 'guide':
+        return <BookOpen size={16} color="var(--color-coral-500)" />;
       case 'task':
         return <CheckSquare size={16} color="var(--color-emerald-500)" />;
       case 'note':

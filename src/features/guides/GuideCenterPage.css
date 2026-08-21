@@ -1,0 +1,833 @@
+/* ==========================================================================
+   SOLIS — GUIDE CENTER V2 PAGE STYLES
+   Full-page learning experience with readable content column and responsive layout.
+   ========================================================================== */
+
+/* =========================================================================
+   1. PAGE LAYOUT
+   ========================================================================= */
+.solis-guide-page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 64px);
+  background: var(--bg-canvas);
+}
+
+/* =========================================================================
+   2. SIDEBAR
+   ========================================================================= */
+.solis-guide-page__sidebar {
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-surface-primary);
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+}
+
+.solis-guide-page__sidebar-header {
+  padding: var(--space-lg) var(--space-md) var(--space-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-guide-page__sidebar-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.solis-guide-page__search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: var(--space-sm);
+}
+
+.solis-guide-page__search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.solis-guide-page__search-input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.solis-guide-page__search-input:focus {
+  border-color: var(--color-coral-500);
+}
+
+.solis-guide-page__search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.solis-guide-page__categories {
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-guide-page__cat-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.solis-guide-page__cat-btn:hover {
+  background: var(--bg-surface-secondary);
+  color: var(--text-primary);
+}
+
+.solis-guide-page__cat-btn--active {
+  background: var(--bg-surface-secondary);
+  color: var(--color-coral-500);
+  font-weight: 600;
+}
+
+.solis-guide-page__cat-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.solis-guide-page__guide-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.solis-guide-page__no-results {
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+}
+
+/* =========================================================================
+   3. MAIN CONTENT AREA
+   ========================================================================= */
+.solis-guide-page__main {
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.solis-guide-page__content {
+  width: 100%;
+  max-width: 720px;
+  overflow-x: hidden;
+}
+
+/* =========================================================================
+   4. RETURN TO GUIDE BANNER
+   ========================================================================= */
+.solis-guide-page__return-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+
+.solis-guide-page__return-banner button {
+  background: none;
+  border: none;
+  color: var(--color-coral-500);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: var(--text-body-sm);
+  font-family: var(--font-interface);
+}
+
+.solis-guide-page__return-banner button:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================================
+   5. GUIDE DIRECTORY (No guide selected)
+   ========================================================================= */
+.solis-guide-directory {
+  text-align: center;
+  padding: var(--space-2xl) 0;
+}
+
+.solis-guide-directory__icon {
+  color: var(--color-coral-500);
+  margin-bottom: var(--space-sm);
+}
+
+.solis-guide-directory__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.solis-guide-directory__subtitle {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-xl) 0;
+  line-height: 1.6;
+}
+
+.solis-guide-directory__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+  text-align: left;
+}
+
+/* =========================================================================
+   6. GUIDE HEADER
+   ========================================================================= */
+.solis-guide-page__guide-category {
+  display: inline-block;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-coral-500);
+  margin-bottom: var(--space-xs);
+}
+
+.solis-guide-page__guide-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
+  line-height: 1.2;
+}
+
+.solis-guide-page__guide-summary {
+  font-family: var(--font-interface);
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0 0 var(--space-sm) 0;
+  max-width: 65ch;
+}
+
+.solis-guide-page__guide-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-guide-page__mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.solis-guide-page__mode-btn {
+  padding: 3px 10px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.solis-guide-page__mode-btn--active {
+  background: var(--color-coral-500);
+  color: #ffffff;
+  border-color: var(--color-coral-500);
+}
+
+/* =========================================================================
+   7. QUICK UNDERSTANDING SECTION
+   ========================================================================= */
+.solis-guide-page__quick-context {
+  margin-bottom: var(--space-xl);
+}
+
+.solis-guide-page__context-item {
+  margin-bottom: var(--space-md);
+}
+
+.solis-guide-page__context-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.solis-guide-page__context-text {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 65ch;
+}
+
+/* =========================================================================
+   8. GUIDE STEP COMPONENT
+   ========================================================================= */
+.solis-guide-step {
+  padding: var(--space-lg);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-md);
+}
+
+.solis-guide-step__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.solis-guide-step__indicator {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.solis-guide-step__icon--completed {
+  color: var(--status-success, #4CAF50);
+}
+
+.solis-guide-step__icon--current {
+  color: var(--color-coral-500);
+}
+
+.solis-guide-step__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.solis-guide-step__number {
+  color: var(--color-coral-500);
+  font-weight: 700;
+}
+
+.solis-guide-step__content {
+  padding-left: 36px;
+}
+
+.solis-guide-step__description {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0 0 var(--space-sm) 0;
+  max-width: 60ch;
+}
+
+.solis-guide-step__why {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  background: var(--bg-surface-secondary);
+  border-left: 3px solid var(--color-coral-500);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom: var(--space-sm);
+  line-height: 1.6;
+}
+
+.solis-guide-step__why strong {
+  color: var(--text-primary);
+}
+
+.solis-guide-step__action-container {
+  margin-bottom: var(--space-sm);
+}
+
+.solis-guide-step__tip-container {
+  margin-bottom: var(--space-sm);
+}
+
+.solis-guide-step__tip-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.solis-guide-step__tip-toggle:hover {
+  color: var(--text-primary);
+}
+
+.solis-guide-step__tip-content {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 4px 0 0 0;
+  padding-left: var(--space-sm);
+}
+
+.solis-guide-step__completion-status {
+  margin-top: var(--space-sm);
+}
+
+.solis-guide-step__status-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+}
+
+.solis-guide-step__status-text--verified {
+  color: var(--status-success, #4CAF50);
+  font-weight: 500;
+}
+
+.solis-guide-step__status-text--muted {
+  color: var(--text-muted);
+}
+
+/* =========================================================================
+   9. GUIDE PROGRESS BAR
+   ========================================================================= */
+.solis-guide-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.solis-guide-progress__text {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.solis-guide-progress__dots {
+  display: flex;
+  gap: 6px;
+}
+
+.solis-guide-progress__dot {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: all 0.12s ease;
+}
+
+.solis-guide-progress__dot--current {
+  color: var(--color-coral-500);
+  transform: scale(1.2);
+}
+
+.solis-guide-progress__dot--completed {
+  color: var(--status-success, #4CAF50);
+}
+
+.solis-guide-progress__dot--pending {
+  color: var(--text-muted);
+}
+
+/* =========================================================================
+   10. GUIDE NAVIGATION
+   ========================================================================= */
+.solis-guide-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-lg);
+  margin-top: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-guide-nav__previous,
+.solis-guide-nav__next {
+  display: flex;
+}
+
+/* =========================================================================
+   11. GUIDE COMPLETION
+   ========================================================================= */
+.solis-guide-completion {
+  text-align: center;
+  padding: var(--space-2xl) 0;
+}
+
+.solis-guide-completion__header {
+  margin-bottom: var(--space-md);
+}
+
+.solis-guide-completion__icon {
+  color: var(--status-success, #4CAF50);
+  margin-bottom: var(--space-sm);
+}
+
+.solis-guide-completion__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-guide-completion__summary {
+  font-size: var(--text-body);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 50ch;
+  margin: 0 auto var(--space-lg);
+}
+
+.solis-guide-completion__action {
+  margin-bottom: var(--space-xl);
+}
+
+.solis-guide-completion__divider {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 0 0 var(--space-xl);
+}
+
+.solis-guide-completion__related {
+  text-align: left;
+}
+
+.solis-guide-completion__related-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.solis-guide-completion__sparkles {
+  color: var(--color-coral-500);
+}
+
+.solis-guide-completion__related-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-sm);
+}
+
+/* =========================================================================
+   12. GUIDE CARD
+   ========================================================================= */
+.solis-guide-card {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+  background: transparent;
+}
+
+.solis-guide-card:hover {
+  background: var(--bg-surface-secondary);
+}
+
+.solis-guide-card--selected {
+  background: var(--bg-surface-secondary);
+  border-color: var(--border-subtle);
+  border-left: 3px solid var(--color-coral-500);
+}
+
+.solis-guide-card--compact {
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.solis-guide-card__category {
+  margin-bottom: 4px;
+}
+
+.solis-guide-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.solis-guide-card--compact .solis-guide-card__title {
+  font-size: var(--text-caption);
+}
+
+.solis-guide-card__summary {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 4px 0;
+}
+
+.solis-guide-card__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* =========================================================================
+   13. DEEP CONTENT SECTION
+   ========================================================================= */
+.solis-guide-page__deep-content {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-guide-page__deep-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.solis-guide-page__deep-list {
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+  line-height: 1.7;
+}
+
+.solis-guide-page__deep-list li {
+  margin-bottom: var(--space-xs);
+}
+
+/* =========================================================================
+   14. CONNECTION & MISTAKES (from original, adapted)
+   ========================================================================= */
+.solis-guide-page__connection-box {
+  background: var(--bg-surface-secondary);
+  border-left: 3px solid var(--color-coral-500);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin: var(--space-lg) 0;
+}
+
+.solis-guide-page__connection-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.solis-guide-page__connection-text {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.solis-guide-page__mistakes-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  margin: var(--space-lg) 0 var(--space-xs) 0;
+}
+
+.solis-guide-page__mistakes-list {
+  margin: 0 0 var(--space-md) 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  line-height: 1.6;
+}
+
+/* =========================================================================
+   15. MOBILE RESPONSIVE
+   ========================================================================= */
+@media (max-width: 768px) {
+  .solis-guide-page {
+    grid-template-columns: 1fr;
+  }
+
+  .solis-guide-page__sidebar {
+    display: none;
+  }
+
+  .solis-guide-page__sidebar--mobile-open {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal, 100);
+    width: 100%;
+    height: 100%;
+    border-right: none;
+  }
+
+  .solis-guide-page__main {
+    padding: var(--space-md);
+  }
+
+  .solis-guide-page__content {
+    max-width: 100%;
+  }
+
+  .solis-guide-page__guide-title {
+    font-size: var(--text-heading-2);
+  }
+
+  .solis-guide-step {
+    padding: var(--space-md);
+  }
+
+  .solis-guide-step__content {
+    padding-left: 0;
+  }
+
+  .solis-guide-nav {
+    flex-direction: row;
+    gap: var(--space-sm);
+  }
+
+  .solis-guide-completion__related-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile back button */
+.solis-guide-page__mobile-header {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .solis-guide-page__mobile-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  .solis-guide-page__mobile-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-family: var(--font-interface);
+    font-size: var(--text-caption);
+    color: var(--text-secondary);
+    background: var(--bg-surface-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .solis-guide-page__mobile-back:hover {
+    color: var(--text-primary);
+    border-color: var(--color-coral-400);
+  }
+}
+
+/* =========================================================================
+   16. TABLET RESPONSIVE
+   ========================================================================= */
+@media (min-width: 769px) and (max-width: 1023px) {
+  .solis-guide-page {
+    grid-template-columns: 200px 1fr;
+  }
+
+  .solis-guide-page__sidebar {
+    font-size: var(--text-caption);
+  }
+
+  .solis-guide-page__main {
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+/* =========================================================================
+   17. WIDE DESKTOP (content stays centered)
+   ========================================================================= */
+@media (min-width: 1600px) {
+  .solis-guide-page__content {
+    max-width: 760px;
+  }
+}
+
+/* =========================================================================
+   18. REDUCED MOTION
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .solis-guide-card,
+  .solis-guide-step,
+  .solis-guide-progress__dot,
+  .solis-guide-page__cat-btn,
+  .solis-guide-page__mode-btn {
+    transition: none;
+  }
+}

@@ -27,6 +27,7 @@ import { Modal } from '../../components/feedback/Modal/Modal';
 import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import {
   Task,
@@ -41,6 +42,7 @@ import { ValidationError } from '../../utils/validation';
 
 export const TasksPage: React.FC = () => {
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
@@ -322,6 +324,8 @@ export const TasksPage: React.FC = () => {
         tag={<Badge variant="coral">Task Sanctuary</Badge>}
         title="Intentional Tasks"
         subtitle="Curate deliberate focus items with nested subtasks, priority ordering, and deterministic progress."
+        guideId="task-sanctuary"
+        onOpenGuide={openGuide}
         actions={
           <Button
             variant="accent"
@@ -442,8 +446,8 @@ export const TasksPage: React.FC = () => {
       ) : tasks.length === 0 ? (
         <EmptyState
           icon={CheckCircle2}
-          title="No tasks match the active filters"
-          description="Your task sanctuary is calm. Add an intentional task or adjust your filters."
+          title={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Your task space is clear" : "No tasks match the active filters"}
+          description={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Decide what deserves your attention today. Create an intentional task and attach it to a subject to track momentum." : "Your sanctuary has no items matching the current filter. Adjust your criteria or capture a new task."}
           actionLabel="Create Intentional Task"
           onAction={openCreateModal}
         />

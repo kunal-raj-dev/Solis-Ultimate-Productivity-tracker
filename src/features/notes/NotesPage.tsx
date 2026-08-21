@@ -9,7 +9,8 @@ import {
   X,
   BrainCircuit,
   Bookmark,
-  ArrowLeft
+  ArrowLeft,
+  BookOpen
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -17,9 +18,11 @@ import { Badge } from '../../components/ui/Badge/Badge';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
+import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { Note, NoteCategory } from '../../types/note';
 import { StudySubject, StudyTopic } from '../../types/study';
@@ -41,6 +44,7 @@ const CATEGORIES: { value: NoteCategory; label: string }[] = [
 
 export const NotesPage: React.FC = () => {
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
   const [searchParams] = useSearchParams();
 
   const [notes, setNotes] = useState<Note[]>([]);
@@ -362,16 +366,36 @@ export const NotesPage: React.FC = () => {
           -------------------------------------------------------------------- */}
       <aside className="solis-notes-index">
         <div className="solis-notes-index__header">
-          <h2 className="solis-notes-index__title">Knowledge Index</h2>
-          <Button
-            variant="accent"
-            size="sm"
-            className="tactile-press"
-            leftIcon={<Plus size={14} />}
-            onClick={() => handleCreateNote()}
-          >
-            New Thought
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <h2 className="solis-notes-index__title">Knowledge Index</h2>
+            <ContextualHelp
+              title="What is Knowledge Studio?"
+              content="Knowledge Studio is your distraction-free external memory for organizing notes, formulas, summaries, and lecture takeaways."
+              example="Drafting a concept note and generating active recall cards ensures permanent mastery."
+              guideId="knowledge-studio"
+              onOpenGuide={openGuide}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<BookOpen size={14} />}
+              onClick={() => openGuide('knowledge-studio')}
+              title="Learn how Knowledge Studio works"
+            >
+              Guide
+            </Button>
+            <Button
+              variant="accent"
+              size="sm"
+              className="tactile-press"
+              leftIcon={<Plus size={14} />}
+              onClick={() => handleCreateNote()}
+            >
+              New Thought
+            </Button>
+          </div>
         </div>
 
         {/* Search */}

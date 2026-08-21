@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sliders, LogOut, Moon, Sun, Loader2 } from 'lucide-react';
+import { Sliders, LogOut, Moon, Sun, Loader2, BookOpen } from 'lucide-react';
 import { Avatar } from '../../ui/Avatar/Avatar';
 import { useAuth } from '../../../context/AuthContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { useToast } from '../../../context/ToastContext';
+import { useGuide } from '../../../context/GuideContext';
 import './AccountMenu.css';
 
 export const AccountMenu: React.FC = () => {
@@ -14,6 +15,7 @@ export const AccountMenu: React.FC = () => {
 
   const { user, logout, isLoggingOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { openGuide } = useGuide();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -116,6 +118,19 @@ export const AccountMenu: React.FC = () => {
               <Sliders size={16} className="solis-account-dropdown__item-icon" />
               <span>System Settings</span>
             </Link>
+
+            <button
+              type="button"
+              className="solis-account-dropdown__item"
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                openGuide();
+              }}
+            >
+              <BookOpen size={16} className="solis-account-dropdown__item-icon" />
+              <span>Guide Center & Philosophy</span>
+            </button>
 
             <button
               type="button"

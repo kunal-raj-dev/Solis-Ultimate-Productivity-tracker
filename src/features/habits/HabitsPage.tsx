@@ -17,6 +17,7 @@ import { Modal } from '../../components/feedback/Modal/Modal';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { Habit, HabitFrequency } from '../../types/habit';
 import { Goal } from '../../types/goal';
@@ -25,6 +26,7 @@ import { ValidationError } from '../../utils/validation';
 
 export const HabitsPage: React.FC = () => {
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
 
   const [habits, setHabits] = useState<Habit[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -199,6 +201,8 @@ export const HabitsPage: React.FC = () => {
         tag={<Badge variant="sage">Rituals & Consistency</Badge>}
         title="Habit Constellation"
         subtitle="Deterministic streaks derived from daily records. Small commitments compounded over time."
+        guideId="rituals-and-consistency"
+        onOpenGuide={openGuide}
         actions={
           <Button variant="accent" size="md" leftIcon={<Plus size={16} />} onClick={openCreateModal}>
             New Ritual
@@ -254,7 +258,7 @@ export const HabitsPage: React.FC = () => {
         <EmptyState
           icon={Flame}
           title="No daily rituals configured yet"
-          description="Form an intentional study or wellness habit to build lasting daily momentum."
+          description="Rituals in Solis focus on long-term consistency over streak anxiety. Form an atomic study or wellness habit to build steady daily momentum."
           actionLabel="Create First Ritual"
           onAction={openCreateModal}
         />

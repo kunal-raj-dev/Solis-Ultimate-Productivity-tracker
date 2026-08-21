@@ -1,0 +1,86 @@
+.solis-next-best-action {
+  background: linear-gradient(135deg, var(--bg-surface-primary) 0%, var(--bg-surface-secondary) 100%);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--color-coral-500);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.solis-next-best-action:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.solis-next-best-action__content {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.solis-next-best-action__icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  color: var(--color-coral-500);
+  flex-shrink: 0;
+}
+
+.solis-next-best-action__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-coral-500);
+  margin-bottom: 2px;
+}
+
+.solis-next-best-action__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.solis-next-best-action__desc {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.solis-next-best-action__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .solis-next-best-action {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-md);
+  }
+
+  .solis-next-best-action__controls {
+    justify-content: flex-end;
+    margin-top: var(--space-xs);
+  }
+}

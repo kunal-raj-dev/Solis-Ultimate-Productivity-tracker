@@ -1,0 +1,132 @@
+.solis-contextual-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.solis-contextual-help__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.solis-contextual-help__trigger:hover,
+.solis-contextual-help__trigger:focus-visible {
+  color: var(--color-coral-500);
+  background-color: var(--bg-surface-secondary);
+  outline: none;
+}
+
+.solis-contextual-help__popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-sm) var(--space-md);
+  z-index: 999;
+  animation: solis-popover-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.solis-contextual-help__popover--top {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
+.solis-contextual-help__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xs);
+}
+
+.solis-contextual-help__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-contextual-help__close {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+}
+
+.solis-contextual-help__close:hover {
+  color: var(--text-primary);
+}
+
+.solis-contextual-help__body {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-xs);
+}
+
+.solis-contextual-help__example {
+  background-color: var(--bg-surface-secondary);
+  border-left: 2px solid var(--color-coral-500);
+  padding: 6px 8px;
+  border-radius: var(--radius-xs);
+  font-size: var(--text-micro);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  font-style: italic;
+}
+
+.solis-contextual-help__footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-2xs);
+  margin-top: var(--space-2xs);
+}
+
+.solis-contextual-help__link {
+  font-size: var(--text-micro);
+  color: var(--color-coral-500);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.solis-contextual-help__link:hover {
+  text-decoration: underline;
+}
+
+@keyframes solis-popover-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

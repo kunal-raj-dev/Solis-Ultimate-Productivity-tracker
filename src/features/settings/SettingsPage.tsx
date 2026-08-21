@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell } from 'lucide-react';
+import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -11,7 +11,9 @@ import { ImportModal } from '../../components/features/ImportModal/ImportModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
+import { resetActivation } from '../../utils/activation';
 import {
   createWorkspaceBackup,
   convertTasksToCSV,
@@ -33,6 +35,7 @@ import { getISODateString } from '../../utils/date';
 export const SettingsPage: React.FC = () => {
   const { user, logout, isLoggingOut } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { openGuide } = useGuide();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -559,6 +562,51 @@ export const SettingsPage: React.FC = () => {
                     </Button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Learnability & Guidance */}
+        <Card>
+          <CardHeader>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={18} color="var(--color-coral-500)" />
+              <CardTitle>Learnability & Guidance System</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                Solis features self-service guide documentation and adaptive onboarding to help you master every environment.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  leftIcon={<BookOpen size={16} />}
+                  onClick={() => openGuide()}
+                >
+                  Open Guide Center
+                </Button>
+                <Button
+                  type="button"
+                  variant="subtle"
+                  size="md"
+                  leftIcon={<RotateCcw size={16} />}
+                  onClick={() => {
+                    resetActivation(user?.id);
+                    addToast({
+                      title: 'Onboarding Reset',
+                      description: 'Getting Started walkthrough has been reset and will appear on your dashboard.',
+                      type: 'info'
+                    });
+                    navigate('/app/dashboard?onboarding=true');
+                  }}
+                >
+                  Replay Getting Started
+                </Button>
               </div>
             </div>
           </CardContent>

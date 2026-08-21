@@ -26,6 +26,7 @@ import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { ExamWorkspaceModal } from '../../components/features/Goals/ExamWorkspaceModal';
 import { ProjectWorkspaceModal } from '../../components/features/Goals/ProjectWorkspaceModal';
 import { useToast } from '../../context/ToastContext';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { Goal, GoalHorizon, GoalExperienceType } from '../../types/goal';
 import { StudySubject, StudyTopic } from '../../types/study';
@@ -38,6 +39,7 @@ import { ValidationError } from '../../utils/validation';
 
 export const GoalsPage: React.FC = () => {
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
   const navigate = useNavigate();
 
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -293,6 +295,8 @@ export const GoalsPage: React.FC = () => {
         tag={<Badge variant="lavender">Long-term Horizons</Badge>}
         title="Goal Horizons & Milestones"
         subtitle="Connect semester milestones and multi-year vision to daily actionable momentum."
+        guideId="goal-horizons"
+        onOpenGuide={openGuide}
         actions={
           <Button variant="accent" size="md" leftIcon={<Plus size={16} />} onClick={openCreateModal}>
             New Horizon
@@ -347,7 +351,7 @@ export const GoalsPage: React.FC = () => {
         <EmptyState
           icon={Target}
           title="No long-term goal horizons set"
-          description="Establish your first semester or career milestone to align your daily tasks."
+          description="Define clear exam, project, or long-term horizons to anchor and direct your daily focus sessions."
           actionLabel="Create Goal Horizon"
           onAction={openCreateModal}
         />

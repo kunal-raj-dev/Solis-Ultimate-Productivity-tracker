@@ -41,3 +41,22 @@
   line-height: var(--leading-relaxed);
   margin-bottom: var(--space-lg);
 }
+
+.solis-empty-state__guide-link {
+  background: none;
+  border: none;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--color-coral-500);
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: var(--space-sm);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.12s ease;
+}
+
+.solis-empty-state__guide-link:hover {
+  text-decoration: underline;
+  background: var(--bg-surface-secondary);
+}

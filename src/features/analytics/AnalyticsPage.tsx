@@ -17,6 +17,8 @@ import { SegmentedControl } from '../../components/ui/SegmentedControl/Segmented
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
 import { ExamReadinessCard } from '../../components/features/Analytics/ExamReadinessCard';
 import { RetentionForecastGraph } from '../../components/features/Analytics/RetentionForecastGraph';
+import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
+import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { StudySession, StudyPlanItem, StudySubject, StudyTopic } from '../../types/study';
 import { FocusSession } from '../../types/focus';
@@ -40,6 +42,7 @@ import './AnalyticsPage.css';
 
 export const AnalyticsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { openGuide } = useGuide();
   const [scope, setScope] = useState<TimeRangeScope>('this_week');
 
   const cachedSubjects = queryCache.get<StudySubject[]>('subjects:false');
@@ -207,6 +210,13 @@ export const AnalyticsPage: React.FC = () => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <Badge variant="coral">Mastery Intelligence & Cognitive Analytics</Badge>
+            <ContextualHelp
+              title="What is Cognitive Rhythm?"
+              content="Cognitive Rhythm computes velocity, subject allocation balance, and retention decay across all your logged focus and study blocks."
+              example="Logging 3–5 days of sessions produces meaningful pattern curves and time-of-day peak efficiency insights."
+              guideId="cognitive-rhythm"
+              onOpenGuide={openGuide}
+            />
             <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
               Deterministic & Traceable
             </span>
@@ -219,7 +229,16 @@ export const AnalyticsPage: React.FC = () => {
           </p>
         </div>
 
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<BookOpen size={14} />}
+            onClick={() => openGuide('cognitive-rhythm')}
+            title="Learn how Cognitive Rhythm works"
+          >
+            Guide
+          </Button>
           <SegmentedControl
             options={[
               { value: 'today', label: 'Today' },

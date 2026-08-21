@@ -4,6 +4,7 @@ import { ThemeProvider } from '../context/ThemeContext';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
 import { DataProvider } from '../context/DataContext';
+import { GuideProvider } from '../context/GuideContext';
 import { ToastContainer } from '../components/feedback/Toast/ToastContainer';
 import { ErrorBoundary } from '../components/feedback/ErrorBoundary/ErrorBoundary';
 
@@ -14,8 +15,10 @@ export const RootLayout: React.FC = () => {
         <AuthProvider>
           <DataProvider>
             <ToastProvider>
-              <Outlet />
-              <ToastContainer />
+              <GuideProvider>
+                <Outlet />
+                <ToastContainer />
+              </GuideProvider>
             </ToastProvider>
           </DataProvider>
         </AuthProvider>

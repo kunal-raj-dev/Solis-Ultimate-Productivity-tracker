@@ -1,5 +1,6 @@
 import React from 'react';
 import { LucideIcon, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../ui/Button/Button';
 import { cn } from '../../../utils/classNames';
 import './EmptyState.css';
@@ -11,6 +12,10 @@ export interface EmptyStateProps {
   actionLabel?: string;
   onAction?: () => void;
   className?: string;
+  /** Optional guide ID — renders a "Learn how" link to the guide page */
+  guideId?: string;
+  /** Label for the guide link (default: "Learn how this works") */
+  guideLabel?: string;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -19,8 +24,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   actionLabel,
   onAction,
-  className
+  className,
+  guideId,
+  guideLabel = 'Learn how this works'
 }) => {
+  const navigate = useNavigate();
+
   return (
     <div className={cn('solis-empty-state', className)}>
       <div className="solis-empty-state__icon-wrap">
@@ -32,6 +41,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         <Button variant="secondary" size="sm" onClick={onAction}>
           {actionLabel}
         </Button>
+      )}
+      {guideId && (
+        <button
+          className="solis-empty-state__guide-link"
+          onClick={() => navigate(`/app/guides/${guideId}`)}
+        >
+          {guideLabel}
+        </button>
       )}
     </div>
   );

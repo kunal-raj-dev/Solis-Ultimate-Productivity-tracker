@@ -8,3 +8,5 @@ export * from './habit';
 export * from './goal';
 export * from './analytics';
 export * from './navigation';
+export * from './guide';
+export * from './activation';

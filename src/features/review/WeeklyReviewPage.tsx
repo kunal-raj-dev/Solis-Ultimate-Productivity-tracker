@@ -19,6 +19,7 @@ import { Input } from '../../components/ui/Input/Input';
 import { dataService } from '../../services/dataService';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { useGuide } from '../../context/GuideContext';
 import { Task } from '../../types/task';
 import { StudySubject, StudySession } from '../../types/study';
 import { Note } from '../../types/note';
@@ -30,6 +31,7 @@ import './WeeklyReviewPage.css';
 export const WeeklyReviewPage: React.FC = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const { openGuide } = useGuide();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<number>(1);
@@ -167,6 +169,8 @@ ${frictionPoints.trim() || '_No major friction reported._'}
         tag={<Badge variant="coral">Weekly Ritual</Badge>}
         title="Weekly Review & Strategic Calibration"
         subtitle="Step back, synthesize your momentum, calibrate attention, and set clear intentions for the upcoming week."
+        guideId="weekly-review"
+        onOpenGuide={openGuide}
       />
 
       {/* Step Indicators */}

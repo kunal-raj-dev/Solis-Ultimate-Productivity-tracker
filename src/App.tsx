@@ -22,6 +22,7 @@ const AnalyticsPage = lazy(() => import('./features/analytics/AnalyticsPage').th
 const NotesPage = lazy(() => import('./features/notes/NotesPage').then(m => ({ default: m.NotesPage })));
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const WeeklyReviewPage = lazy(() => import('./features/review/WeeklyReviewPage').then(m => ({ default: m.WeeklyReviewPage })));
+const GuideCenterRoute = lazy(() => import('./features/guides/GuideCenterRoute').then(m => ({ default: m.GuideCenterRoute })));
 
 export const App: React.FC = () => {
   return (
@@ -56,6 +57,8 @@ export const App: React.FC = () => {
               <Route path="notes" element={<NotesPage />} />
               <Route path="review" element={<WeeklyReviewPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="guides" element={<GuideCenterRoute />} />
+              <Route path="guides/:guideId" element={<GuideCenterRoute />} />
             </Route>
 
             {/* 404 Catch-All */}

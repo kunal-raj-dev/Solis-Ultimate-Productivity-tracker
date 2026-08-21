@@ -6,10 +6,12 @@ import { Task } from '../types/task';
 import { StudySubject, StudyTopic } from '../types/study';
 import { Note } from '../types/note';
 import { Goal } from '../types/goal';
+import { SOLIS_GUIDES } from '../data/guides';
 
 export type CommandItemType =
   | 'action'
   | 'navigation'
+  | 'guide'
   | 'task'
   | 'note'
   | 'subject'
@@ -25,6 +27,7 @@ export interface CommandItem {
   shortcut?: string;
   iconName?: string;
   actionUrl?: string;
+  guideId?: string;
   onSelect?: () => void;
 }
 
@@ -37,6 +40,14 @@ export interface WorkspaceDataSources {
 }
 
 export const DEFAULT_NAVIGATION_COMMANDS: CommandItem[] = [
+  {
+    id: 'nav-guides',
+    title: 'Open Guide Center & Philosophy',
+    subtitle: '18 comprehensive guides on study mastery',
+    type: 'navigation',
+    actionUrl: '/app/guides',
+    shortcut: 'G H'
+  },
   {
     id: 'nav-dashboard',
     title: 'Go to Dashboard',
@@ -232,6 +243,26 @@ export function searchWorkspace(
       (nav.subtitle && nav.subtitle.toLowerCase().includes(normalized))
     ) {
       results.push(nav);
+    }
+  }
+
+  // 7. Search Guides & Philosophy
+  for (const guide of SOLIS_GUIDES) {
+    if (
+      guide.title.toLowerCase().includes(normalized) ||
+      guide.summary.toLowerCase().includes(normalized) ||
+      guide.category.toLowerCase().includes(normalized) ||
+      (guide.keywords && guide.keywords.some((k) => k.toLowerCase().includes(normalized)))
+    ) {
+      results.push({
+        id: `guide-${guide.id}`,
+        title: guide.title,
+        subtitle: `Guide • ${guide.category.toUpperCase()} • ${guide.summary}`,
+        type: 'guide',
+        badge: 'Guide',
+        guideId: guide.id,
+        actionUrl: `/app/guides?guide=${guide.id}`
+      });
     }
   }
 
