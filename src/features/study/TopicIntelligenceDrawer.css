@@ -337,9 +337,19 @@
 @media (max-width: 600px) {
   .solis-topic-drawer {
     max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .solis-topic-drawer__body {
+    padding: var(--space-md) var(--space-md) calc(var(--space-2xl) + env(safe-area-inset-bottom, 16px));
   }
 
   .solis-topic-drawer__metrics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .solis-topic-drawer__actions {
+    padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 16px));
   }
 }

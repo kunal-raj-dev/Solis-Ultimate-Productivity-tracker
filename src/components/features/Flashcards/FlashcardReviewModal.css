@@ -131,6 +131,7 @@
   .solis-recall-actions {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-xs);
+    margin-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 16px));
   }
 
   .solis-recall-btn {

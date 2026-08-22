@@ -15,7 +15,6 @@
   flex-direction: column;
   min-width: 0;
   position: relative;
-  z-index: var(--z-base);
 }
 
 .solis-app-view {

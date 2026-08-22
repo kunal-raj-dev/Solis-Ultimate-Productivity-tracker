@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Brain,
@@ -153,7 +154,7 @@ export const TopicIntelligenceDrawer: React.FC<TopicIntelligenceDrawerProps> = (
     }
   };
 
-  return (
+  const drawerContent = (
     <div className="solis-topic-drawer-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Topic Intelligence Drawer">
       <div className="solis-topic-drawer" ref={drawerRef} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -321,4 +322,8 @@ export const TopicIntelligenceDrawer: React.FC<TopicIntelligenceDrawerProps> = (
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined'
+    ? createPortal(drawerContent, document.body)
+    : drawerContent;
 };

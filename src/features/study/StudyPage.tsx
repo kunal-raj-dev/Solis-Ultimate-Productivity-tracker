@@ -1850,7 +1850,7 @@ export const StudyPage: React.FC = () => {
                   <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
                     Subject color
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(68px, 1fr))', gap: '8px' }}>
                     {[
                       { id: 'coral', label: 'Coral', color: 'var(--color-coral-500)' },
                       { id: 'amber', label: 'Amber', color: 'var(--color-amber-500)' },
@@ -1957,7 +1957,7 @@ export const StudyPage: React.FC = () => {
             <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
               Subject color
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(68px, 1fr))', gap: '8px' }}>
               {[
                 { id: 'coral', label: 'Coral', color: 'var(--color-coral-500)' },
                 { id: 'amber', label: 'Amber', color: 'var(--color-amber-500)' },

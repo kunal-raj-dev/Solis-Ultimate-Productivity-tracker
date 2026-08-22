@@ -57,6 +57,8 @@
 .solis-modal-body {
   padding: var(--space-sm) var(--space-xl) var(--space-lg);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   font-size: var(--text-body-sm);
   color: var(--text-secondary);
   scrollbar-width: thin;
@@ -88,34 +90,41 @@
   gap: var(--space-sm);
   border-top: 1px solid var(--border-subtle);
   background-color: var(--bg-surface-subtle);
+  flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
   .solis-modal-backdrop {
     align-items: flex-end;
     padding: 0;
+    touch-action: pan-y;
   }
 
   .solis-modal-dialog {
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 92vh;
+    max-height: 88vh;
+    max-height: min(88dvh, calc(100vh - 28px));
     max-width: 100%;
+    width: 100%;
+    margin: 0;
     border-bottom: none;
     border-left: none;
     border-right: none;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
     animation: solisSheetSlideUp var(--duration-swift) var(--ease-spatial);
   }
 
   .solis-modal-header {
     padding: var(--space-md) var(--space-lg) var(--space-xs);
+    flex-shrink: 0;
   }
 
   .solis-modal-body {
-    padding: var(--space-xs) var(--space-lg) var(--space-md);
+    padding: var(--space-xs) var(--space-lg) calc(var(--space-xl) + env(safe-area-inset-bottom, 16px));
   }
 
   .solis-modal-footer {
-    padding: var(--space-sm) var(--space-lg) calc(var(--space-md) + var(--safe-area-bottom));
+    padding: var(--space-sm) var(--space-lg) calc(var(--space-md) + env(safe-area-inset-bottom, 16px));
     flex-wrap: wrap;
   }
 }

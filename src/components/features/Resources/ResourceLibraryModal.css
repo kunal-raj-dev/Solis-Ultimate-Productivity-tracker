@@ -62,3 +62,17 @@
   background-color: var(--bg-surface-secondary);
   color: var(--color-coral-500);
 }
+
+@media (max-width: 600px) {
+  .solis-resource-library-dialog {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .solis-resource-grid {
+    max-height: 55vh;
+    max-height: min(55dvh, calc(100vh - 280px));
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}

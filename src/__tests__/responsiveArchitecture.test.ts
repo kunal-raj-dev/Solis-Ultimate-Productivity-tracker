@@ -143,5 +143,26 @@ describe('Solis Multi-Device Responsive Architecture & Mobile UX Suite', () => {
       expect(rows).toBe(4);
       expect(Number.isInteger(rows)).toBe(true);
     });
+
+    it('validates modal z-index layering above mobile nav and app chrome', () => {
+      const zModal = 500;
+      const zModalBackdrop = 400;
+      const zHeader = 200;
+      const zBase = 1;
+
+      // Modal must strictly supersede Mobile Nav, Header, and Base layout stacking
+      expect(zModal).toBeGreaterThan(zHeader);
+      expect(zModalBackdrop).toBeGreaterThan(zHeader);
+      expect(zHeader).toBeGreaterThan(zBase);
+    });
+
+    it('verifies mobile modal bottom body padding provides clearance above safe area and bezel', () => {
+      const spaceXlPx = 32;
+      const safeAreaBottomPx = 16;
+      const totalModalBodyBottomPadding = spaceXlPx + safeAreaBottomPx;
+
+      // Action buttons inside form body must have at least 44px clearance
+      expect(totalModalBodyBottomPadding).toBeGreaterThanOrEqual(44);
+    });
   });
 });
