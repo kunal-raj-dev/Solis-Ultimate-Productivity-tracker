@@ -1671,7 +1671,7 @@ export const StudyPage: React.FC = () => {
         onClose={() => setIsLogSessionModalOpen(false)}
         title="Log Study Session"
       >
-        <form onSubmit={handleLogSession} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleLogSession} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {sessionError && (
             <div
               style={{
@@ -1679,7 +1679,7 @@ export const StudyPage: React.FC = () => {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '8px 12px',
-                borderRadius: '6px',
+                borderRadius: 'var(--radius-md)',
                 backgroundColor: 'var(--status-error-bg)',
                 color: 'var(--status-error)',
                 fontSize: 'var(--text-caption)'
@@ -1745,9 +1745,10 @@ export const StudyPage: React.FC = () => {
             placeholder="Insights, confusing edge-cases, notes for flashcards..."
             value={sessionNotes}
             onChange={(e) => setSessionNotes(e.target.value)}
+            style={{ minHeight: '68px' }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '2px 0' }}>
             <Checkbox
               checked={createNoteFromSession}
               onChange={() => setCreateNoteFromSession(!createNoteFromSession)}
@@ -1768,7 +1769,7 @@ export const StudyPage: React.FC = () => {
             ]}
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
             <Button variant="ghost" type="button" onClick={() => setIsLogSessionModalOpen(false)}>
               Cancel
             </Button>

@@ -4,6 +4,9 @@
    ========================================================================== */
 
 :root {
+  color-scheme: light;
+  accent-color: #E65A41;
+
   /* ------------------------------------------------------------------------
      1. RAW PALETTE FOUNDATIONS (Primitives)
      ------------------------------------------------------------------------ */
@@ -251,6 +254,9 @@
    ========================================================================== */
 [data-theme="dark"],
 .dark {
+  color-scheme: dark;
+  accent-color: #FF6B52;
+
   --bg-canvas: #141211;
   --bg-canvas-glass: rgba(20, 18, 17, 0.85);
   --bg-surface-primary: #1E1B18;
@@ -287,8 +293,8 @@
 
   /* Typography / Text Semantics (Night Mode) */
   --text-primary: #F5F2EB;
-  --text-secondary: #ABA398;
-  --text-muted: #7D756B;
+  --text-secondary: #B5ADA2;
+  --text-muted: #918A80;
   --text-inverse: #141211;
   --text-accent: #FF6B52;
 
@@ -301,17 +307,17 @@
   --nav-bg-transparent: transparent;
   --nav-bg-scrolled: rgba(20, 18, 17, 0.85);
   --nav-text: #F5F2EB;
-  --nav-text-muted: #ABA398;
+  --nav-text-muted: #B5ADA2;
   --nav-text-active: #FF6B52;
-  --nav-border: rgba(245, 242, 235, 0.10);
+  --nav-border: rgba(245, 242, 235, 0.12);
   --nav-hover: rgba(245, 242, 235, 0.06);
   --nav-focus: #FF6B52;
   --nav-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 
   /* Border Semantics (Night Mode) */
-  --border-subtle: rgba(245, 242, 235, 0.08);
-  --border-default: rgba(245, 242, 235, 0.14);
-  --border-strong: rgba(245, 242, 235, 0.24);
+  --border-subtle: rgba(245, 242, 235, 0.10);
+  --border-default: rgba(245, 242, 235, 0.16);
+  --border-strong: rgba(245, 242, 235, 0.28);
   --border-focus: #FF6B52;
 
   /* Skeletons (Night Mode) */

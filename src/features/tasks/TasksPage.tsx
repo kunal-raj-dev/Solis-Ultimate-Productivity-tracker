@@ -11,7 +11,8 @@ import {
   Tag,
   AlertCircle,
   X,
-  Sparkles
+  Sparkles,
+  Check
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
@@ -20,6 +21,7 @@ import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
 import { Card } from '../../components/ui/Card/Card';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { Input } from '../../components/ui/Input/Input';
+import { DatePicker, TimePicker } from '../../components/ui/DatePicker';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
@@ -86,6 +88,7 @@ export const TasksPage: React.FC = () => {
 
   // Inline subtask input per expanded task
   const [newSubtaskTitles, setNewSubtaskTitles] = useState<Record<string, string>>({});
+  const [editingSubtask, setEditingSubtask] = useState<{ taskId: string; subId: string; title: string } | null>(null);
 
   const openCreateModal = useCallback(() => {
     setEditingTask(null);
@@ -310,6 +313,23 @@ export const TasksPage: React.FC = () => {
       await dataService.tasks.deleteSubTask(taskId, subId);
     } catch {
       addToast({ title: 'Error deleting subtask', type: 'error' });
+    }
+  };
+
+  const handleSaveEditSubtask = async (taskId: string, subId: string) => {
+    if (!editingSubtask || !editingSubtask.title.trim()) return;
+    const newTitle = editingSubtask.title.trim();
+    setEditingSubtask(null);
+
+    try {
+      await dataService.tasks.editSubTask(taskId, subId, newTitle);
+      addToast({ title: 'Subtask Updated', description: newTitle, type: 'success' });
+    } catch (err) {
+      addToast({
+        title: 'Error updating subtask',
+        description: err instanceof Error ? err.message : 'Invalid title',
+        type: 'error'
+      });
     }
   };
 
@@ -635,44 +655,159 @@ export const TasksPage: React.FC = () => {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-                        {task.subTasks.map((sub) => (
-                          <div
-                            key={sub.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '6px 10px',
-                              background: 'var(--bg-surface-primary)',
-                              borderRadius: '6px',
-                              border: '1px solid var(--border-subtle)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                              <Checkbox
-                                checked={sub.completed}
-                                onChange={() => handleToggleSubtask(task.id, sub.id)}
-                                aria-label={`Toggle subtask ${sub.title}`}
-                              />
-                              <span
-                                style={{
-                                  fontSize: 'var(--text-body-sm)',
-                                  textDecoration: sub.completed ? 'line-through' : 'none',
-                                  color: sub.completed ? 'var(--text-muted)' : 'var(--text-primary)'
-                                }}
-                              >
-                                {sub.title}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => handleDeleteSubtask(task.id, sub.id)}
-                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                              aria-label={`Delete subtask ${sub.title}`}
+                        {task.subTasks.map((sub) => {
+                          const isEditingThisSub = editingSubtask?.taskId === task.id && editingSubtask?.subId === sub.id;
+
+                          return (
+                            <div
+                              key={sub.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '6px 10px',
+                                background: 'var(--bg-surface-primary)',
+                                borderRadius: '6px',
+                                border: isEditingThisSub ? '1px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
+                                minHeight: '38px'
+                              }}
                             >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        ))}
+                              {isEditingThisSub ? (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleSaveEditSubtask(task.id, sub.id);
+                                  }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}
+                                >
+                                  <input
+                                    type="text"
+                                    value={editingSubtask.title}
+                                    onChange={(e) =>
+                                      setEditingSubtask((prev) => (prev ? { ...prev, title: e.target.value } : null))
+                                    }
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') setEditingSubtask(null);
+                                    }}
+                                    autoFocus
+                                    style={{
+                                      flex: 1,
+                                      background: 'var(--bg-surface-secondary)',
+                                      border: '1px solid var(--border-focus)',
+                                      borderRadius: 'var(--radius-sm)',
+                                      padding: '4px 8px',
+                                      color: 'var(--text-primary)',
+                                      fontSize: 'var(--text-body-sm)',
+                                      outline: 'none'
+                                    }}
+                                    aria-label="Edit subtask title"
+                                  />
+                                  <button
+                                    type="submit"
+                                    className="tactile-press"
+                                    style={{
+                                      background: 'var(--color-coral-500)',
+                                      border: 'none',
+                                      color: '#fff',
+                                      cursor: 'pointer',
+                                      padding: '4px 8px',
+                                      borderRadius: 'var(--radius-sm)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      fontSize: 'var(--text-micro)',
+                                      fontWeight: 600
+                                    }}
+                                    title="Save (Enter)"
+                                    aria-label="Save subtask"
+                                  >
+                                    <Check size={13} />
+                                    <span>Save</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingSubtask(null)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: 'var(--text-muted)',
+                                      cursor: 'pointer',
+                                      padding: '4px',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}
+                                    title="Cancel (Esc)"
+                                    aria-label="Cancel editing"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </form>
+                              ) : (
+                                <>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                                    <Checkbox
+                                      checked={sub.completed}
+                                      onChange={() => handleToggleSubtask(task.id, sub.id)}
+                                      aria-label={`Toggle subtask ${sub.title}`}
+                                    />
+                                    <span
+                                      onDoubleClick={() => setEditingSubtask({ taskId: task.id, subId: sub.id, title: sub.title })}
+                                      style={{
+                                        fontSize: 'var(--text-body-sm)',
+                                        textDecoration: sub.completed ? 'line-through' : 'none',
+                                        color: sub.completed ? 'var(--text-muted)' : 'var(--text-primary)',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        cursor: 'pointer'
+                                      }}
+                                      title="Double-click to edit"
+                                    >
+                                      {sub.title}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '8px' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingSubtask({ taskId: task.id, subId: sub.id, title: sub.title })}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--text-muted)',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        borderRadius: 'var(--radius-xs)'
+                                      }}
+                                      aria-label={`Edit subtask ${sub.title}`}
+                                      title="Edit subtask"
+                                    >
+                                      <Edit2 size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteSubtask(task.id, sub.id)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'var(--text-muted)',
+                                        cursor: 'pointer',
+                                        padding: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        borderRadius: 'var(--radius-xs)'
+                                      }}
+                                      aria-label={`Delete subtask ${sub.title}`}
+                                      title="Delete subtask"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -759,7 +894,7 @@ export const TasksPage: React.FC = () => {
             />
 
             <CustomSelect
-              label="Linked Subject (Optional)"
+              label="Linked Subject"
               value={formSubjectId}
               onChange={(val) => setFormSubjectId(val)}
               options={[
@@ -800,17 +935,15 @@ export const TasksPage: React.FC = () => {
                 />
 
                 <div className="solis-tasks-form-grid">
-                  <Input
+                  <DatePicker
                     label="Due Date"
-                    type="date"
                     value={formDueDate}
-                    onChange={(e) => setFormDueDate(e.target.value)}
+                    onChange={setFormDueDate}
                   />
-                  <Input
+                  <TimePicker
                     label="Due Time"
-                    type="time"
                     value={formDueTime}
-                    onChange={(e) => setFormDueTime(e.target.value)}
+                    onChange={setFormDueTime}
                   />
                 </div>
 

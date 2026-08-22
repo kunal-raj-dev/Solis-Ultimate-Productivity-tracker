@@ -138,13 +138,13 @@ export const LandingPage: React.FC = () => {
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', margin: '16px 0' }}>
-                        <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>Focus Time</div>
+                        <div style={{ backgroundColor: 'var(--bg-surface-primary)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-subtle)' }}>
+                          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '2px' }}>Focus Time</div>
                           <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 700, color: 'var(--text-primary)' }}>3.4 hrs</div>
                         </div>
-                        <div style={{ background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>Habit Streak</div>
-                          <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 700, color: 'var(--color-coral-500)' }}>12 Days</div>
+                        <div style={{ backgroundColor: 'var(--bg-surface-primary)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-subtle)' }}>
+                          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '2px' }}>Habit Streak</div>
+                          <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 700, color: 'var(--subject-coral-accent)' }}>12 Days</div>
                         </div>
                       </div>
 
@@ -202,7 +202,7 @@ export const LandingPage: React.FC = () => {
                 </div>
                 <h3 className="solis-pillar-title">Study Sessions</h3>
                 <p className="solis-pillar-desc">
-                  Subject-based time allocation, active recall scheduling, and continuous retention tracking.
+                  Subject-based time allocation, active recall scheduling, and continuous retention tracking across domains.
                 </p>
               </div>
             </ScrollReveal>

@@ -5,12 +5,12 @@ import {
   Trash2,
   FileText,
   Tag as TagIcon,
-  Check,
   X,
   BrainCircuit,
   Bookmark,
   ArrowLeft,
-  BookOpen
+  BookOpen,
+  Save
 } from 'lucide-react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -79,9 +79,6 @@ export const NotesPage: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [isRetrying, setIsRetrying] = useState(false);
 
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const saveVersionRef = useRef<number>(0);
-  const latestAcknowledgedVersionRef = useRef<number>(0);
   const hasInitializedSelectionRef = useRef(false);
 
   const handleCreateFlashcardFromNote = async (cardData: any) => {
@@ -263,7 +260,6 @@ export const NotesPage: React.FC = () => {
   const handleDeleteNote = async (id: string) => {
     const prevNotes = notes;
     const prevSelected = selectedNote;
-    localStorage.removeItem(`solis_note_draft_${id}`);
     setNotes((prev) => prev.filter((n) => n.id !== id));
     if (selectedNote?.id === id) {
       const remaining = notes.filter((n) => n.id !== id);
@@ -291,72 +287,63 @@ export const NotesPage: React.FC = () => {
     }
   };
 
-  // Debounced auto-save with sequence/version tracking and local draft backup
-  const triggerAutoSave = (updatedFields: Partial<Note>) => {
+  const handleManualSave = async () => {
     if (!selectedNote) return;
     setSaveStatus('saving');
-
-    saveVersionRef.current += 1;
-    const currentVersion = saveVersionRef.current;
-
-    // Immediate local draft backup
     try {
-      localStorage.setItem(
-        `solis_note_draft_${selectedNote.id}`,
-        JSON.stringify({
-          title: updatedFields.title ?? title,
-          content: updatedFields.content ?? content,
-          timestamp: Date.now(),
-          version: currentVersion
-        })
-      );
-    } catch {
-      // ignore
+      await dataService.notes.updateNote(selectedNote.id, {
+        title,
+        content,
+        category,
+        subjectId: subjectId || undefined,
+        tags
+      });
+      setSaveStatus('saved');
+      addToast({
+        title: 'Note Saved',
+        description: `"${title || 'Untitled Thought'}" saved successfully.`,
+        type: 'success'
+      });
+    } catch (err) {
+      setSaveStatus('unsaved');
+      addToast({
+        title: 'Save failed',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
     }
-
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        await dataService.notes.updateNote(selectedNote.id, updatedFields);
-        // Only mark saved and remove draft if this response is not superseded by a newer edit
-        if (currentVersion >= latestAcknowledgedVersionRef.current) {
-          latestAcknowledgedVersionRef.current = currentVersion;
-          localStorage.removeItem(`solis_note_draft_${selectedNote.id}`);
-          setSaveStatus('saved');
-        }
-      } catch (err) {
-        setSaveStatus('unsaved');
-        addToast({
-          title: 'Auto-save failed (draft saved locally)',
-          description: formatErrorMessage(err),
-          type: 'error'
-        });
-      }
-    }, 800);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleManualSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedNote, title, content, category, subjectId, tags]);
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    triggerAutoSave({ title: val });
+    setSaveStatus('unsaved');
   };
 
   const handleContentChange = (val: string) => {
     setContent(val);
-    triggerAutoSave({ content: val });
+    setSaveStatus('unsaved');
   };
 
   const handleCategoryChange = (val: string) => {
     const cat = val as NoteCategory;
     setCategory(cat);
-    triggerAutoSave({ category: cat });
+    setSaveStatus('unsaved');
   };
 
   const handleSubjectChange = (val: string) => {
     setSubjectId(val);
-    triggerAutoSave({ subjectId: val || undefined });
+    setSaveStatus('unsaved');
   };
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -365,18 +352,18 @@ export const NotesPage: React.FC = () => {
       const updated = Array.from(new Set([...tags, newTagInput.trim()]));
       setTags(updated);
       setNewTagInput('');
-      triggerAutoSave({ tags: updated });
+      setSaveStatus('unsaved');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
     const updated = tags.filter((t) => t !== tagToRemove);
     setTags(updated);
-    triggerAutoSave({ tags: updated });
+    setSaveStatus('unsaved');
   };
 
   const subjectSelectOptions = [
-    { value: '', label: 'No Associated Discipline' },
+    { value: '', label: 'General Knowledge' },
     ...subjects.filter((s) => s.status !== 'archived').map((s) => ({
       value: s.id,
       label: s.name,
@@ -559,18 +546,18 @@ export const NotesPage: React.FC = () => {
           <>
             {/* Canvas Meta Topbar */}
             <div className="solis-notes-canvas__topbar">
-              <button
-                type="button"
-                className="solis-notes-canvas__back-btn"
-                onClick={() => setMobileView('index')}
-                aria-label="Back to Knowledge Index"
-              >
-                <ArrowLeft size={15} />
-                <span>Notes</span>
-              </button>
-
               <div className="solis-notes-canvas__meta">
-                <div style={{ width: '150px' }}>
+                <button
+                  type="button"
+                  className="solis-notes-canvas__back-btn"
+                  onClick={() => setMobileView('index')}
+                  aria-label="Back to Knowledge Index"
+                >
+                  <ArrowLeft size={15} />
+                  <span>Notes</span>
+                </button>
+
+                <div style={{ width: '130px' }}>
                   <CustomSelect
                     variant="subtle"
                     value={category}
@@ -579,71 +566,60 @@ export const NotesPage: React.FC = () => {
                   />
                 </div>
 
-                <div style={{ width: '220px' }}>
+                <div style={{ width: '190px' }}>
                   <CustomSelect
                     variant="subtle"
                     value={subjectId}
                     onChange={handleSubjectChange}
                     options={subjectSelectOptions}
-                    placeholder="Subject context..."
+                    placeholder="General Knowledge"
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: 'var(--text-micro)', color: saveStatus === 'saved' ? 'var(--color-sage-600)' : 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  {saveStatus === 'saved' && <Check size={12} />}
-                  {saveStatus === 'saving' ? 'Auto-saving...' : saveStatus === 'saved' ? 'Auto-saved' : 'Unsaved changes'}
-                </span>
+              {/* Right: Explicit Save & Quick Tools */}
+              <div className="solis-notes-canvas__actions">
+                <Button
+                  variant={saveStatus === 'unsaved' ? 'accent' : 'outline'}
+                  size="sm"
+                  leftIcon={<Save size={13} />}
+                  onClick={handleManualSave}
+                  isLoading={saveStatus === 'saving'}
+                  title="Save Note (⌘S)"
+                >
+                  Save
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<BrainCircuit size={13} />}
                   onClick={() => setIsCardModalOpen(true)}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--color-coral-500)',
-                    cursor: 'pointer',
-                    padding: '3px 8px',
-                    fontSize: 'var(--text-micro)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
+                  style={{ color: 'var(--color-coral-500)' }}
                   title="Generate Flashcard from Note"
                 >
-                  <BrainCircuit size={13} />
-                  <span>+ Card</span>
-                </button>
+                  + Card
+                </Button>
 
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Bookmark size={13} />}
                   onClick={() => setIsResourceModalOpen(true)}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--color-amber-500)',
-                    cursor: 'pointer',
-                    padding: '3px 8px',
-                    fontSize: 'var(--text-micro)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
+                  style={{ color: 'var(--color-amber-500)' }}
                   title="Attach & Cite Study Resource"
                 >
-                  <Bookmark size={13} />
-                  <span>+ Cite</span>
-                </button>
+                  + Cite
+                </Button>
 
                 <button
                   type="button"
                   onClick={() => setDeletingNoteId(selectedNote.id)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', minWidth: '28px', minHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-xs)' }}
+                  className="solis-note-delete-btn"
                   title="Delete note"
                   aria-label="Delete active note"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>

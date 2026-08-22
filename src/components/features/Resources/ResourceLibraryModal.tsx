@@ -140,11 +140,12 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Knowledge Library & Research Citations"
+      className="solis-resource-library-dialog"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
         {/* Header Search & Filter Bar */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ flex: 1, minWidth: '180px', position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ flex: '2 1 200px', position: 'relative' }}>
             <Input
               placeholder="Search papers, textbooks, tags..."
               value={searchQuery}
@@ -152,7 +153,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
             />
           </div>
 
-          <div style={{ width: '160px' }}>
+          <div style={{ flex: '1 1 150px' }}>
             <CustomSelect
               value={filterSubjectId}
               onChange={setFilterSubjectId}
@@ -163,7 +164,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
             />
           </div>
 
-          <div style={{ width: '130px' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <CustomSelect
               value={filterType}
               onChange={setFilterType}
@@ -178,7 +179,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
             />
           </div>
 
-          <div style={{ width: '130px' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <CustomSelect
               value={filterStatus}
               onChange={setFilterStatus}
@@ -210,9 +211,6 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
               <span style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
                 Catalog New Study Resource
               </span>
-              <Button variant="ghost" size="sm" type="button" onClick={() => setIsCreating(false)}>
-                Cancel
-              </Button>
             </div>
 
             <Input
@@ -224,7 +222,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
               autoFocus
             />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
               <Input
                 label="Author / Institution"
                 placeholder="e.g. Diego Ongaro (Stanford)"
@@ -239,7 +237,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
               <CustomSelect
                 label="Resource Type"
                 value={newType}
@@ -269,7 +267,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
                 value={newTopicId}
                 onChange={setNewTopicId}
                 options={[
-                  { value: '', label: 'General Subject Reference' },
+                  { value: '', label: 'General Reference' },
                   ...subjectTopics.map((t) => ({ value: t.id, label: t.title }))
                 ]}
               />
@@ -280,6 +278,7 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
               placeholder="Key proofs, core invariants, or motivation to read..."
               value={newNotes}
               onChange={(e) => setNewNotes(e.target.value)}
+              style={{ minHeight: '68px' }}
             />
 
             <Input

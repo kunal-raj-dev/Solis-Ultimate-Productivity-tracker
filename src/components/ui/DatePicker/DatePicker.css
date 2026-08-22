@@ -1,0 +1,398 @@
+/* ==========================================================================
+   SOLIS CUSTOM DATE & TIME PICKERS — Design System 2.0
+   ========================================================================== */
+
+.solis-datepicker-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  width: 100%;
+  position: relative;
+}
+
+.solis-datepicker-group--open {
+  z-index: 1000;
+}
+
+.solis-datepicker-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.solis-datepicker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.solis-datepicker-trigger:hover {
+  border-color: var(--border-strong);
+  background-color: var(--bg-surface-hover);
+}
+
+.solis-datepicker-trigger--active {
+  border-color: var(--color-coral-500);
+  box-shadow: 0 0 0 3px var(--color-coral-100);
+}
+
+.solis-datepicker-trigger--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.solis-datepicker-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.solis-datepicker-value {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-datepicker-placeholder {
+  color: var(--text-muted);
+}
+
+.solis-datepicker-clear-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-fast);
+}
+
+.solis-datepicker-clear-btn:hover {
+  color: var(--color-coral-500);
+}
+
+/* Dropdown Card */
+.solis-datepicker-dropdown,
+.solis-timepicker-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 1100;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: solisDropdownFade var(--duration-swift) var(--ease-spatial);
+  box-sizing: border-box;
+}
+
+.solis-datepicker-dropdown {
+  width: 280px;
+  max-width: calc(100vw - 32px);
+}
+
+.solis-timepicker-dropdown {
+  width: 240px;
+  max-width: calc(100vw - 32px);
+}
+
+.solis-datepicker-dropdown--top,
+.solis-timepicker-dropdown--top {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.solis-datepicker-dropdown--right,
+.solis-timepicker-dropdown--right {
+  left: auto;
+  right: 0;
+}
+
+/* Quick Presets Bar */
+.solis-datepicker-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-datepicker-preset-btn {
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.solis-datepicker-preset-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--color-coral-400);
+  color: var(--color-coral-500);
+}
+
+/* Month Navigation Header */
+.solis-datepicker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.solis-datepicker-month-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-datepicker-nav-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-datepicker-nav-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+/* Calendar Grid */
+.solis-datepicker-grid-headers {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+}
+
+.solis-datepicker-day-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  padding-bottom: 2px;
+}
+
+.solis-datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.solis-datepicker-day {
+  height: 32px;
+  width: 32px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-datepicker-day:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  color: var(--color-coral-500);
+}
+
+.solis-datepicker-day--other-month {
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+.solis-datepicker-day--today {
+  font-weight: 700;
+  border: 1px solid var(--color-coral-400);
+}
+
+.solis-datepicker-day--selected {
+  background-color: var(--color-coral-500) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(230, 90, 65, 0.4);
+}
+
+.solis-datepicker-day:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+/* Footer Actions */
+.solis-datepicker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-datepicker-footer-clear {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.solis-datepicker-footer-clear:hover {
+  color: var(--color-coral-500);
+}
+
+.solis-datepicker-footer-today {
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.solis-datepicker-footer-today:hover {
+  border-color: var(--color-coral-400);
+  color: var(--color-coral-500);
+}
+
+/* Time Picker Specifics */
+.solis-timepicker-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-timepicker-preset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-surface-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-timepicker-preset-item:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.solis-timepicker-preset-item--active {
+  background: rgba(230, 90, 65, 0.12);
+  border-color: rgba(230, 90, 65, 0.3);
+  color: var(--color-coral-500);
+  font-weight: 600;
+}
+
+.solis-timepicker-custom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.solis-timepicker-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-timepicker-column-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.solis-timepicker-column-list {
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+  padding-right: 2px;
+}
+
+.solis-timepicker-cell {
+  padding: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.solis-timepicker-cell:hover {
+  background: var(--bg-surface-hover);
+  color: var(--color-coral-500);
+}
+
+.solis-timepicker-cell--selected {
+  background: var(--color-coral-500) !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}

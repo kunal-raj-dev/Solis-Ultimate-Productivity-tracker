@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card/Card';
 import { Input } from '../../components/ui/Input/Input';
+import { TimePicker } from '../../components/ui/DatePicker';
 import { Switch } from '../../components/ui/Switch/Switch';
 import { ImportModal } from '../../components/features/ImportModal/ImportModal';
 import { useAuth } from '../../context/AuthContext';
@@ -35,7 +36,7 @@ import { getISODateString } from '../../utils/date';
 
 export const SettingsPage: React.FC = () => {
   const { user, logout, isLoggingOut } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, density, setDensity } = useTheme();
   const { openGuide } = useGuide();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -48,7 +49,6 @@ export const SettingsPage: React.FC = () => {
   const [breakDuration, setBreakDuration] = useState('5');
   const [dailyGoal, setDailyGoal] = useState('180');
   const [weekStart, setWeekStart] = useState(() => localStorage.getItem('solis_week_start') || 'monday');
-  const [density, setDensity] = useState(() => localStorage.getItem('solis_density') || 'comfortable');
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(loadNotificationPreferences);
   const [isExporting, setIsExporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -434,17 +434,15 @@ export const SettingsPage: React.FC = () => {
 
                 {notifPrefs.quietHoursEnabled && (
                   <div className="solis-settings-form-grid--compact">
-                    <Input
+                    <TimePicker
                       label="Quiet Hours Start"
-                      type="time"
                       value={notifPrefs.quietHoursStart}
-                      onChange={(e) => setNotifPrefs((prev) => ({ ...prev, quietHoursStart: e.target.value }))}
+                      onChange={(val) => setNotifPrefs((prev) => ({ ...prev, quietHoursStart: val }))}
                     />
-                    <Input
+                    <TimePicker
                       label="Quiet Hours End"
-                      type="time"
                       value={notifPrefs.quietHoursEnd}
-                      onChange={(e) => setNotifPrefs((prev) => ({ ...prev, quietHoursEnd: e.target.value }))}
+                      onChange={(val) => setNotifPrefs((prev) => ({ ...prev, quietHoursEnd: val }))}
                     />
                   </div>
                 )}

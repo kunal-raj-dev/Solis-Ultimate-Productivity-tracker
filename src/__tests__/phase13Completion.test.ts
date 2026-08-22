@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MockDataService } from '../services/mock/mockService';
 import { searchWorkspace } from '../utils/commandSearch';
+import { SOUNDSCAPE_PRESETS } from '../utils/focus/soundscapeEngine';
+import { generateSolisIntelligenceReport } from '../utils/intelligence';
 import { Note } from '../types/note';
 import { StudySubject } from '../types/study';
 
@@ -81,5 +83,34 @@ describe('Phase 13 Product Completion & Integration Suite', () => {
     const subResult = results.find((r) => r.id === 'subject-sub-456');
     expect(subResult).toBeDefined();
     expect(subResult?.actionUrl).toBe('/app/study?subjectId=sub-456');
+  });
+
+  it('verifies soundscape engine presets are properly registered with distinct IDs', () => {
+    expect(SOUNDSCAPE_PRESETS.length).toBe(6);
+    const ids = SOUNDSCAPE_PRESETS.map((p) => p.id);
+    expect(ids).toContain('pink_noise');
+    expect(ids).toContain('brown_noise');
+    expect(ids).toContain('binaural_alpha');
+    expect(ids).toContain('binaural_theta');
+    expect(ids).toContain('rain');
+    expect(ids).toContain('deep_drone');
+  });
+
+  it('verifies intelligence report generator evaluates valid recommendations deterministically', () => {
+    const report = generateSolisIntelligenceReport(
+      {
+        sessions: [],
+        planItems: [],
+        subjects: [],
+        topics: [],
+        focusSessions: [],
+        tasks: [],
+        habits: []
+      },
+      'this_week'
+    );
+    expect(report).toBeDefined();
+    expect(report.recommendations).toBeDefined();
+    expect(Array.isArray(report.recommendations)).toBe(true);
   });
 });

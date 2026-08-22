@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Play, Pause, Maximize2, Flame, Headphones } from 'lucide-react';
+import { Play, Pause, Maximize2, Flame, Headphones, Coffee, X } from 'lucide-react';
 import { useFocus } from '../../../context/FocusContext';
 import { formatTime } from '../../../utils/timer';
 import { cn } from '../../../utils/classNames';
@@ -9,12 +9,14 @@ import './MiniFocusPlayer.css';
 export const MiniFocusPlayer: React.FC = () => {
   const {
     status,
+    preset,
     secondsRemaining,
     focusTitle,
     selectedSubject,
     soundscape,
     startTimer,
-    pauseTimer
+    pauseTimer,
+    cancelTimer
   } = useFocus();
 
   const navigate = useNavigate();
@@ -29,7 +31,10 @@ export const MiniFocusPlayer: React.FC = () => {
   }
 
   const isRunning = status === 'running';
-  const displayTitle = selectedSubject?.name || focusTitle || 'Deep Focus Session';
+  const isBreak = preset === 'short_break';
+  const displayTitle = isBreak
+    ? 'Recharge & Eye Rest'
+    : selectedSubject?.name || focusTitle || 'Deep Focus Session';
 
   const handleTogglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,7 +53,9 @@ export const MiniFocusPlayer: React.FC = () => {
     <aside
       className={cn(
         'solis-mini-player',
-        isRunning ? 'solis-mini-player--running' : 'solis-mini-player--paused'
+        !isRunning && 'solis-mini-player--paused',
+        isRunning && !isBreak && 'solis-mini-player--running-focus',
+        isRunning && isBreak && 'solis-mini-player--running-break'
       )}
       onClick={handleExpand}
       aria-label="Active Focus Session"
@@ -58,18 +65,32 @@ export const MiniFocusPlayer: React.FC = () => {
         <span
           className={cn(
             'solis-mini-player__indicator',
-            isRunning ? 'solis-mini-player__indicator--pulsing' : 'solis-mini-player__indicator--paused'
+            !isRunning && 'solis-mini-player__indicator--paused',
+            isRunning && !isBreak && 'solis-mini-player__indicator--focus',
+            isRunning && isBreak && 'solis-mini-player__indicator--break'
           )}
           aria-hidden="true"
         />
 
         <span className="solis-mini-player__icon">
-          {soundscape !== 'none' ? <Headphones size={15} /> : <Flame size={15} />}
+          {soundscape !== 'none' ? (
+            <Headphones size={15} />
+          ) : isBreak ? (
+            <Coffee size={15} />
+          ) : (
+            <Flame size={15} />
+          )}
         </span>
 
         <div className="solis-mini-player__meta">
           <span className="solis-mini-player__status-label">
-            {isRunning ? 'Focusing' : 'Paused'}
+            {!isRunning
+              ? isBreak
+                ? 'Paused (Break)'
+                : 'Paused'
+              : isBreak
+              ? 'Rest Break'
+              : 'Focusing'}
           </span>
           <span className="solis-mini-player__title" title={displayTitle}>
             {displayTitle}
@@ -107,6 +128,19 @@ export const MiniFocusPlayer: React.FC = () => {
         >
           <Maximize2 size={13} />
           <span className="solis-mini-player__expand-label">Expand</span>
+        </button>
+
+        <button
+          type="button"
+          className="solis-mini-player__btn solis-mini-player__btn--cancel"
+          onClick={(e) => {
+            e.stopPropagation();
+            cancelTimer();
+          }}
+          title="Cancel & Dismiss Session"
+          aria-label="Cancel and dismiss focus session"
+        >
+          <X size={14} />
         </button>
       </div>
     </aside>

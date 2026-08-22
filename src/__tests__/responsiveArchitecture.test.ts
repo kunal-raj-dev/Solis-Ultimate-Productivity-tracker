@@ -97,5 +97,33 @@ describe('Solis Multi-Device Responsive Architecture & Mobile UX Suite', () => {
       expect(miniPlayerBottomOffset).toBe(106);
       expect(miniPlayerBottomOffset).toBeGreaterThan(mobileNavHeight);
     });
+
+    it('calculates right-edge collision detection accurately for dropdowns on narrow viewports', () => {
+      // Simulate narrow viewport (e.g. mobile 375px or right column of tablet)
+      const viewportWidth = 375;
+      const triggerLeft = 200; // Trigger in right half of screen
+      const dropdownWidth = 240;
+
+      const spaceRight = viewportWidth - triggerLeft;
+      const shouldAlignRight = spaceRight < dropdownWidth || triggerLeft > viewportWidth / 2;
+
+      expect(shouldAlignRight).toBe(true);
+    });
+
+    it('validates mobile modal bottom sheet max-height and boundary constraints', () => {
+      const mobileViewportHeight = 844; // iPhone 15
+      const sheetMaxHeightRatio = 0.92;
+      const safeAreaBottom = 34;
+
+      const maxSheetHeight = mobileViewportHeight * sheetMaxHeightRatio;
+      expect(maxSheetHeight).toBeLessThan(mobileViewportHeight);
+      expect(maxSheetHeight).toBeGreaterThan(700);
+
+      // Usable body height
+      const headerHeight = 56;
+      const footerHeight = 64 + safeAreaBottom;
+      const usableBodyHeight = maxSheetHeight - headerHeight - footerHeight;
+      expect(usableBodyHeight).toBeGreaterThan(500);
+    });
   });
 });

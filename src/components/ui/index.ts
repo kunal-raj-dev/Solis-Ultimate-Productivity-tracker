@@ -14,4 +14,4 @@ export * from './SegmentedControl/SegmentedControl';
 export * from './Select/CustomSelect';
 export * from './ContextualHelp/ContextualHelp';
 export * from './Logo/Logo';
-
+export * from './DatePicker';

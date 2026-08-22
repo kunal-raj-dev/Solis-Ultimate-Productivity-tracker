@@ -10,6 +10,10 @@
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
   letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 .solis-input-wrapper {
@@ -48,6 +52,38 @@
   background: transparent;
   border: none;
   outline: none;
+  accent-color: var(--color-coral-500);
+}
+
+.solis-input[type="date"],
+.solis-input[type="time"],
+.solis-input[type="datetime-local"] {
+  accent-color: var(--color-coral-500);
+  cursor: pointer;
+  color-scheme: light;
+}
+
+[data-theme="dark"] .solis-input[type="date"],
+.dark .solis-input[type="date"],
+[data-theme="dark"] .solis-input[type="time"],
+.dark .solis-input[type="time"],
+[data-theme="dark"] .solis-input[type="datetime-local"],
+.dark .solis-input[type="datetime-local"] {
+  color-scheme: dark;
+  accent-color: var(--color-coral-500);
+}
+
+.solis-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.65;
+  padding: 4px;
+  border-radius: var(--radius-xs);
+  transition: opacity var(--transition-fast), background-color var(--transition-fast);
+}
+
+.solis-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: var(--bg-surface-hover);
 }
 
 .solis-input::placeholder {

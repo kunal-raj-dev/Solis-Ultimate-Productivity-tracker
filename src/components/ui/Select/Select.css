@@ -9,6 +9,10 @@
   font-size: var(--text-caption);
   font-weight: var(--font-weight-medium);
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 .solis-select-wrapper {
@@ -37,6 +41,14 @@
 .solis-select:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(230, 90, 65, 0.12);
+}
+
+.solis-select option {
+  background-color: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  padding: 8px 12px;
 }
 
 .solis-select-icon {

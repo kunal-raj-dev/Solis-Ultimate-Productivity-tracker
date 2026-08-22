@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../../utils/classNames';
 import './Modal.css';
@@ -22,11 +22,18 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previousActiveElementRef.current = document.activeElement as HTMLElement;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -51,38 +58,33 @@ export const Modal: React.FC<ModalProps> = ({
           }
         }
       }
-    },
-    [onClose]
-  );
+    };
 
-  useEffect(() => {
-    if (isOpen) {
-      previousActiveElementRef.current = document.activeElement as HTMLElement;
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
 
-      // Auto-focus dialog or first interactive element
-      const timer = setTimeout(() => {
-        if (dialogRef.current) {
-          const firstInput = dialogRef.current.querySelector<HTMLElement>('input, textarea, select, button');
-          if (firstInput) {
-            firstInput.focus();
-          } else {
-            dialogRef.current.focus();
-          }
+    // Initial focus on mount: prioritize inputs/textareas inside modal body, fallback to first interactive
+    const timer = setTimeout(() => {
+      if (dialogRef.current) {
+        const firstInput = dialogRef.current.querySelector<HTMLElement>(
+          '.solis-modal-body [autofocus], .solis-modal-body input:not([disabled]), .solis-modal-body textarea:not([disabled]), .solis-modal-body select:not([disabled]), .solis-modal-body button:not([disabled]), .solis-modal-close'
+        );
+        if (firstInput) {
+          firstInput.focus();
+        } else {
+          dialogRef.current.focus();
         }
-      }, 50);
+      }
+    }, 50);
 
-      return () => {
-        clearTimeout(timer);
-        document.body.style.overflow = '';
-        window.removeEventListener('keydown', handleKeyDown);
-        if (previousActiveElementRef.current && typeof previousActiveElementRef.current.focus === 'function') {
-          previousActiveElementRef.current.focus();
-        }
-      };
-    }
-  }, [isOpen, handleKeyDown]);
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+      if (previousActiveElementRef.current && typeof previousActiveElementRef.current.focus === 'function') {
+        previousActiveElementRef.current.focus();
+      }
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

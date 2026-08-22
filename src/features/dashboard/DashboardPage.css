@@ -89,6 +89,114 @@
   color: var(--text-muted);
 }
 
+/* Hero Right Actions Group */
+.solis-dashboard-hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  width: 230px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1023px) {
+  .solis-dashboard-hero-actions {
+    width: 100%;
+    max-width: 380px;
+  }
+}
+
+.solis-dashboard-hero-actions .solis-btn {
+  width: 100%;
+  justify-content: center;
+  height: 44px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Evening Closure Ritual Action Button */
+.solis-evening-closure-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 14px 6px 12px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-subtle);
+  text-align: left;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.solis-evening-closure-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: rgba(142, 100, 240, 0.45);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm), 0 0 16px rgba(142, 100, 240, 0.15);
+}
+
+.solis-evening-closure-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(142, 100, 240, 0.15);
+  color: var(--color-lavender-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.solis-evening-closure-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.solis-evening-closure-title {
+  font-family: var(--font-interface);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-evening-closure-sub {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-evening-closure-arrow {
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.solis-evening-closure-btn:hover .solis-evening-closure-arrow {
+  transform: translateX(2px);
+  color: var(--color-lavender-400);
+}
+
 /* Continuity Memory Strip */
 .solis-continuity-strip {
   display: flex;
@@ -139,6 +247,16 @@
   overflow: hidden;
 }
 
+@media (max-width: 640px) {
+  .solis-momentum-hero {
+    padding: var(--space-lg) var(--space-md);
+    border-radius: var(--radius-xl);
+  }
+  .solis-momentum-hero__layout {
+    gap: var(--space-lg);
+  }
+}
+
 @media (min-width: 1024px) {
   .solis-momentum-hero {
     padding: var(--space-3xl);
@@ -163,7 +281,7 @@
 
 .solis-momentum-score-sculpture {
   font-family: var(--font-display);
-  font-size: clamp(4.5rem, 8vw, 6.5rem);
+  font-size: clamp(3.75rem, 8vw, 6.5rem);
   font-weight: 300;
   line-height: 0.9;
   letter-spacing: -0.04em;
@@ -173,7 +291,7 @@
 }
 
 .solis-momentum-score-sculpture span {
-  font-size: 2rem;
+  font-size: 1.75rem;
   color: var(--color-coral-300);
   margin-left: 4px;
 }
@@ -182,6 +300,13 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-md);
+}
+
+@media (max-width: 420px) {
+  .solis-momentum-quad-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 
 .solis-momentum-quad-pill {

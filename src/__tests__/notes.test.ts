@@ -112,5 +112,13 @@ describe('Phase 4 — Notes Domain & Pure Utilities', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('1');
     });
+
+    it('handles partial updates without violating schema validation', () => {
+      expect(() =>
+        validateNoteInput({
+          title: 'Updated Thinking Note'
+        })
+      ).not.toThrow();
+    });
   });
 });

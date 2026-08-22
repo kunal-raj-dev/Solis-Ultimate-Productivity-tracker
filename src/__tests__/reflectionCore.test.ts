@@ -82,6 +82,20 @@ describe('Stage D — Reflection Core & Habit-to-Goal Engine', () => {
       const fetched = await service.reflections.getReflectionByDate('2026-08-19');
       expect(fetched).toBeNull();
     });
+
+    it('sanitizes tomorrow intentions and saves structured closure data', async () => {
+      const saved = await service.reflections.saveDailyReflection({
+        date: '2026-08-20',
+        energyScore: 5,
+        focusScore: 5,
+        wins: ['Fixed state isolation', 'Cleaned up CSS layering'],
+        tomorrowIntentions: ['Implement compiler backend', '  ', ''],
+        synthesisNotes: 'Solid productive day.'
+      });
+
+      expect(saved.wins).toHaveLength(2);
+      expect(saved.tomorrowIntentions).toContain('Implement compiler backend');
+    });
   });
 
   describe('Habit-to-Goal Momentum Synergy', () => {

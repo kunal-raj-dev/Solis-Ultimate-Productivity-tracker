@@ -76,4 +76,18 @@ describe('Task Engine Service & Subtasks Management', () => {
     const updated = await service.tasks.deleteSubTask(task.id, sub.id);
     expect(updated.subTasks.find((s) => s.id === sub.id)).toBeUndefined();
   });
+
+  it('edits subtask title successfully and rejects empty strings', async () => {
+    const task = await service.tasks.createTask({ title: 'Task with sub to edit' });
+    const sub = await service.tasks.addSubTask(task.id, 'Original Title');
+
+    const updated = await service.tasks.editSubTask(task.id, sub.id, 'Updated Title');
+    const editedSub = updated.subTasks.find((s) => s.id === sub.id);
+    expect(editedSub?.title).toBe('Updated Title');
+
+    // Reject empty
+    await expect(service.tasks.editSubTask(task.id, sub.id, '   ')).rejects.toThrow(
+      'Subtask title cannot be empty.'
+    );
+  });
 });

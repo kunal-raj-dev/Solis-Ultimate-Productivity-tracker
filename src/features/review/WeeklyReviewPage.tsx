@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
@@ -89,19 +89,21 @@ export const WeeklyReviewPage: React.FC = () => {
     return () => unsubscribe();
   }, [loadData]);
 
-  // Derived intelligence
-  const intelReport = generateSolisIntelligenceReport(
-    {
-      sessions,
-      planItems: [],
-      subjects,
-      topics: [],
-      focusSessions,
-      tasks,
-      habits
-    },
-    'this_week'
-  );
+  // Derived intelligence (memoized to prevent rerender stutter)
+  const intelReport = useMemo(() => {
+    return generateSolisIntelligenceReport(
+      {
+        sessions,
+        planItems: [],
+        subjects,
+        topics: [],
+        focusSessions,
+        tasks,
+        habits
+      },
+      'this_week'
+    );
+  }, [sessions, subjects, focusSessions, tasks, habits]);
 
   const totalStudyMinutes = sessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
   const totalStudyHours = (totalStudyMinutes / 60).toFixed(1);

@@ -15,7 +15,7 @@
 
 .solis-progress-track {
   width: 100%;
-  background-color: var(--color-ivory-300);
+  background-color: var(--bg-surface-tertiary);
   border-radius: var(--radius-full);
   overflow: hidden;
   position: relative;

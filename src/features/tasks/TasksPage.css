@@ -31,4 +31,21 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  .solis-task-item-card {
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  .solis-task-action-btns {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+.solis-task-touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }

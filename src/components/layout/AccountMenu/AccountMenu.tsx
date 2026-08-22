@@ -14,7 +14,7 @@ export const AccountMenu: React.FC = () => {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const { user, logout, isLoggingOut } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const { openGuide } = useGuide();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -138,12 +138,12 @@ export const AccountMenu: React.FC = () => {
               role="menuitem"
               onClick={toggleTheme}
             >
-              {theme === 'dark' ? (
+              {isDark ? (
                 <Sun size={16} className="solis-account-dropdown__item-icon" />
               ) : (
                 <Moon size={16} className="solis-account-dropdown__item-icon" />
               )}
-              <span>Atmosphere: {theme === 'dark' ? 'Warm Ivory' : 'Deep Charcoal'}</span>
+              <span>Atmosphere: {isDark ? 'Deep Charcoal' : 'Warm Ivory'}</span>
             </button>
           </div>
 

@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { ThemeMode } from '../types/common';
 
+export type DensityMode = 'comfortable' | 'compact';
+
 interface ThemeContextValue {
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
   isDark: boolean;
+  density: DensityMode;
+  setDensity: (density: DensityMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -23,6 +27,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
+  const [density, setDensityState] = useState<DensityMode>(() => {
+    try {
+      const saved = localStorage.getItem('solis_density') as DensityMode;
+      return saved === 'compact' ? 'compact' : 'comfortable';
+    } catch {
+      return 'comfortable';
+    }
+  });
+
   const [isDark, setIsDark] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('solis-theme') as ThemeMode;
@@ -36,6 +49,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return true;
     }
   });
+
+  const applyDensity = useCallback((mode: DensityMode) => {
+    const root = document.documentElement;
+    root.setAttribute('data-density', mode);
+  }, []);
 
   const applyTheme = useCallback((activeTheme: ThemeMode) => {
     const root = document.documentElement;
@@ -70,6 +88,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     try {
+      localStorage.setItem('solis_density', density);
+    } catch {
+      // ignore
+    }
+    applyDensity(density);
+  }, [density, applyDensity]);
+
+  useEffect(() => {
+    try {
       localStorage.setItem('solis-theme', theme);
     } catch {
       // ignore storage access errors
@@ -90,12 +117,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setThemeState(newTheme);
   };
 
+  const setDensity = (newDensity: DensityMode) => {
+    setDensityState(newDensity);
+  };
+
   const toggleTheme = () => {
     setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isDark }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isDark, density, setDensity }}>
       {children}
     </ThemeContext.Provider>
   );

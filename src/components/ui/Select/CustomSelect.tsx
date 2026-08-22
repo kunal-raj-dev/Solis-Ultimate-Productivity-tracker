@@ -20,6 +20,7 @@ export interface CustomSelectProps {
   helperText?: string;
   error?: string;
   variant?: 'surface' | 'subtle' | 'dark';
+  align?: 'left' | 'right' | 'auto';
   className?: string;
   disabled?: boolean;
   id?: string;
@@ -34,12 +35,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   helperText,
   error,
   variant = 'surface',
+  align = 'auto',
   className,
   disabled = false,
   id
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
+  const [computedAlign, setComputedAlign] = useState<'left' | 'right'>('left');
   const containerRef = useRef<HTMLDivElement>(null);
   const listboxRef = useRef<HTMLUListElement>(null);
   const generatedId = useId();
@@ -58,6 +62,37 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const calculatePlacement = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 240 && rect.top > 200) {
+        setPlacement('top');
+      } else {
+        setPlacement('bottom');
+      }
+
+      if (align === 'left' || align === 'right') {
+        setComputedAlign(align);
+      } else {
+        const spaceRight = window.innerWidth - rect.left;
+        if (spaceRight < 220 || rect.left > window.innerWidth / 2) {
+          setComputedAlign('right');
+        } else {
+          setComputedAlign('left');
+        }
+      }
+    }
+  };
+
+  const handleToggle = () => {
+    if (disabled) return;
+    if (!isOpen) {
+      calculatePlacement();
+    }
+    setIsOpen(!isOpen);
+  };
+
   // Keyboard accessibility
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
@@ -68,11 +103,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         onChange?.(options[highlightedIndex].value);
         setIsOpen(false);
       } else {
-        setIsOpen(!isOpen);
+        handleToggle();
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (!isOpen) {
+        calculatePlacement();
         setIsOpen(true);
         setHighlightedIndex(0);
       } else {
@@ -81,6 +117,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (!isOpen) {
+        calculatePlacement();
         setIsOpen(true);
         setHighlightedIndex(options.length - 1);
       } else {
@@ -92,7 +129,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   };
 
   return (
-    <div className={cn('solis-custom-select-group', className)} ref={containerRef}>
+    <div
+      className={cn('solis-custom-select-group', isOpen && 'solis-custom-select-group--open', className)}
+      ref={containerRef}
+    >
       {label && (
         <label htmlFor={selectId} className="solis-custom-select-label">
           {label}
@@ -106,7 +146,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           disabled={disabled}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={handleToggle}
           onKeyDown={handleKeyDown}
           className={cn(
             'solis-custom-select-trigger',
@@ -138,9 +178,16 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         {isOpen && (
           <ul
             ref={listboxRef}
+            id={`${selectId}-listbox`}
             role="listbox"
             tabIndex={-1}
-            className={cn('solis-custom-select-dropdown', `solis-custom-select-dropdown--${variant}`)}
+            aria-labelledby={selectId}
+            className={cn(
+              'solis-custom-select-dropdown',
+              `solis-custom-select-dropdown--${variant}`,
+              placement === 'top' && 'solis-custom-select-dropdown--open-up',
+              computedAlign === 'right' && 'solis-custom-select-dropdown--right'
+            )}
           >
             {options.map((opt, idx) => {
               const isSelected = opt.value === value;

@@ -15,22 +15,78 @@
   max-width: 440px;
   height: 48px;
   padding: 0 var(--space-md) 0 var(--space-sm);
-  background: var(--bg-surface-elevated);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-default);
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-floating);
   cursor: pointer;
   user-select: none;
   animation: solisMiniSlideUp var(--duration-swift) var(--ease-spatial);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.solis-mini-player:hover {
+/* 1. Paused State: Calm, Solid Elevated Surface */
+.solis-mini-player--paused {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-default);
+}
+
+.solis-mini-player--paused:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-floating), 0 0 20px rgba(230, 90, 65, 0.12);
   border-color: var(--border-strong);
+  box-shadow: var(--shadow-floating), 0 0 16px rgba(0, 0, 0, 0.25);
+}
+
+/* 2. Active Focus/Work State: Signature Warm Coral Gradient */
+.solis-mini-player--running-focus {
+  background: linear-gradient(135deg, rgba(230, 90, 65, 0.24) 0%, rgba(200, 70, 48, 0.12) 55%, var(--bg-surface-elevated) 100%);
+  border: 1px solid rgba(230, 90, 65, 0.45);
+  box-shadow: var(--shadow-floating), 0 0 24px rgba(230, 90, 65, 0.22);
+}
+
+.solis-mini-player--running-focus:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-coral-500);
+  box-shadow: var(--shadow-floating), 0 0 32px rgba(230, 90, 65, 0.32);
+}
+
+.solis-mini-player--running-focus .solis-mini-player__icon {
+  color: var(--color-coral-500);
+}
+
+.solis-mini-player--running-focus .solis-mini-player__status-label {
+  color: var(--color-coral-400);
+}
+
+.solis-mini-player--running-focus .solis-mini-player__btn--play:hover {
+  background: var(--color-coral-500);
+  color: #FFFFFF;
+}
+
+/* 3. Active Break/Rest State: Soothing Sage Emerald Gradient */
+.solis-mini-player--running-break {
+  background: linear-gradient(135deg, rgba(62, 134, 91, 0.26) 0%, rgba(45, 110, 72, 0.14) 55%, var(--bg-surface-elevated) 100%);
+  border: 1px solid rgba(62, 134, 91, 0.5);
+  box-shadow: var(--shadow-floating), 0 0 24px rgba(62, 134, 91, 0.24);
+}
+
+.solis-mini-player--running-break:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-sage-500);
+  box-shadow: var(--shadow-floating), 0 0 32px rgba(62, 134, 91, 0.35);
+}
+
+.solis-mini-player--running-break .solis-mini-player__icon {
+  color: var(--color-sage-500);
+}
+
+.solis-mini-player--running-break .solis-mini-player__status-label {
+  color: var(--color-sage-400);
+}
+
+.solis-mini-player--running-break .solis-mini-player__btn--play:hover {
+  background: var(--color-sage-600);
+  color: #FFFFFF;
 }
 
 .solis-mini-player:active {
@@ -53,10 +109,16 @@
   flex-shrink: 0;
 }
 
-.solis-mini-player__indicator--pulsing {
+.solis-mini-player__indicator--focus {
   background-color: var(--color-coral-500);
   box-shadow: 0 0 0 0 rgba(230, 90, 65, 0.7);
   animation: solisPulseCoral 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+.solis-mini-player__indicator--break {
+  background-color: var(--color-sage-500);
+  box-shadow: 0 0 0 0 rgba(62, 134, 91, 0.7);
+  animation: solisPulseSage 2s infinite cubic-bezier(0.66, 0, 0, 1);
 }
 
 .solis-mini-player__indicator--paused {
@@ -162,6 +224,19 @@
   color: var(--text-primary);
 }
 
+.solis-mini-player__btn--cancel {
+  width: 32px;
+  height: 32px;
+  background: var(--bg-surface-secondary);
+  color: var(--text-muted);
+  border-radius: var(--radius-full);
+}
+
+.solis-mini-player__btn--cancel:hover {
+  background: rgba(230, 90, 65, 0.15);
+  color: var(--color-coral-500);
+}
+
 @keyframes solisMiniSlideUp {
   from {
     opacity: 0;
@@ -185,6 +260,21 @@
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(230, 90, 65, 0);
+  }
+}
+
+@keyframes solisPulseSage {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(62, 134, 91, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(62, 134, 91, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(62, 134, 91, 0);
   }
 }
 

@@ -130,6 +130,15 @@ export const FocusPage: React.FC = () => {
     }))
   ];
 
+  const soundscapeOptions = [
+    { value: 'none', label: '🔇 Silent Sanctuary', sublabel: 'Mute ambient audio' },
+    ...SOUNDSCAPE_PRESETS.map((p) => ({
+      value: p.id,
+      label: `🎵 ${p.label}`,
+      sublabel: p.description.split('.')[0]
+    }))
+  ];
+
   // Dynamic Subject World Atmosphere Palette
   const worldOrbColor: 'coral' | 'amber' | 'lavender' | 'sage' =
     status === 'completed'
@@ -149,26 +158,26 @@ export const FocusPage: React.FC = () => {
       : '';
 
   return (
-    <div style={{ paddingBottom: 'var(--space-3xl)' }}>
+    <div className="solis-focus-page-root">
       {/* Screen Reader Announcement Live Region */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {accessibleAnnouncement}
       </div>
 
-      {/* FULL ENVIRONMENT FOCUS SANCTUARY */}
+      {/* FULL ENVIRONMENT IMMERSIVE FOCUS SANCTUARY */}
       <div className={`solis-focus-sanctuary solis-focus-sanctuary--${status}`}>
         <ParallaxScene style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <ParallaxLayer speed={0.04} isAbsolute>
             <AtmosphericOrb
               color={worldOrbColor}
-              sizePx={480}
-              top="8%"
-              right="20%"
+              sizePx={520}
+              top="6%"
+              right="15%"
               opacity={status === 'running' ? 0.55 : 0.3}
             />
           </ParallaxLayer>
 
-          <ParallaxLayer speed={0} style={{ width: '100%', maxWidth: '640px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <ParallaxLayer speed={0} style={{ width: '100%', maxWidth: '680px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {/* Top Sanctuary Navigation Zone */}
             <div
               style={{
@@ -177,7 +186,9 @@ export const FocusPage: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginBottom: 'var(--space-lg)',
-                padding: '0 var(--space-xs)'
+                padding: '0 var(--space-xs)',
+                position: 'relative',
+                zIndex: 60
               }}
             >
               <button
@@ -234,30 +245,19 @@ export const FocusPage: React.FC = () => {
 
             {/* Soundscape Synthesizer Bar */}
             <div className="solis-soundscape-bar">
-              <Headphones size={15} style={{ color: soundscape !== 'none' ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.4)' }} />
-              <select
-                value={soundscape}
-                onChange={(e) => setSoundscape(e.target.value as SoundscapeType)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#fff',
-                  fontFamily: 'var(--font-interface)',
-                  fontSize: 'var(--text-caption)',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="none" style={{ background: '#161413', color: '#fff' }}>🔇 Silent Focus</option>
-                {SOUNDSCAPE_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id} style={{ background: '#161413', color: '#fff' }}>
-                    🎵 {p.label}
-                  </option>
-                ))}
-              </select>
+              <Headphones size={15} style={{ color: soundscape !== 'none' ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.4)', flexShrink: 0 }} />
+              <div style={{ width: '220px' }}>
+                <CustomSelect
+                  variant="dark"
+                  value={soundscape}
+                  onChange={(val) => setSoundscape(val as SoundscapeType)}
+                  options={soundscapeOptions}
+                  placeholder="Soundscape..."
+                />
+              </div>
 
               {soundscape !== 'none' && (
-                <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input
                     type="range"
                     min="0"
@@ -265,30 +265,47 @@ export const FocusPage: React.FC = () => {
                     step="0.05"
                     value={soundscapeVolume}
                     onChange={(e) => setSoundscapeVolume(parseFloat(e.target.value))}
-                    style={{ width: '70px', accentColor: 'var(--color-coral-500)', cursor: 'pointer' }}
+                    className="solis-soundscape-slider"
                     aria-label="Soundscape Volume"
                   />
                   <button
                     type="button"
                     onClick={toggleMute}
+                    className="tactile-press"
                     style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: isMuted ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.6)',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: 'var(--radius-full)',
+                      color: isMuted ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.8)',
                       cursor: 'pointer',
                       display: 'flex',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '28px',
+                      height: '28px'
                     }}
                     title={isMuted ? 'Unmute' : 'Mute'}
+                    aria-label={isMuted ? 'Unmute soundscape' : 'Mute soundscape'}
                   >
-                    {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                    {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
                   </button>
-                </>
+                </div>
               )}
             </div>
 
             {/* Top preset switcher & Acoustic bell */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 'var(--space-md) 0 var(--space-lg)', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                margin: 'var(--space-md) 0 var(--space-lg)',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                position: 'relative',
+                zIndex: 20
+              }}
+            >
               <SegmentedControl
                 variant="contained"
                 value={preset}
@@ -332,7 +349,7 @@ export const FocusPage: React.FC = () => {
             </div>
 
             {/* Custom Subject Selector (Subject Worlds) */}
-            <div style={{ width: '100%', maxWidth: '360px', marginBottom: 'var(--space-md)' }}>
+            <div style={{ width: '100%', maxWidth: '360px', marginBottom: 'var(--space-md)', position: 'relative', zIndex: 10 }}>
               <CustomSelect
                 variant="dark"
                 value={selectedSubjectId}

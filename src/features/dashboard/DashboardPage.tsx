@@ -295,21 +295,38 @@ export const DashboardPage: React.FC = () => {
       }
 
       if (refData.tomorrowIntentions && refData.tomorrowIntentions.length > 0) {
-        await dataService.tasks.createTask({
-          title: refData.tomorrowIntentions[0],
-          category: 'deep_work',
-          priority: 'high',
-          tags: ['tomorrow-priority']
-        });
+        for (const intention of refData.tomorrowIntentions) {
+          const trimmed = intention?.trim();
+          if (trimmed) {
+            try {
+              await dataService.tasks.createTask({
+                title: trimmed,
+                category: 'deep_work',
+                priority: 'high',
+                tags: ['tomorrow-priority']
+              });
+            } catch (taskErr) {
+              console.warn('Could not auto-create tomorrow intention task:', taskErr);
+            }
+          }
+        }
       }
 
-      if (refData.synthesisNotes) {
-        await dataService.notes.createNote({
-          title: `Daily Reflection — ${formatFriendlyDate(getISODateString())}`,
-          content: `${refData.synthesisNotes}\n\n**Key Wins:**\n${(refData.wins || []).map((w) => `- ${w}`).join('\n')}\n\n**Tomorrow's Intentions:**\n${(refData.tomorrowIntentions || []).map((t) => `- ${t}`).join('\n')}`,
-          category: 'reflection',
-          tags: ['daily-closure', 'reflection']
-        });
+      if (refData.synthesisNotes && refData.synthesisNotes.trim()) {
+        try {
+          const cleanNotes = refData.synthesisNotes.trim();
+          const winsList = (refData.wins || []).filter(Boolean).map((w) => `- ${w}`).join('\n');
+          const intentionsList = (refData.tomorrowIntentions || []).filter(Boolean).map((t) => `- ${t}`).join('\n');
+
+          await dataService.notes.createNote({
+            title: `Daily Reflection — ${formatFriendlyDate(getISODateString())}`,
+            content: `${cleanNotes}${winsList ? `\n\n**Key Wins:**\n${winsList}` : ''}${intentionsList ? `\n\n**Tomorrow's Intentions:**\n${intentionsList}` : ''}`,
+            category: 'reflection',
+            tags: ['daily-closure', 'reflection']
+          });
+        } catch (noteErr) {
+          console.warn('Could not auto-create reflection note:', noteErr);
+        }
       }
 
       addToast({
@@ -318,9 +335,11 @@ export const DashboardPage: React.FC = () => {
         type: 'success'
       });
       await loadDashboardData();
-    } catch {
+    } catch (err) {
+      console.error('Evening closure save error:', err);
       addToast({
         title: 'Closure failed to save',
+        description: err instanceof Error ? err.message : 'Please verify reflection entries',
         type: 'error'
       });
     }
@@ -421,7 +440,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-start' }}>
+          <div className="solis-dashboard-hero-actions">
             <Button
               variant="accent"
               size="lg"
@@ -432,11 +451,20 @@ export const DashboardPage: React.FC = () => {
               Enter Sanctuary
             </Button>
             <button
+              type="button"
               onClick={() => setIsClosureModalOpen(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: 'var(--text-caption)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              className="solis-evening-closure-btn tactile-press"
+              title="Open Evening Closure & Reflection Ritual"
+              aria-label="Open Evening Closure Ritual"
             >
-              <Moon size={14} color="var(--color-lavender-500)" />
-              <span>Evening Closure Ritual</span>
+              <div className="solis-evening-closure-icon">
+                <Moon size={15} />
+              </div>
+              <div className="solis-evening-closure-text">
+                <span className="solis-evening-closure-title">Evening Closure</span>
+                <span className="solis-evening-closure-sub">Reflect & lock tomorrow</span>
+              </div>
+              <ChevronRight size={14} className="solis-evening-closure-arrow" />
             </button>
           </div>
         </div>
@@ -675,8 +703,8 @@ export const DashboardPage: React.FC = () => {
               fontWeight: 600,
               border: '1px solid',
               borderColor: viewMode === 'lists' ? 'var(--color-coral-500)' : 'var(--border-subtle)',
-              backgroundColor: viewMode === 'lists' ? 'var(--color-coral-100)' : 'var(--bg-surface-primary)',
-              color: viewMode === 'lists' ? 'var(--color-coral-600)' : 'var(--text-secondary)',
+              backgroundColor: viewMode === 'lists' ? 'var(--subject-coral-subtle)' : 'var(--bg-surface-primary)',
+              color: viewMode === 'lists' ? 'var(--subject-coral-accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
@@ -695,8 +723,8 @@ export const DashboardPage: React.FC = () => {
               fontWeight: 600,
               border: '1px solid',
               borderColor: viewMode === 'timeline' ? 'var(--color-coral-500)' : 'var(--border-subtle)',
-              backgroundColor: viewMode === 'timeline' ? 'var(--color-coral-100)' : 'var(--bg-surface-primary)',
-              color: viewMode === 'timeline' ? 'var(--color-coral-600)' : 'var(--text-secondary)',
+              backgroundColor: viewMode === 'timeline' ? 'var(--subject-coral-subtle)' : 'var(--bg-surface-primary)',
+              color: viewMode === 'timeline' ? 'var(--subject-coral-accent)' : 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',

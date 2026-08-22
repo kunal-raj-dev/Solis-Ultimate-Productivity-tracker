@@ -20,6 +20,7 @@ import { Progress } from '../../components/ui/Progress/Progress';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Modal } from '../../components/feedback/Modal/Modal';
 import { Input } from '../../components/ui/Input/Input';
+import { DatePicker } from '../../components/ui/DatePicker';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
@@ -637,12 +638,10 @@ export const GoalsPage: React.FC = () => {
           </div>
 
           <div className="solis-goals-form-grid">
-            <Input
+            <DatePicker
               label="Target Completion Date"
-              type="date"
               value={goalTargetDate}
-              onChange={(e) => setGoalTargetDate(e.target.value)}
-              required
+              onChange={setGoalTargetDate}
             />
 
             <CustomSelect

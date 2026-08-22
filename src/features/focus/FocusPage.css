@@ -1,51 +1,56 @@
-/* ==========================================================================
-   SOLIS — FOCUS SANCTUARY (Design System 2.0 Reformation)
-   Full-environment immersion, breathing ambient light, floating time typography
-   ========================================================================== */
+.solis-focus-page-root {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
 
 .solis-focus-sanctuary {
   position: relative;
-  min-height: calc(100vh - 180px);
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: var(--space-xl) var(--space-md);
-  border-radius: var(--radius-2xl);
-  overflow: hidden;
+  justify-content: flex-start;
+  padding: var(--space-xl) var(--space-md) var(--space-3xl);
+  border-radius: 0;
+  border: none;
+  overflow-x: hidden;
   transition: background 1s var(--ease-spatial), box-shadow 1s var(--ease-spatial);
 }
 
 @media (min-width: 768px) {
   .solis-focus-sanctuary {
-    padding: var(--space-3xl) var(--space-2xl);
-    min-height: calc(100vh - 200px);
+    padding: var(--space-2xl) var(--space-xl) var(--space-4xl);
   }
 }
 
 /* Atmospheric State Variants */
 .solis-focus-sanctuary--idle {
-  background: radial-gradient(circle at 50% 40%, #26201B 0%, #161413 70%, #0F0E0D 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  background: radial-gradient(circle at 50% 30%, #241E1A 0%, #151311 55%, #0D0C0B 100%);
+  border: none;
+  box-shadow: none;
 }
 
 .solis-focus-sanctuary--running {
-  background: radial-gradient(circle at 50% 35%, #381C15 0%, #221512 60%, #0E0B0A 100%);
-  border: 1px solid rgba(230, 90, 65, 0.3);
-  box-shadow: 0 32px 80px rgba(230, 90, 65, 0.18);
+  background: radial-gradient(circle at 50% 25%, #3A1910 0%, #1F120E 55%, #0C0908 100%);
+  border: none;
+  box-shadow: none;
 }
 
 .solis-focus-sanctuary--paused {
-  background: radial-gradient(circle at 50% 40%, #2C2038 0%, #1A1622 65%, #0E0C12 100%);
-  border: 1px solid rgba(126, 105, 171, 0.3);
-  box-shadow: 0 32px 80px rgba(126, 105, 171, 0.16);
+  background: radial-gradient(circle at 50% 30%, #281B33 0%, #17121E 55%, #0C0A0F 100%);
+  border: none;
+  box-shadow: none;
 }
 
 .solis-focus-sanctuary--completed {
-  background: radial-gradient(circle at 50% 40%, #1F2E22 0%, #141D16 65%, #0B100C 100%);
-  border: 1px solid rgba(74, 124, 89, 0.35);
-  box-shadow: 0 32px 80px rgba(74, 124, 89, 0.2);
+  background: radial-gradient(circle at 50% 30%, #1A281D 0%, #111A13 55%, #090E0B 100%);
+  border: none;
+  box-shadow: none;
 }
 
 /* Floating Time Display */
@@ -98,15 +103,28 @@
 
 /* Soundscape Bar */
 .solis-soundscape-bar {
+  position: relative;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 14px;
   border-radius: var(--radius-full);
-  margin-top: var(--space-lg);
-  backdrop-filter: blur(8px);
+  margin-top: var(--space-md);
+  backdrop-filter: blur(12px);
+  max-width: 90vw;
+}
+
+.solis-soundscape-slider {
+  width: 72px;
+  height: 4px;
+  accent-color: var(--color-coral-500);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  outline: none;
 }
 
 @media (max-width: 600px) {
