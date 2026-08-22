@@ -55,6 +55,66 @@ export const TopicIntelligenceDrawer: React.FC<TopicIntelligenceDrawerProps> = (
   onOpenNotes
 }) => {
   const navigate = useNavigate();
+  const drawerRef = React.useRef<HTMLDivElement>(null);
+  const previousActiveElementRef = React.useRef<HTMLElement | null>(null);
+
+  const handleKeyDown = React.useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusableElements = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    },
+    [onClose]
+  );
+
+  React.useEffect(() => {
+    if (isOpen) {
+      previousActiveElementRef.current = document.activeElement as HTMLElement;
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+
+      // Auto-focus first interactive element
+      setTimeout(() => {
+        if (drawerRef.current) {
+          const firstFocusable = drawerRef.current.querySelector<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          firstFocusable?.focus();
+        }
+      }, 50);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+      if (previousActiveElementRef.current && typeof previousActiveElementRef.current.focus === 'function') {
+        previousActiveElementRef.current.focus();
+      }
+    };
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen || !history) return null;
 
@@ -94,8 +154,8 @@ export const TopicIntelligenceDrawer: React.FC<TopicIntelligenceDrawerProps> = (
   };
 
   return (
-    <div className="solis-topic-drawer-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="solis-topic-drawer" onClick={(e) => e.stopPropagation()}>
+    <div className="solis-topic-drawer-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Topic Intelligence Drawer">
+      <div className="solis-topic-drawer" ref={drawerRef} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="solis-topic-drawer__header">
           <div>

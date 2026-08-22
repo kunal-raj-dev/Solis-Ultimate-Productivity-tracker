@@ -23,6 +23,7 @@ import { Habit, HabitFrequency } from '../../types/habit';
 import { Goal } from '../../types/goal';
 import { getPastNDaysISO, formatFriendlyDate, isToday } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
+import './HabitsPage.css';
 
 export const HabitsPage: React.FC = () => {
   const { addToast } = useToast();
@@ -422,7 +423,7 @@ export const HabitsPage: React.FC = () => {
             onChange={(e) => setHabitDesc(e.target.value)}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div className="solis-habits-form-grid">
             <CustomSelect
               label="Category"
               value={habitCat}

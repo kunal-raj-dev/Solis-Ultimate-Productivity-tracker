@@ -11,4 +11,7 @@ export * from './Progress/Progress';
 export * from './Skeleton/Skeleton';
 export * from './Card/Card';
 export * from './SegmentedControl/SegmentedControl';
+export * from './Select/CustomSelect';
+export * from './ContextualHelp/ContextualHelp';
 export * from './Logo/Logo';
+

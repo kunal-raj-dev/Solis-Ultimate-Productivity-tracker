@@ -13,6 +13,7 @@ import {
   X,
   Sparkles
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
@@ -39,6 +40,7 @@ import { StudySubject } from '../../types/study';
 import { PriorityLevel } from '../../types/common';
 import { formatFriendlyDate, getISODateString } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
+import './TasksPage.css';
 
 export const TasksPage: React.FC = () => {
   const { addToast } = useToast();
@@ -50,6 +52,9 @@ export const TasksPage: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [isRetrying, setIsRetrying] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+
+  // URL Params for deep linking
+  const [searchParams] = useSearchParams();
 
   // Filter & Search State
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -81,6 +86,22 @@ export const TasksPage: React.FC = () => {
 
   // Inline subtask input per expanded task
   const [newSubtaskTitles, setNewSubtaskTitles] = useState<Record<string, string>>({});
+
+  const openCreateModal = useCallback(() => {
+    setEditingTask(null);
+    setFormTitle('');
+    setFormDescription('');
+    setFormCategory('study');
+    setFormPriority('medium');
+    setFormSubjectId('');
+    setFormDueDate(getISODateString(new Date()));
+    setFormDueTime('18:00');
+    setFormEstimatedMinutes('30');
+    setFormTags('');
+    setFormError(null);
+    setShowMoreOptions(false);
+    setIsCreateModalOpen(true);
+  }, []);
 
   const loadTasks = useCallback(async (isInitial = false) => {
     if (isInitial) setInitialLoadStatus('loading');
@@ -127,6 +148,12 @@ export const TasksPage: React.FC = () => {
     return () => unsubscribe();
   }, [loadTasks]);
 
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openCreateModal();
+    }
+  }, [searchParams, openCreateModal]);
+
   const handleRetry = async () => {
     setIsRetrying(true);
     await loadTasks(tasks.length === 0);
@@ -162,22 +189,6 @@ export const TasksPage: React.FC = () => {
       setTasks(prevTasks);
       addToast({ title: 'Could not toggle task', type: 'error' });
     }
-  };
-
-  const openCreateModal = () => {
-    setEditingTask(null);
-    setFormTitle('');
-    setFormDescription('');
-    setFormCategory('study');
-    setFormPriority('medium');
-    setFormSubjectId('');
-    setFormDueDate(getISODateString(new Date()));
-    setFormDueTime('18:00');
-    setFormEstimatedMinutes('30');
-    setFormTags('');
-    setFormError(null);
-    setShowMoreOptions(false);
-    setIsCreateModalOpen(true);
   };
 
   const openEditModal = (task: Task) => {
@@ -788,7 +799,7 @@ export const TasksPage: React.FC = () => {
                   onChange={(e) => setFormDescription(e.target.value)}
                 />
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                <div className="solis-tasks-form-grid">
                   <Input
                     label="Due Date"
                     type="date"

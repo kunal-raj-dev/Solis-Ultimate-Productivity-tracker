@@ -1,0 +1,27 @@
+/* ==========================================================================
+   SOLIS — GOALS PAGE RESPONSIVE STYLES
+   ========================================================================== */
+
+.solis-goals-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.solis-goals-form-grid--nested {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 600px) {
+  .solis-goals-form-grid,
+  .solis-goals-form-grid--nested {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}

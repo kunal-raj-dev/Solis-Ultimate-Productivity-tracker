@@ -770,7 +770,14 @@ export const DashboardPage: React.FC = () => {
                     <div className="solis-flow-item__main">
                       <Checkbox
                         checked={item.completed}
-                        onChange={() => {}}
+                        onChange={async () => {
+                          try {
+                            const updated = await dataService.study.togglePlanItem(item.id);
+                            setStudyPlan((prev) => prev.map((p) => (p.id === item.id ? updated : p)));
+                          } catch {
+                            addToast({ title: 'Update failed', type: 'error' });
+                          }
+                        }}
                         aria-label={`Study item ${item.title}`}
                       />
                       <div>
@@ -869,7 +876,12 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             <div className="solis-subject-grid">
-              {subjects.filter((s) => s.status !== 'archived').slice(0, 4).map((sub) => (
+              {subjects.filter((s) => s.status !== 'archived').slice(0, 4).map((sub) => {
+                const studiedHours = recentSessions
+                  .filter(s => s.subjectId === sub.id)
+                  .reduce((acc, s) => acc + (s.durationMinutes || 0), 0) / 60;
+                
+                return (
                 <div
                   key={sub.id}
                   className="solis-subject-world-card"
@@ -887,9 +899,9 @@ export const DashboardPage: React.FC = () => {
                   <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
                     {sub.name}
                   </div>
-                  <Progress value={sub.targetHoursPerWeek ? (sub.targetHoursPerWeek * 0.4) : 40} max={sub.targetHoursPerWeek || 10} size="sm" variant={sub.color as any || 'coral'} />
+                  <Progress value={studiedHours} max={sub.targetHoursPerWeek || 10} size="sm" variant={sub.color as any || 'coral'} />
                 </div>
-              ))}
+              )})}
             </div>
           </section>
 

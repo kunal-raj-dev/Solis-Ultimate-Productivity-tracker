@@ -130,8 +130,8 @@
 }
 
 .solis-mini-player__btn--play {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: var(--bg-surface-secondary);
   color: var(--text-primary);
 }
@@ -149,8 +149,8 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
-  padding: 0 8px;
+  height: 32px;
+  padding: 0 10px;
   font-size: 11px;
   font-weight: 600;
   background: var(--bg-surface-secondary);

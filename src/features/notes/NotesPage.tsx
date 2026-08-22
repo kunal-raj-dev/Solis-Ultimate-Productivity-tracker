@@ -12,13 +12,16 @@ import {
   ArrowLeft,
   BookOpen
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
+import { Input } from '../../components/ui/Input/Input';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
+import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
+import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog/ConfirmationDialog';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
 import { useToast } from '../../context/ToastContext';
@@ -46,6 +49,7 @@ export const NotesPage: React.FC = () => {
   const { addToast } = useToast();
   const { openGuide } = useGuide();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
@@ -55,6 +59,7 @@ export const NotesPage: React.FC = () => {
   const [mobileView, setMobileView] = useState<'index' | 'editor'>('index');
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -117,11 +122,36 @@ export const NotesPage: React.FC = () => {
         setSyncStatus('idle');
 
         // Handle initial note selection without dependency loop
+        const paramId = searchParams.get('id') || searchParams.get('noteId');
         const paramAction = searchParams.get('action');
         const paramSubjectId = searchParams.get('subjectId');
         const paramTitle = searchParams.get('title');
+        const locState = location.state as { newNote?: Partial<Note> } | null;
 
-        if ((paramAction === 'new' || paramTitle) && !hasInitializedSelectionRef.current) {
+        if (locState?.newNote && !hasInitializedSelectionRef.current) {
+          hasInitializedSelectionRef.current = true;
+          const notePayload = locState.newNote;
+          dataService.notes.createNote({
+            title: notePayload.title || 'Untitled Thought',
+            content: notePayload.content || '',
+            category: notePayload.category || 'concept',
+            subjectId: notePayload.subjectId || undefined,
+            tags: notePayload.tags || []
+          }).then((created) => {
+            setNotes((prev) => [created, ...prev]);
+            handleSelectNote(created);
+          }).catch((err) => {
+            console.error('Failed to create note from state:', err);
+          });
+        } else if (paramId && !hasInitializedSelectionRef.current) {
+          hasInitializedSelectionRef.current = true;
+          const matchingNote = notesData.find((n) => n.id === paramId);
+          if (matchingNote) {
+            handleSelectNote(matchingNote);
+          } else if (notesData.length > 0) {
+            handleSelectNote(notesData[0]);
+          }
+        } else if ((paramAction === 'new' || paramTitle) && !hasInitializedSelectionRef.current) {
           hasInitializedSelectionRef.current = true;
           handleCreateNote(paramTitle || 'Untitled Note', paramSubjectId || '');
         } else if (!hasInitializedSelectionRef.current && notesData.length > 0) {
@@ -393,31 +423,20 @@ export const NotesPage: React.FC = () => {
               leftIcon={<Plus size={14} />}
               onClick={() => handleCreateNote()}
             >
-              New Thought
+              New Note
             </Button>
           </div>
         </div>
 
         {/* Search */}
-        <div style={{ position: 'relative' }}>
-          <input
-            type="text"
+        <div>
+          <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search concepts, tags, text..."
-            style={{
-              width: '100%',
-              height: '38px',
-              padding: '0 var(--space-md) 0 34px',
-              borderRadius: 'var(--radius-full)',
-              background: 'var(--bg-surface-primary)',
-              border: '1px solid var(--border-subtle)',
-              fontFamily: 'var(--font-interface)',
-              fontSize: 'var(--text-caption)',
-              outline: 'none'
-            }}
+            leftIcon={<Search size={14} />}
+            aria-label="Search notes"
           />
-          <Search size={14} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '12px' }} />
         </div>
 
         {/* Category Pills */}
@@ -618,9 +637,11 @@ export const NotesPage: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => handleDeleteNote(selectedNote.id)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                  title="Delete thought"
+                  type="button"
+                  onClick={() => setDeletingNoteId(selectedNote.id)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', minWidth: '28px', minHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-xs)' }}
+                  title="Delete note"
+                  aria-label="Delete active note"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -673,24 +694,13 @@ export const NotesPage: React.FC = () => {
             />
           </>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '400px', textAlign: 'center' }}>
-            <FileText size={36} color="var(--color-charcoal-300)" style={{ marginBottom: '12px' }} />
-            <h3 style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-heading-2)', marginBottom: '6px' }}>
-              Your Thinking Sanctuary
-            </h3>
-            <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', maxWidth: '400px', marginBottom: '16px' }}>
-              Select an existing insight or create a new thinking canvas to begin distillation.
-            </p>
-            <Button
-              variant="accent"
-              size="md"
-              className="tactile-press"
-              leftIcon={<Plus size={16} />}
-              onClick={() => handleCreateNote()}
-            >
-              New Thought
-            </Button>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Your Thinking Sanctuary"
+            description="Select an existing insight or create a new thinking canvas to begin distillation."
+            actionLabel="New Note"
+            onAction={() => handleCreateNote()}
+          />
         )}
       </main>
 
@@ -751,6 +761,23 @@ export const NotesPage: React.FC = () => {
         onSynthesizeNote={(res) => {
           handleCiteResource(res);
         }}
+      />
+
+      {/* Delete Note Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={Boolean(deletingNoteId)}
+        onClose={() => setDeletingNoteId(null)}
+        onConfirm={async () => {
+          if (deletingNoteId) {
+            const id = deletingNoteId;
+            setDeletingNoteId(null);
+            await handleDeleteNote(id);
+          }
+        }}
+        title="Delete Knowledge Note"
+        description="Are you sure you want to permanently delete this note? All synthesis, citations, and markdown content will be removed."
+        confirmLabel="Delete Note"
+        variant="danger"
       />
     </div>
   );

@@ -12,3 +12,7 @@ export * from './guide';
 export * from './activation';
 export * from './learning';
 export * from './learningIntelligence';
+export * from './planning';
+export * from './reflection';
+export * from './resource';
+

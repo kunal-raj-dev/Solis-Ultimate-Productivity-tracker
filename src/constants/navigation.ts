@@ -17,7 +17,6 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
         label: 'Task Sanctuary',
         path: '/app/tasks',
         iconName: 'CheckCircle2',
-        badge: 3,
         description: 'Intentional decision surface'
       },
       {

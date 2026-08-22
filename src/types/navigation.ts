@@ -8,7 +8,8 @@ export type NavId =
   | 'analytics'
   | 'notes'
   | 'review'
-  | 'settings';
+  | 'settings'
+  | 'guides';
 
 export interface NavItemConfig {
   id: NavId;

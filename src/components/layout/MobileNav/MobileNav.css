@@ -40,6 +40,10 @@
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .solis-mobile-nav__item:hover {

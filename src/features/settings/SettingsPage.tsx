@@ -14,6 +14,7 @@ import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { resetActivation } from '../../utils/activation';
+import './SettingsPage.css';
 import {
   createWorkspaceBackup,
   convertTasksToCSV,
@@ -251,7 +252,7 @@ export const SettingsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                <div className="solis-settings-form-grid">
                   <Input
                     label="Focus Block (Minutes)"
                     type="number"
@@ -279,7 +280,7 @@ export const SettingsPage: React.FC = () => {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', paddingTop: '8px' }}>
+                <div className="solis-settings-form-grid--compact">
                   <div>
                     <label style={{ display: 'block', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
                       Week Starts On
@@ -432,7 +433,7 @@ export const SettingsPage: React.FC = () => {
                 />
 
                 {notifPrefs.quietHoursEnabled && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', paddingTop: '4px' }}>
+                  <div className="solis-settings-form-grid--compact">
                     <Input
                       label="Quiet Hours Start"
                       type="time"

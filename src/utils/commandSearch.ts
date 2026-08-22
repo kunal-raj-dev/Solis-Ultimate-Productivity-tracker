@@ -173,7 +173,7 @@ export function searchWorkspace(
           subtitle: `Note • ${n.category || 'General'}${n.subjectName ? ` • ${n.subjectName}` : ''}`,
           type: 'note',
           badge: 'Note',
-          actionUrl: '/app/notes'
+          actionUrl: `/app/notes?id=${n.id}`
         });
       }
     }
@@ -192,7 +192,7 @@ export function searchWorkspace(
           subtitle: `Subject • Target: ${s.targetHoursPerWeek || 0} hrs/week`,
           type: 'subject',
           badge: 'Subject',
-          actionUrl: '/app/study'
+          actionUrl: `/app/study?subjectId=${s.id}`
         });
       }
     }
@@ -211,7 +211,7 @@ export function searchWorkspace(
           subtitle: `Topic • Mastery: ${top.masteryLevel}`,
           type: 'topic',
           badge: 'Topic',
-          actionUrl: '/app/study'
+          actionUrl: top.subjectId ? `/app/study?subjectId=${top.subjectId}` : '/app/study'
         });
       }
     }

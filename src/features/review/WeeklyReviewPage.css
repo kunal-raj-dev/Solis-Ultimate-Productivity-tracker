@@ -1,7 +1,11 @@
+/* ==========================================================================
+   SOLIS — WEEKLY REVIEW (Canonical Design Tokens & Responsive Architecture)
+   ========================================================================== */
+
 .solis-review-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-lg);
   max-width: 800px;
   padding-bottom: 60px;
 }
@@ -9,35 +13,36 @@
 .solis-review-steps {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding-bottom: var(--space-2xs);
+  -webkit-overflow-scrolling: touch;
 }
 
 .solis-review-step-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-xs);
   padding: 8px 16px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border-subtle);
-  background: var(--surface-primary);
+  background: var(--bg-surface-primary);
   color: var(--text-secondary);
   font-size: var(--text-caption);
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all var(--transition-fast);
+  transition: all var(--duration-fast) var(--ease-tactile);
 }
 
 .solis-review-step-btn:hover {
-  background: var(--surface-hover);
+  background: var(--bg-surface-hover);
   color: var(--text-primary);
 }
 
 .solis-review-step-btn--active {
   border-color: var(--color-coral-500);
-  background: var(--surface-secondary);
+  background: var(--bg-surface-secondary);
   color: var(--color-coral-500);
   font-weight: 600;
 }
@@ -54,7 +59,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--surface-secondary);
+  background: var(--bg-surface-secondary);
   font-size: 11px;
   font-weight: 700;
 }
@@ -72,8 +77,8 @@
 .solis-review-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
 
 .solis-review-stat-box {
@@ -82,14 +87,14 @@
   align-items: center;
   justify-content: center;
   padding: 16px 12px;
-  background: var(--surface-secondary);
+  background: var(--bg-surface-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   text-align: center;
 }
 
 .solis-review-stat-num {
-  font-family: var(--font-heading);
+  font-family: var(--font-display);
   font-size: var(--text-h3);
   font-weight: 700;
   color: var(--color-coral-500);
@@ -104,12 +109,12 @@
 
 .solis-review-intel-banner {
   padding: 14px 16px;
-  background: var(--surface-secondary);
+  background: var(--bg-surface-secondary);
   border-left: 3px solid var(--color-coral-500);
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
   font-size: var(--text-body-sm);
   color: var(--text-primary);
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
   line-height: 1.5;
 }
 
@@ -117,7 +122,22 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding-top: 16px;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
   border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 600px) {
+  .solis-review-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .solis-review-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  
+  .solis-review-actions button {
+    width: 100%;
+  }
 }

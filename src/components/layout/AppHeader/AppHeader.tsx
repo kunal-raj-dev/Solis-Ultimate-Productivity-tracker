@@ -53,7 +53,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch }) => {
             leftIcon={<Flame size={15} />}
             onClick={() => navigate('/app/focus')}
           >
-            Focus Space
+            Start Focus
           </Button>
         </div>
 

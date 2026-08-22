@@ -13,7 +13,7 @@
 
 @media (max-width: 767px) {
   .solis-toast-container {
-    bottom: calc(var(--mobile-nav-height) + var(--space-md));
+    bottom: calc(var(--mobile-nav-height) + var(--safe-area-bottom) + 64px);
     right: var(--space-md);
     left: var(--space-md);
     max-width: none;

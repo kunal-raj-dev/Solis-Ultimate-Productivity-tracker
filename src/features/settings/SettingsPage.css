@@ -1,0 +1,24 @@
+/* ==========================================================================
+   SOLIS — SETTINGS PAGE RESPONSIVE STYLES
+   ========================================================================== */
+
+.solis-settings-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.solis-settings-form-grid--compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+  padding-top: var(--space-2xs);
+}
+
+@media (max-width: 600px) {
+  .solis-settings-form-grid,
+  .solis-settings-form-grid--compact {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}

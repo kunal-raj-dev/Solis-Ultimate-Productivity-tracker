@@ -144,8 +144,29 @@
 .editorial-lead {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: var(--text-h3);
+  font-size: var(--text-heading-3);
   color: var(--text-secondary);
   line-height: 1.4;
   letter-spacing: -0.01em;
 }
+
+/* --------------------------------------------------------------------------
+   DENSITY SYSTEM (Compact vs Comfortable Modes)
+   -------------------------------------------------------------------------- */
+:root,
+[data-density="comfortable"] {
+  --space-card-padding: var(--space-lg);
+  --space-row-gap: var(--space-md);
+  --space-section-gap: var(--space-xl);
+  --control-height: 42px;
+  --table-row-height: 48px;
+}
+
+[data-density="compact"] {
+  --space-card-padding: var(--space-md);
+  --space-row-gap: var(--space-xs);
+  --space-section-gap: var(--space-lg);
+  --control-height: 36px;
+  --table-row-height: 40px;
+}
+

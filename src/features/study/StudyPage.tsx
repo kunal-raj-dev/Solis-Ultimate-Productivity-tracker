@@ -20,7 +20,7 @@ import {
   MoreVertical,
   Edit2
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
@@ -28,6 +28,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Progress } from '../../components/ui/Progress/Progress';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Modal } from '../../components/feedback/Modal/Modal';
+import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { Input } from '../../components/ui/Input/Input';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
@@ -59,6 +60,7 @@ import './StudyPage.css';
 
 export const StudyPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { addToast } = useToast();
   const { openGuide } = useGuide();
 
@@ -279,6 +281,30 @@ export const StudyPage: React.FC = () => {
     });
     return () => unsubscribe();
   }, [loadData]);
+
+  // Deep linking via query parameters
+  useEffect(() => {
+    const paramSubjectId = searchParams.get('subjectId');
+    const paramAction = searchParams.get('action');
+
+    if (paramSubjectId) {
+      setSessionSubjectId(paramSubjectId);
+      setPlanSubjectId(paramSubjectId);
+      // Wait for DOM to render subject card if present
+      setTimeout(() => {
+        const el = document.getElementById(`subject-${paramSubjectId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+
+    if (paramAction === 'log') {
+      setIsLogSessionModalOpen(true);
+    } else if (paramAction === 'add-subject') {
+      setIsAddSubjectModalOpen(true);
+    }
+  }, [searchParams]);
 
   // Click outside listener for subject action menus
   useEffect(() => {
@@ -698,6 +724,18 @@ export const StudyPage: React.FC = () => {
     }
   };
 
+  const handleDeletePlanItem = async (id: string) => {
+    const prevPlan = studyPlan;
+    setStudyPlan((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await dataService.study.deletePlanItem(id);
+      addToast({ title: 'Plan item removed', type: 'info' });
+    } catch {
+      setStudyPlan(prevPlan);
+      addToast({ title: 'Could not delete plan item', type: 'error' });
+    }
+  };
+
   const handleConvertPlanToTask = async (item: StudyPlanItem) => {
     try {
       const created = await dataService.tasks.createTask({
@@ -870,55 +908,37 @@ export const StudyPage: React.FC = () => {
             </Button>
           </Card>
         ) : displayedSubjects.length === 0 ? (
-          <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 20px' }}>
-            <BookOpen size={28} color="var(--text-muted)" style={{ margin: '0 auto 10px' }} />
-            {subjectViewTab === 'active' ? (
-              archivedCount > 0 ? (
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
-                    No active subjects right now.
-                  </div>
-                  <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
-                    You have {archivedCount} archived subject(s) preserved in your repository.
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <Button variant="outline" size="sm" onClick={() => setSubjectViewTab('archived')}>
-                      View Archived ({archivedCount})
-                    </Button>
-                    <Button variant="accent" size="sm" leftIcon={<Plus size={14} />} onClick={() => setIsAddSubjectModalOpen(true)}>
-                      Add Subject
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
-                    No active subjects yet.
-                  </div>
-                  <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
-                    Create your first subject to begin building your study system.
-                  </div>
-                  <Button variant="accent" size="sm" leftIcon={<Plus size={14} />} onClick={() => setIsAddSubjectModalOpen(true)}>
-                    + Add Subject
-                  </Button>
-                </div>
-              )
+          subjectViewTab === 'active' ? (
+            archivedCount > 0 ? (
+              <EmptyState
+                icon={BookOpen}
+                title="No active subjects right now"
+                description={`You have ${archivedCount} archived subject(s) preserved in your repository.`}
+                actionLabel={`View Archived (${archivedCount})`}
+                onAction={() => setSubjectViewTab('archived')}
+              />
             ) : (
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
-                  No archived subjects
-                </div>
-                <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Active subjects you archive will be stored here with full syllabus and notes history.
-                </div>
-              </div>
-            )}
-          </Card>
+              <EmptyState
+                icon={BookOpen}
+                title="No active subjects yet"
+                description="Create your first subject to begin building your living syllabus and study system."
+                actionLabel="Add Subject"
+                onAction={() => setIsAddSubjectModalOpen(true)}
+              />
+            )
+          ) : (
+            <EmptyState
+              icon={Archive}
+              title="No archived subjects"
+              description="Active subjects you archive will be stored here with full syllabus and notes history."
+            />
+          )
         ) : (
           <div className="solis-subject-worlds-grid">
             {displayedSubjects.map((subject) => (
               <div
                 key={subject.id}
+                id={`subject-${subject.id}`}
                 className={`solis-subject-world-tile solis-subject-world-tile--${subject.color || 'coral'}`}
                 style={{ opacity: subject.status === 'archived' ? 0.85 : 1 }}
               >
@@ -1362,13 +1382,24 @@ export const StudyPage: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {!item.linkedTaskId && (
                         <button
+                          type="button"
                           onClick={() => handleConvertPlanToTask(item)}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', minWidth: '28px', minHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-xs)' }}
                           title="Convert to Task"
+                          aria-label={`Convert ${item.title} to task`}
                         >
                           <ListTodo size={14} />
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePlanItem(item.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px', minWidth: '28px', minHeight: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-xs)' }}
+                        title="Delete plan item"
+                        aria-label={`Delete ${item.title}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                       <Button
                         variant="subtle"
                         size="sm"

@@ -36,6 +36,7 @@ import { StudyResource } from '../../types/resource';
 import { Habit } from '../../types/habit';
 import { PriorityLevel } from '../../types/common';
 import { ValidationError } from '../../utils/validation';
+import './GoalsPage.css';
 
 export const GoalsPage: React.FC = () => {
   const { addToast } = useToast();
@@ -555,7 +556,7 @@ export const GoalsPage: React.FC = () => {
             onChange={(e) => setGoalDesc(e.target.value)}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div className="solis-goals-form-grid">
             <CustomSelect
               label="Goal Experience Mode"
               value={goalExpType}
@@ -581,7 +582,7 @@ export const GoalsPage: React.FC = () => {
           </div>
 
           {goalExpType === 'exam' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '12px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div className="solis-goals-form-grid--nested">
               <Input
                 label="Target Exam Score / Grade"
                 placeholder="e.g. 95% (Distinction)"
@@ -609,7 +610,7 @@ export const GoalsPage: React.FC = () => {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div className="solis-goals-form-grid">
             <CustomSelect
               label="Horizon Period"
               value={goalHorizon}
@@ -635,7 +636,7 @@ export const GoalsPage: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div className="solis-goals-form-grid">
             <Input
               label="Target Completion Date"
               type="date"

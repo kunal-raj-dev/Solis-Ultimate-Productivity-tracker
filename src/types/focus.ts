@@ -2,7 +2,7 @@ import { BaseEntity, ID } from './common';
 
 export type FocusModeType = 'pomodoro' | 'deep_flow' | 'custom_timer' | 'stopwatch';
 
-export type TimerStatus = 'idle' | 'running' | 'paused' | 'break' | 'completed';
+export type TimerStatus = 'idle' | 'running' | 'paused' | 'break' | 'completed' | 'cancelled';
 
 export type SoundscapeType = 'none' | 'pink_noise' | 'brown_noise' | 'binaural_alpha' | 'binaural_theta' | 'rain' | 'deep_drone';
 

@@ -18,6 +18,7 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
 import { Input } from '../../components/ui/Input/Input';
 import { Modal } from '../../components/feedback/Modal/Modal';
+import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog/ConfirmationDialog';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
 import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
@@ -80,15 +81,29 @@ export const FocusPage: React.FC = () => {
     const paramSubjectId = searchParams.get('subjectId') || locState?.subjectId;
     const paramPlanId = searchParams.get('planId');
     const paramTitle = searchParams.get('title') || searchParams.get('topicTitle') || locState?.topic;
+    const paramDuration = searchParams.get('duration') || searchParams.get('durationMinutes') || locState?.durationMinutes;
 
     if (paramSubjectId) setSelectedSubjectId(paramSubjectId);
     if (paramPlanId) setSelectedPlanItemId(paramPlanId);
     if (paramTitle) setFocusTitle(paramTitle);
-  }, [searchParams, location.state, setSelectedSubjectId, setSelectedPlanItemId, setFocusTitle]);
+    if (paramDuration) {
+      const mins = typeof paramDuration === 'number' ? paramDuration : parseInt(paramDuration, 10);
+      if (!isNaN(mins) && mins > 0) {
+        if (mins === 25) {
+          selectPreset('pomodoro');
+        } else if (mins === 50) {
+          selectPreset('deep_flow');
+        } else {
+          selectPreset('custom', mins);
+        }
+      }
+    }
+  }, [searchParams, location.state, setSelectedSubjectId, setSelectedPlanItemId, setFocusTitle, selectPreset]);
 
   // Custom preset modal
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [customMinutesInput, setCustomMinutesInput] = useState('45');
+  const [isAbortConfirmOpen, setIsAbortConfirmOpen] = useState(false);
 
   const handleSelectPreset = (newPreset: FocusPreset) => {
     if (newPreset === 'custom') {
@@ -167,7 +182,13 @@ export const FocusPage: React.FC = () => {
             >
               <button
                 type="button"
-                onClick={() => navigate('/app/dashboard')}
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    navigate(-1);
+                  } else {
+                    navigate('/app/dashboard');
+                  }
+                }}
                 className="tactile-press"
                 style={{
                   background: 'rgba(255, 255, 255, 0.08)',
@@ -420,7 +441,7 @@ export const FocusPage: React.FC = () => {
                     size="md"
                     className="tactile-press"
                     leftIcon={<XCircle size={16} />}
-                    onClick={cancelTimer}
+                    onClick={() => setIsAbortConfirmOpen(true)}
                     style={{ color: 'var(--color-charcoal-400)' }}
                   >
                     Abort
@@ -508,8 +529,27 @@ export const FocusPage: React.FC = () => {
         title="Custom Focus Duration"
       >
         <form onSubmit={handleApplyCustom} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              Quick Presets
+            </label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {[15, 25, 45, 60, 90, 120].map((mins) => (
+                <Button
+                  key={mins}
+                  type="button"
+                  size="sm"
+                  variant={customMinutesInput === String(mins) ? 'accent' : 'subtle'}
+                  onClick={() => setCustomMinutesInput(String(mins))}
+                >
+                  {mins} min
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <Input
-            label="Duration in Minutes (1 – 180 min)"
+            label="Custom Duration in Minutes (1 – 180 min)"
             type="number"
             value={customMinutesInput}
             onChange={(e) => setCustomMinutesInput(e.target.value)}
@@ -526,6 +566,22 @@ export const FocusPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Abort Session Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={isAbortConfirmOpen}
+        onClose={() => setIsAbortConfirmOpen(false)}
+        onConfirm={() => {
+          setIsAbortConfirmOpen(false);
+          cancelTimer();
+          addToast({ title: 'Focus session cancelled', type: 'info' });
+        }}
+        title="Abort Active Focus Flow?"
+        description="Are you sure you want to stop this focus block? Elapsed progress for this block will not be recorded in your daily momentum."
+        confirmLabel="Abort Session"
+        cancelLabel="Continue Flow"
+        variant="danger"
+      />
     </div>
   );
 };
