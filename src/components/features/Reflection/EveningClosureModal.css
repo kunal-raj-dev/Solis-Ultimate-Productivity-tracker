@@ -23,6 +23,20 @@
   background-color: var(--color-sage-500);
 }
 
+.solis-closure-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .solis-closure-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+}
+
 .solis-score-pills {
   display: flex;
   gap: 8px;
@@ -30,7 +44,8 @@
 
 .solis-score-pill {
   flex: 1;
-  padding: 10px 0;
+  min-height: 44px;
+  padding: 8px 0;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background-color: var(--bg-surface-primary);
@@ -43,6 +58,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
 }
 

@@ -379,6 +379,8 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
+  gap: 12px;
+  min-width: 0;
 }
 
 .solis-flow-item:hover {
@@ -392,6 +394,14 @@
   align-items: center;
   gap: 12px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .solis-flow-item {
+    padding: 10px 12px;
+  }
 }
 
 /* Subject Horizon Cards */
@@ -423,15 +433,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-sm);
   padding: 10px 14px;
   background: var(--bg-surface-primary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  min-width: 0;
 }
 
 .solis-habit-dots {
   display: flex;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .solis-habit-dot {
@@ -440,9 +453,24 @@
   border-radius: 50%;
   background: var(--bg-surface-secondary);
   border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .solis-habit-dot--active {
   background: var(--color-coral-500);
   border-color: var(--color-coral-600);
+}
+
+@media (max-width: 480px) {
+  .solis-habit-dot-row {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .solis-habit-dot {
+    width: 12px;
+    height: 12px;
+  }
+  .solis-habit-dots {
+    gap: 4px;
+  }
 }

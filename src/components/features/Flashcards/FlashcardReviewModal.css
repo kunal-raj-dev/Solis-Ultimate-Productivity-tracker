@@ -126,3 +126,36 @@
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+@media (max-width: 480px) {
+  .solis-recall-actions {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .solis-recall-btn {
+    min-height: 48px;
+    padding: 8px 6px;
+  }
+
+  .solis-card-flip-container {
+    min-height: 210px;
+    margin: var(--space-sm) 0;
+  }
+
+  .solis-card-flip-inner {
+    min-height: 210px;
+  }
+
+  .solis-card-face {
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  .solis-card-prompt {
+    font-size: var(--text-body-lg);
+  }
+
+  .solis-card-answer {
+    font-size: var(--text-body-sm);
+  }
+}

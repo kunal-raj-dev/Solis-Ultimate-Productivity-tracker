@@ -24,4 +24,23 @@
     grid-template-columns: 1fr;
     gap: var(--space-sm);
   }
+
+  .solis-goal-card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .solis-goal-card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    border-top: 1px dashed var(--border-subtle);
+    padding-top: 8px;
+  }
+
+  .solis-goal-milestone-form {
+    max-width: 100% !important;
+  }
 }

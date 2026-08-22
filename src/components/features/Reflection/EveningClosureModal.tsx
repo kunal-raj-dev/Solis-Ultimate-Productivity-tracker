@@ -111,7 +111,7 @@ export const EveningClosureModal: React.FC<EveningClosureModalProps> = ({
         {step === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Daily Celebration Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', textAlign: 'center' }}>
+            <div className="solis-closure-stat-grid">
               <div style={{ padding: '10px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
                 <span style={{ fontSize: 'var(--text-heading-3)', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--color-coral-500)', display: 'block' }}>
                   {todaySummary.studyMinutes}m

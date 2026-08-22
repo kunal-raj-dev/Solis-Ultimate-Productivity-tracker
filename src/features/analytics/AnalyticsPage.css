@@ -198,9 +198,20 @@
 
 .solis-heatmap-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(32px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
   gap: 8px;
   align-items: center;
+}
+
+@media (max-width: 600px) {
+  .solis-rhythm-section {
+    padding: var(--space-lg) var(--space-md);
+    border-radius: var(--radius-xl);
+  }
+  .solis-heatmap-grid {
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+  }
 }
 
 .solis-heatmap-cell {
@@ -221,6 +232,13 @@
   gap: var(--space-xl);
   padding-top: var(--space-lg);
   border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 600px) {
+  .solis-rhythm-breakdown-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
 }
 
 .solis-time-bucket-item {
@@ -319,6 +337,12 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 480px) {
+  .solis-mastery-topic-row {
+    padding: 12px 14px;
   }
 }
 

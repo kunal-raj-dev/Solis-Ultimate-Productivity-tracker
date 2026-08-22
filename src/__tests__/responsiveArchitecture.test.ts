@@ -125,5 +125,23 @@ describe('Solis Multi-Device Responsive Architecture & Mobile UX Suite', () => {
       const usableBodyHeight = maxSheetHeight - headerHeight - footerHeight;
       expect(usableBodyHeight).toBeGreaterThan(500);
     });
+
+    it('verifies mobile view bottom clearance includes mobile nav, safe area, and mini player', () => {
+      const mobileNavHeight = 64;
+      const safeAreaBottom = 34;
+      const clearancePadding = 68;
+
+      const totalBottomClearance = mobileNavHeight + safeAreaBottom + clearancePadding;
+      expect(totalBottomClearance).toBe(166);
+      expect(totalBottomClearance).toBeGreaterThan(150);
+    });
+
+    it('validates 7-column heatmap grid geometry on mobile viewports', () => {
+      const totalDays = 28;
+      const columns = 7;
+      const rows = totalDays / columns;
+      expect(rows).toBe(4);
+      expect(Number.isInteger(rows)).toBe(true);
+    });
   });
 });

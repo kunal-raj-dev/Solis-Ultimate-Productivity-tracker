@@ -366,7 +366,7 @@ export const GoalsPage: React.FC = () => {
             return (
               <Card key={goal.id}>
                 {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                <div className="solis-goal-card-header">
                   <div style={{ flex: 1, minWidth: '240px' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                       <Badge variant={goal.experienceType === 'exam' ? 'coral' : goal.experienceType === 'project' ? 'amber' : 'neutral'}>
@@ -420,8 +420,8 @@ export const GoalsPage: React.FC = () => {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <div style={{ textAlign: 'right' }}>
+                  <div className="solis-goal-card-actions">
+                    <div>
                       <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>Target Deadline</div>
                       <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>{goal.targetDate}</div>
                     </div>
@@ -508,7 +508,7 @@ export const GoalsPage: React.FC = () => {
                   </div>
 
                   {/* Add Milestone Form */}
-                  <form onSubmit={(e) => handleAddMilestone(goal.id, e)} style={{ display: 'flex', gap: '8px', maxWidth: '420px' }}>
+                  <form onSubmit={(e) => handleAddMilestone(goal.id, e)} className="solis-goal-milestone-form" style={{ display: 'flex', gap: '8px', maxWidth: '420px' }}>
                     <Input
                       placeholder="Add milestone step..."
                       value={newMilestoneTitles[goal.id] || ''}

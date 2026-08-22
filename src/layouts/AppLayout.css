@@ -20,7 +20,7 @@
 
 .solis-app-view {
   flex: 1;
-  padding: var(--space-md) var(--space-sm) calc(var(--mobile-nav-height) + var(--safe-area-bottom) + var(--space-xl));
+  padding: var(--space-md) var(--space-sm) calc(var(--mobile-nav-height) + var(--safe-area-bottom) + 68px);
   max-width: var(--max-content-width);
   width: 100%;
   margin: 0 auto;
@@ -28,7 +28,7 @@
 
 @media (min-width: 600px) {
   .solis-app-view {
-    padding: var(--space-lg) var(--space-lg) calc(var(--mobile-nav-height) + var(--safe-area-bottom) + var(--space-xl));
+    padding: var(--space-lg) var(--space-lg) calc(var(--mobile-nav-height) + var(--safe-area-bottom) + 68px);
   }
 }
 

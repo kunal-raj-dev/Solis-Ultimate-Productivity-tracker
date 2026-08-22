@@ -275,7 +275,7 @@ export const HabitsPage: React.FC = () => {
                 }}
               >
                 {/* Top Row: Info + Streaks + Actions */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                <div className="solis-habit-card-header">
                   <div style={{ flex: 1, minWidth: '240px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                       <Badge variant={(habit.color as BadgeVariant) || 'coral'}>
@@ -303,8 +303,8 @@ export const HabitsPage: React.FC = () => {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ textAlign: 'right' }}>
+                  <div className="solis-habit-card-actions">
+                    <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--text-heading-3)', fontWeight: 700, color: 'var(--color-coral-500)' }}>
                         <Flame size={18} />
                         <span>{habit.currentStreak} days</span>
@@ -349,7 +349,7 @@ export const HabitsPage: React.FC = () => {
                     7-Day Check-in History
                   </span>
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="solis-habits-week-matrix">
                     {past7Days.map((dateStr) => {
                       const isDone = habit.history[dateStr] === true;
                       const isCurrToday = isToday(dateStr);
