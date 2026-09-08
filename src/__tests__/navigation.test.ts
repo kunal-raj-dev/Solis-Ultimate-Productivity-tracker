@@ -21,7 +21,7 @@ describe('Global Navigation & Route Intelligence Architecture', () => {
     const todaySection = APP_NAVIGATION.find((s) => s.id === 'today');
     expect(todaySection).toBeDefined();
     const itemIds = todaySection?.items.map((i) => i.id);
-    expect(itemIds).toEqual(['dashboard', 'tasks', 'study', 'focus']);
+    expect(itemIds).toEqual(['dashboard', 'tasks', 'study', 'focus', 'rooms']);
   });
 
   it('correctly maps mobile navigation to primary destinations', () => {

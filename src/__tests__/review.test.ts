@@ -115,7 +115,8 @@ describe('Solis Weekly Review & Strategic Calibration Suite', () => {
         tasks: mockTasks,
         habits: mockHabits
       },
-      'this_week'
+      'this_week',
+      new Date('2026-08-17T12:00:00Z')
     );
 
     expect(report.rhythm).toBeDefined();
