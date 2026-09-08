@@ -133,17 +133,30 @@ export function formatAuthError(error: any): FormattedAuthError {
     };
   }
 
-  // 9. Network / Connectivity Failures
+  // 9. Network / Connectivity Failures & Service Outages
   if (
     message.includes('failed to fetch') ||
     message.includes('network error') ||
     message.includes('networkerror') ||
     message.includes('timeout') ||
-    message.includes('aborterror')
+    message.includes('aborterror') ||
+    message.includes('name_not_resolved') ||
+    code === 'fetch_error'
   ) {
+    const nav = typeof navigator !== 'undefined' ? navigator : (typeof window !== 'undefined' ? window.navigator : undefined);
+    const isOffline = Boolean(nav && nav.onLine === false);
+
+    if (isOffline) {
+      return {
+        userMessage: 'Network connection failure: You appear to be offline. Please check your internet connection.',
+        code: 'offline',
+        category: 'network'
+      };
+    }
+
     return {
-      userMessage: 'Network connection failure. Please check your internet connection.',
-      code: 'network_error',
+      userMessage: 'Network connection failure: Unable to reach Solis authentication servers. The database service may be paused, restarting, or unreachable. Please verify your Supabase project status.',
+      code: 'server_unreachable',
       category: 'network'
     };
   }

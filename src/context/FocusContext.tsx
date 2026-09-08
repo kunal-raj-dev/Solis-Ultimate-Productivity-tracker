@@ -150,18 +150,16 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     checkpointAcknowledged
   ]);
 
-  // Load subjects
+  // Load subjects (stable single subscription)
   const loadSubjects = useCallback(async () => {
     try {
       const subs = await dataService.study.getSubjects();
       setSubjects(subs);
-      if (!selectedSubjectId && subs.length > 0) {
-        setSelectedSubjectId(subs[0].id);
-      }
+      setSelectedSubjectId((prev) => prev || (subs.length > 0 ? subs[0].id : ''));
     } catch (err) {
       console.error('Failed to load focus subjects:', err);
     }
-  }, [selectedSubjectId]);
+  }, []);
 
   useEffect(() => {
     loadSubjects();

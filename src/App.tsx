@@ -23,6 +23,8 @@ const NotesPage = lazy(() => import('./features/notes/NotesPage').then(m => ({ d
 const SettingsPage = lazy(() => import('./features/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const WeeklyReviewPage = lazy(() => import('./features/review/WeeklyReviewPage').then(m => ({ default: m.WeeklyReviewPage })));
 const GuideCenterRoute = lazy(() => import('./features/guides/GuideCenterRoute').then(m => ({ default: m.GuideCenterRoute })));
+const RoomsPage = lazy(() => import('./features/rooms/RoomsPage').then(m => ({ default: m.RoomsPage })));
+const ActiveRoomView = lazy(() => import('./features/rooms/ActiveRoomView').then(m => ({ default: m.ActiveRoomView })));
 
 export const App: React.FC = () => {
   return (
@@ -56,6 +58,8 @@ export const App: React.FC = () => {
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="notes" element={<NotesPage />} />
               <Route path="review" element={<WeeklyReviewPage />} />
+              <Route path="rooms" element={<RoomsPage />} />
+              <Route path="rooms/:roomId" element={<ActiveRoomView />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="guides" element={<GuideCenterRoute />} />
               <Route path="guides/:guideId" element={<GuideCenterRoute />} />

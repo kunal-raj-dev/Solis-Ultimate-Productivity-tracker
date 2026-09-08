@@ -25,11 +25,11 @@ export default defineConfig({
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
               return 'vendor-react';
             }
-            if (id.includes('@supabase')) {
-              return 'vendor-supabase';
-            }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
             }
             return 'vendor-core';
           }

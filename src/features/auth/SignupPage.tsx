@@ -20,11 +20,11 @@ export const SignupPage: React.FC = () => {
   const { addToast } = useToast();
   const navigate = useNavigate();
 
-  // Clear any previous error when arriving on the Signup page
+  // Clear any previous error when arriving on the Signup page (mount only)
   useEffect(() => {
     clearError();
     setLocalError(null);
-  }, [clearError]);
+  }, []); // Run strictly once on mount to preserve submission errors
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -32,19 +32,33 @@ export const SignupPage: React.FC = () => {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLocalError(null);
     clearError();
 
-    if (password.length < 6) {
+    const form = e.currentTarget;
+    const nameInput = form.querySelector('input[type="text"]') as HTMLInputElement | null;
+    const emailInput = form.querySelector('input[type="email"]') as HTMLInputElement | null;
+    const passwordInput = form.querySelector('input[type="password"]') as HTMLInputElement | null;
+
+    const finalName = (name || nameInput?.value || '').trim();
+    const finalEmail = (email || emailInput?.value || '').trim();
+    const finalPassword = password || passwordInput?.value || '';
+
+    if (!finalName || !finalEmail || !finalPassword) {
+      setLocalError('Please complete all required fields.');
+      return;
+    }
+
+    if (finalPassword.length < 6) {
       setLocalError('Password must be at least 6 characters.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await signup({ name: name.trim(), email: email.trim(), password, focusField });
+      await signup({ name: finalName, email: finalEmail, password: finalPassword, focusField });
       addToast({
         title: 'Sanctuary created',
         description: 'Welcome to Solis. Your study space is initialized.',

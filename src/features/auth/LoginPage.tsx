@@ -22,11 +22,11 @@ export const LoginPage: React.FC = () => {
 
   const redirectPath = (location.state as any)?.from?.pathname || '/app/dashboard';
 
-  // Clear any previous error when arriving on the Login page
+  // Clear any previous error when arriving on the Login page (mount only)
   useEffect(() => {
     clearError();
     setLocalError(null);
-  }, [clearError]);
+  }, []); // Run strictly once on mount to avoid clearing active submission errors
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -34,14 +34,28 @@ export const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, authLoading, navigate, redirectPath]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLocalError(null);
     clearError();
+
+    // Resilient fallback to DOM inputs if browser autofill didn't trigger React onChange
+    const form = e.currentTarget;
+    const emailInput = form.querySelector('input[type="email"]') as HTMLInputElement | null;
+    const passwordInput = form.querySelector('input[type="password"]') as HTMLInputElement | null;
+
+    const finalEmail = (email || emailInput?.value || '').trim();
+    const finalPassword = password || passwordInput?.value || '';
+
+    if (!finalEmail || !finalPassword) {
+      setLocalError('Please enter both your email address and password.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await login({ email: email.trim(), password, rememberMe });
+      await login({ email: finalEmail, password: finalPassword, rememberMe });
       addToast({
         title: 'Welcome back',
         description: 'Your study sanctuary has been loaded.',
@@ -133,7 +147,7 @@ export const LoginPage: React.FC = () => {
           variant="primary"
           size="md"
           isLoading={isSubmitting}
-          disabled={isSubmitting || !email.trim() || !password}
+          disabled={isSubmitting}
           isFullWidth
           rightIcon={<ArrowRight size={16} />}
         >

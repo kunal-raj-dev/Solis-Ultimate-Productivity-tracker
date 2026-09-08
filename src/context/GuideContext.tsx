@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GuideSessionState, GuideSessionMap } from '../types/guide';
-import { GuideCenterModal } from '../features/guides/GuideCenterModal';
+
+const GuideCenterModal = React.lazy(() =>
+  import('../features/guides/GuideCenterModal').then((m) => ({ default: m.GuideCenterModal }))
+);
 
 interface GuideContextValue {
   isGuideOpen: boolean;
@@ -143,11 +146,15 @@ export const GuideProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setReturnGuideId
     }}>
       {children}
-      <GuideCenterModal
-        isOpen={isGuideOpen}
-        onClose={closeGuide}
-        initialGuideId={activeGuideId}
-      />
+      {isGuideOpen && (
+        <React.Suspense fallback={null}>
+          <GuideCenterModal
+            isOpen={isGuideOpen}
+            onClose={closeGuide}
+            initialGuideId={activeGuideId}
+          />
+        </React.Suspense>
+      )}
     </GuideContext.Provider>
   );
 };

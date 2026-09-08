@@ -92,45 +92,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [syncUserSession]);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    const currentSeq = ++seqRef.current;
     setAuthStatus('initializing');
     setAuthError(null);
     try {
       const session = await dataService.auth.login(credentials);
-      if (isMountedRef.current) {
+      if (isMountedRef.current && currentSeq === seqRef.current) {
         setUser(session.user);
         setAuthStatus('authenticated');
       }
     } catch (err) {
-      if (isMountedRef.current) {
+      if (isMountedRef.current && currentSeq === seqRef.current) {
         const formatted = formatAuthError(err);
         setAuthError(formatted.userMessage);
         setAuthStatus('auth_error');
         throw new Error(formatted.userMessage);
       }
     }
-  };
+  }, []);
 
-  const signup = async (credentials: SignupCredentials) => {
+  const signup = useCallback(async (credentials: SignupCredentials) => {
+    const currentSeq = ++seqRef.current;
     setAuthStatus('initializing');
     setAuthError(null);
     try {
       const session = await dataService.auth.signup(credentials);
-      if (isMountedRef.current) {
+      if (isMountedRef.current && currentSeq === seqRef.current) {
         setUser(session.user);
         setAuthStatus('authenticated');
       }
     } catch (err) {
-      if (isMountedRef.current) {
+      if (isMountedRef.current && currentSeq === seqRef.current) {
         const formatted = formatAuthError(err);
         setAuthError(formatted.userMessage);
         setAuthStatus('auth_error');
         throw new Error(formatted.userMessage);
       }
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
@@ -146,9 +148,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoggingOut(false);
       }
     }
-  };
+  }, [isLoggingOut]);
 
-  const requestPasswordReset = async (email: string) => {
+  const requestPasswordReset = useCallback(async (email: string) => {
     setAuthError(null);
     try {
       await dataService.auth.requestPasswordReset(email);
@@ -159,9 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(formatted.userMessage);
       }
     }
-  };
+  }, []);
 
-  const updatePassword = async (password: string) => {
+  const updatePassword = useCallback(async (password: string) => {
     setAuthError(null);
     try {
       await dataService.auth.updatePassword(password);
@@ -172,30 +174,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(formatted.userMessage);
       }
     }
-  };
+  }, []);
 
-  const clearError = () => setAuthError(null);
+  const clearError = useCallback(() => setAuthError(null), []);
 
   const isLoading = authStatus === 'initializing';
   const isAuthenticated = authStatus === 'authenticated' && user !== null;
 
+  const value = React.useMemo<AuthContextValue>(
+    () => ({
+      user,
+      authStatus,
+      isAuthenticated,
+      isLoading,
+      isLoggingOut,
+      authError,
+      login,
+      signup,
+      logout,
+      requestPasswordReset,
+      updatePassword,
+      clearError
+    }),
+    [
+      user,
+      authStatus,
+      isAuthenticated,
+      isLoading,
+      isLoggingOut,
+      authError,
+      login,
+      signup,
+      logout,
+      requestPasswordReset,
+      updatePassword,
+      clearError
+    ]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        authStatus,
-        isAuthenticated,
-        isLoading,
-        isLoggingOut,
-        authError,
-        login,
-        signup,
-        logout,
-        requestPasswordReset,
-        updatePassword,
-        clearError
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
