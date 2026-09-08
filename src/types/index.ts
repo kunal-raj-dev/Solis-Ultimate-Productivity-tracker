@@ -15,4 +15,5 @@ export * from './learningIntelligence';
 export * from './planning';
 export * from './reflection';
 export * from './resource';
+export * from './room';
 
