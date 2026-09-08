@@ -12,7 +12,8 @@ import {
   Sliders,
   LogOut,
   Loader2,
-  Sparkles
+  Sparkles,
+  Users
 } from 'lucide-react';
 import { APP_NAVIGATION } from '../../../constants/navigation';
 import { useData } from '../../../context/DataContext';
@@ -34,7 +35,8 @@ const ICON_MAP: Record<string, React.FC<{ size?: number }>> = {
   BarChart3,
   FileText,
   Sliders,
-  Sparkles
+  Sparkles,
+  Users
 };
 
 export const Sidebar: React.FC = () => {

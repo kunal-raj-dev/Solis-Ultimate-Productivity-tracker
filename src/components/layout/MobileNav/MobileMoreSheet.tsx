@@ -9,7 +9,8 @@ import {
   Sliders,
   HelpCircle,
   X,
-  ChevronRight
+  ChevronRight,
+  Users
 } from 'lucide-react';
 import { prefetchRoute } from '../../../utils/prefetch';
 import './MobileMoreSheet.css';
@@ -20,6 +21,19 @@ interface MobileMoreSheetProps {
 }
 
 const MORE_SECTIONS = [
+  {
+    title: 'Collaborative Flow',
+    items: [
+      {
+        id: 'rooms',
+        label: 'Study Rooms',
+        path: '/app/rooms',
+        description: 'Synchronized collaborative focus pods',
+        icon: Users,
+        color: 'coral'
+      }
+    ]
+  },
   {
     title: 'Knowledge',
     items: [

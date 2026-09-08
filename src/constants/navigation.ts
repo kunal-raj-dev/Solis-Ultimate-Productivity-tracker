@@ -32,6 +32,13 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
         path: '/app/focus',
         iconName: 'Flame',
         description: 'Immersive distraction-free room'
+      },
+      {
+        id: 'rooms',
+        label: 'Study Rooms',
+        path: '/app/rooms',
+        iconName: 'Users',
+        description: 'Synchronized collaborative focus pods'
       }
     ]
   },
