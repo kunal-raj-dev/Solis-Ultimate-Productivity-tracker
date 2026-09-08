@@ -12,7 +12,8 @@ import {
   IReviewService,
   IRoutineService,
   IResourceService,
-  IReflectionService
+  IReflectionService,
+  IRoomService
 } from '../api.interface';
 import {
   MOCK_USER,
@@ -41,6 +42,7 @@ import { Flashcard, CardRating, ReviewQueueItem } from '../../types/learning';
 import { RecurringStudyRoutine } from '../../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
+import { StudyRoom, RoomParticipant, RoomMessage, CreateRoomPayload, RoomTimerState, ParticipantStatus } from '../../types/room';
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
 import { UserProfile, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
 import { isToday, isPast, isFuture, getISODateString, isThisWeek } from '../../utils/date';
@@ -63,7 +65,16 @@ const delay = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 export class MockDataService implements IDataService {
   private listeners: Set<() => void> = new Set();
 
-  private _user: UserProfile | null = MOCK_USER;
+  private _user: UserProfile | null = (() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (sessionStorage.getItem('solis_mock_logged_out') === 'true') {
+          return null;
+        }
+      } catch {}
+    }
+    return MOCK_USER;
+  })();
   private _tasks: Task[] = JSON.parse(JSON.stringify(MOCK_TASKS));
   private _subjects: StudySubject[] = JSON.parse(JSON.stringify(MOCK_SUBJECTS));
   private _topics: StudyTopic[] = JSON.parse(JSON.stringify(MOCK_TOPICS));
@@ -78,6 +89,102 @@ export class MockDataService implements IDataService {
   private _routines: RecurringStudyRoutine[] = JSON.parse(JSON.stringify(MOCK_ROUTINES));
   private _resources: StudyResource[] = JSON.parse(JSON.stringify(MOCK_RESOURCES));
   private _reflections: DailyReflection[] = JSON.parse(JSON.stringify(MOCK_REFLECTIONS));
+  private _rooms: StudyRoom[] = [
+    {
+      id: 'room_solis_sanctuary',
+      hostId: 'user_mock_scholar',
+      hostName: 'Kunal Raj',
+      title: 'Distributed Systems & Algorithms Pod',
+      timerState: 'running',
+      targetDurationSeconds: 1500,
+      startedAt: new Date(Date.now() - 300000).toISOString(),
+      pausedElapsedSeconds: 0,
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+      updatedAt: new Date(Date.now() - 300000).toISOString(),
+      participantsCount: 3
+    },
+    {
+      id: 'room_focus_lab',
+      hostId: 'user_alyssa_p',
+      hostName: 'Alyssa Vance',
+      title: 'Deep Architecture Design Studio',
+      timerState: 'idle',
+      targetDurationSeconds: 3000,
+      startedAt: null,
+      pausedElapsedSeconds: 0,
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
+      updatedAt: new Date(Date.now() - 7200000).toISOString(),
+      participantsCount: 2
+    }
+  ];
+  private _roomParticipants: RoomParticipant[] = [
+    {
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_mock_scholar',
+      userName: 'Kunal Raj',
+      userEmail: 'scholar@solis.space',
+      status: 'focusing',
+      joinedAt: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_alyssa_p',
+      userName: 'Alyssa Vance',
+      userEmail: 'alyssa@mit.edu',
+      status: 'focusing',
+      joinedAt: new Date(Date.now() - 3000000).toISOString()
+    },
+    {
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_elena_r',
+      userName: 'Elena Rostova',
+      userEmail: 'elena@stanford.edu',
+      status: 'break',
+      joinedAt: new Date(Date.now() - 1800000).toISOString()
+    },
+    {
+      roomId: 'room_focus_lab',
+      userId: 'user_alyssa_p',
+      userName: 'Alyssa Vance',
+      userEmail: 'alyssa@mit.edu',
+      status: 'focusing',
+      joinedAt: new Date(Date.now() - 7200000).toISOString()
+    },
+    {
+      roomId: 'room_focus_lab',
+      userId: 'user_marcus_k',
+      userName: 'Marcus Aurelius',
+      userEmail: 'marcus@stoic.org',
+      status: 'idle',
+      joinedAt: new Date(Date.now() - 5400000).toISOString()
+    }
+  ];
+  private _roomMessages: RoomMessage[] = [
+    {
+      id: 'msg_1',
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_alyssa_p',
+      userName: 'Alyssa Vance',
+      content: 'Starting the raft consensus protocol review today.',
+      createdAt: new Date(Date.now() - 1800000).toISOString()
+    },
+    {
+      id: 'msg_2',
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_mock_scholar',
+      userName: 'Kunal Raj',
+      content: 'Locked in for a 25-minute sprint on the replication log.',
+      createdAt: new Date(Date.now() - 1200000).toISOString()
+    },
+    {
+      id: 'msg_3',
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_elena_r',
+      userName: 'Elena Rostova',
+      content: 'Stepping out for a quick 5 min hydration break! ☕',
+      createdAt: new Date(Date.now() - 200000).toISOString()
+    }
+  ];
 
   constructor() {
     this.recalculateAllStreaks();
@@ -127,6 +234,11 @@ export class MockDataService implements IDataService {
       if (!credentials.email || !credentials.password) {
         throw new Error('Please provide email and password');
       }
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('solis_mock_logged_out');
+        } catch {}
+      }
       this._user = { ...MOCK_USER, email: credentials.email };
       this.notify();
       return {
@@ -140,6 +252,11 @@ export class MockDataService implements IDataService {
       await delay(80);
       if (!credentials.email || !credentials.name) {
         throw new Error('Please fill in all signup fields');
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('solis_mock_logged_out');
+        } catch {}
       }
       this._user = {
         id: `usr_${Date.now()}`,
@@ -169,6 +286,11 @@ export class MockDataService implements IDataService {
     logout: async (): Promise<void> => {
       await delay(40);
       this._user = null;
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem('solis_mock_logged_out', 'true');
+        } catch {}
+      }
       this.notify();
     },
 
@@ -1546,6 +1668,213 @@ export class MockDataService implements IDataService {
       const prevLen = this._reflections.length;
       this._reflections = this._reflections.filter((r) => r.id !== id);
       const changed = this._reflections.length !== prevLen;
+      if (changed) this.notify();
+      return changed;
+    }
+  };
+
+  public rooms: IRoomService = {
+    getRooms: async (): Promise<StudyRoom[]> => {
+      await delay(20);
+      const rooms = this._rooms.map((room) => {
+        const participants = this._roomParticipants.filter((p) => p.roomId === room.id);
+        return {
+          ...room,
+          participantsCount: participants.length
+        };
+      });
+      return JSON.parse(JSON.stringify(rooms));
+    },
+
+    getRoom: async (roomId: string): Promise<StudyRoom | null> => {
+      await delay(15);
+      const room = this._rooms.find((r) => r.id === roomId);
+      if (!room) return null;
+      const participants = this._roomParticipants.filter((p) => p.roomId === room.id);
+      return JSON.parse(
+        JSON.stringify({
+          ...room,
+          participantsCount: participants.length
+        })
+      );
+    },
+
+    createRoom: async (payload: CreateRoomPayload): Promise<StudyRoom> => {
+      await delay(30);
+      if (!payload.title || !payload.title.trim()) {
+        throw new ValidationError('Room title is required.');
+      }
+
+      const newRoom: StudyRoom = {
+        id: `room_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        hostId: this._user?.id || 'user_mock_scholar',
+        hostName: this._user?.name || 'Solis Scholar',
+        title: payload.title.trim(),
+        timerState: 'idle',
+        targetDurationSeconds: payload.targetDurationSeconds && payload.targetDurationSeconds > 0
+          ? payload.targetDurationSeconds
+          : 1500,
+        startedAt: null,
+        pausedElapsedSeconds: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        participantsCount: 1
+      };
+
+      this._rooms.unshift(newRoom);
+      this._roomParticipants.push({
+        roomId: newRoom.id,
+        userId: newRoom.hostId,
+        userName: newRoom.hostName,
+        userEmail: this._user?.email || 'scholar@solis.space',
+        status: 'focusing',
+        joinedAt: new Date().toISOString()
+      });
+
+      this.notify();
+      return JSON.parse(JSON.stringify(newRoom));
+    },
+
+    updateTimerState: async (
+      roomId: string,
+      newState: RoomTimerState,
+      targetDuration?: number
+    ): Promise<StudyRoom> => {
+      await delay(25);
+      const room = this._rooms.find((r) => r.id === roomId);
+      if (!room) throw new ValidationError(`Room "${roomId}" not found.`);
+
+      const previousState = room.timerState;
+      if (newState === 'paused') {
+        let additionalElapsed = 0;
+        if (previousState === 'running' && room.startedAt) {
+          const startMs = new Date(room.startedAt).getTime();
+          additionalElapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+        }
+        room.timerState = 'paused';
+        room.pausedElapsedSeconds = (room.pausedElapsedSeconds || 0) + additionalElapsed;
+        room.startedAt = null;
+      } else if (newState === 'running') {
+        room.timerState = 'running';
+        room.startedAt = new Date().toISOString();
+        if (previousState === 'idle') {
+          room.pausedElapsedSeconds = 0;
+          if (targetDuration && targetDuration > 0) {
+            room.targetDurationSeconds = targetDuration;
+          }
+        }
+      } else if (newState === 'idle') {
+        room.timerState = 'idle';
+        room.startedAt = null;
+        room.pausedElapsedSeconds = 0;
+        if (targetDuration && targetDuration > 0) {
+          room.targetDurationSeconds = targetDuration;
+        }
+      }
+
+      room.updatedAt = new Date().toISOString();
+      this.notify();
+      return JSON.parse(JSON.stringify(room));
+    },
+
+    joinRoom: async (roomId: string, status: ParticipantStatus = 'focusing'): Promise<RoomParticipant> => {
+      await delay(20);
+      const room = this._rooms.find((r) => r.id === roomId);
+      if (!room) throw new ValidationError(`Room "${roomId}" not found.`);
+
+      const userId = this._user?.id || 'user_mock_scholar';
+      const existing = this._roomParticipants.find((p) => p.roomId === roomId && p.userId === userId);
+
+      if (existing) {
+        existing.status = status;
+        this.notify();
+        return JSON.parse(JSON.stringify(existing));
+      }
+
+      const newParticipant: RoomParticipant = {
+        roomId,
+        userId,
+        userName: this._user?.name || 'Solis Scholar',
+        userEmail: this._user?.email || 'scholar@solis.space',
+        status,
+        joinedAt: new Date().toISOString()
+      };
+
+      this._roomParticipants.push(newParticipant);
+      this.notify();
+      return JSON.parse(JSON.stringify(newParticipant));
+    },
+
+    leaveRoom: async (roomId: string): Promise<boolean> => {
+      await delay(20);
+      const userId = this._user?.id || 'user_mock_scholar';
+      const prevLen = this._roomParticipants.length;
+      this._roomParticipants = this._roomParticipants.filter(
+        (p) => !(p.roomId === roomId && p.userId === userId)
+      );
+      const changed = this._roomParticipants.length !== prevLen;
+      if (changed) this.notify();
+      return changed;
+    },
+
+    updateParticipantStatus: async (
+      roomId: string,
+      status: ParticipantStatus
+    ): Promise<RoomParticipant> => {
+      await delay(20);
+      const userId = this._user?.id || 'user_mock_scholar';
+      const participant = this._roomParticipants.find((p) => p.roomId === roomId && p.userId === userId);
+      if (!participant) {
+        throw new ValidationError('Participant not found in room.');
+      }
+
+      participant.status = status;
+      this.notify();
+      return JSON.parse(JSON.stringify(participant));
+    },
+
+    getParticipants: async (roomId: string): Promise<RoomParticipant[]> => {
+      await delay(15);
+      const participants = this._roomParticipants.filter((p) => p.roomId === roomId);
+      return JSON.parse(JSON.stringify(participants));
+    },
+
+    getMessages: async (roomId: string, limit = 100): Promise<RoomMessage[]> => {
+      await delay(15);
+      const msgs = this._roomMessages
+        .filter((m) => m.roomId === roomId)
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .slice(-limit);
+      return JSON.parse(JSON.stringify(msgs));
+    },
+
+    sendMessage: async (roomId: string, content: string): Promise<RoomMessage> => {
+      await delay(25);
+      if (!content || !content.trim()) {
+        throw new ValidationError('Message content cannot be empty.');
+      }
+
+      const newMsg: RoomMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        roomId,
+        userId: this._user?.id || 'user_mock_scholar',
+        userName: this._user?.name || 'Solis Scholar',
+        content: content.trim(),
+        createdAt: new Date().toISOString()
+      };
+
+      this._roomMessages.push(newMsg);
+      this.notify();
+      return JSON.parse(JSON.stringify(newMsg));
+    },
+
+    deleteRoom: async (roomId: string): Promise<boolean> => {
+      await delay(25);
+      const prevLen = this._rooms.length;
+      this._rooms = this._rooms.filter((r) => r.id !== roomId);
+      this._roomParticipants = this._roomParticipants.filter((p) => p.roomId !== roomId);
+      this._roomMessages = this._roomMessages.filter((m) => m.roomId !== roomId);
+      const changed = this._rooms.length !== prevLen;
       if (changed) this.notify();
       return changed;
     }

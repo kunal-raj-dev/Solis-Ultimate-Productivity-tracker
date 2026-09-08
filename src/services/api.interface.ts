@@ -10,6 +10,7 @@ import { Flashcard, CardRating, ReviewQueueItem } from '../types/learning';
 import { RecurringStudyRoutine } from '../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../types/resource';
 import { DailyReflection } from '../types/reflection';
+import { StudyRoom, RoomParticipant, RoomMessage, CreateRoomPayload, RoomTimerState, ParticipantStatus } from '../types/room';
 
 export interface IAuthService {
   getCurrentUser(): Promise<UserProfile | null>;
@@ -140,6 +141,20 @@ export interface IReflectionService {
   deleteReflection(id: string): Promise<boolean>;
 }
 
+export interface IRoomService {
+  getRooms(): Promise<StudyRoom[]>;
+  getRoom(roomId: string): Promise<StudyRoom | null>;
+  createRoom(payload: CreateRoomPayload): Promise<StudyRoom>;
+  updateTimerState(roomId: string, newState: RoomTimerState, targetDuration?: number): Promise<StudyRoom>;
+  joinRoom(roomId: string, status?: ParticipantStatus): Promise<RoomParticipant>;
+  leaveRoom(roomId: string): Promise<boolean>;
+  updateParticipantStatus(roomId: string, status: ParticipantStatus): Promise<RoomParticipant>;
+  getParticipants(roomId: string): Promise<RoomParticipant[]>;
+  getMessages(roomId: string, limit?: number): Promise<RoomMessage[]>;
+  sendMessage(roomId: string, content: string): Promise<RoomMessage>;
+  deleteRoom(roomId: string): Promise<boolean>;
+}
+
 export interface IDataService {
   auth: IAuthService;
   tasks: ITaskService;
@@ -154,5 +169,6 @@ export interface IDataService {
   routines: IRoutineService;
   resources: IResourceService;
   reflections: IReflectionService;
+  rooms: IRoomService;
   subscribe(listener: () => void): () => void;
 }

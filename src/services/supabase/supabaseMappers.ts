@@ -9,6 +9,7 @@ import { Flashcard, ReviewQueueItem } from '../../types/learning';
 import { RecurringStudyRoutine } from '../../types/planning';
 import { StudyResource } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
+import { StudyRoom, RoomParticipant, RoomMessage } from '../../types/room';
 import { calculateStreaks } from '../../utils/streaks';
 import { getISODateString } from '../../utils/date';
 
@@ -328,5 +329,43 @@ export function mapReflection(row: any): DailyReflection {
     reviewCardsCompleted: row.review_cards_completed ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at
+  };
+}
+
+export function mapStudyRoom(row: any, hostName?: string, participantsCount?: number): StudyRoom {
+  return {
+    id: row.id,
+    hostId: row.host_id,
+    hostName: hostName || row.profiles?.name || undefined,
+    title: row.title,
+    timerState: row.timer_state || 'idle',
+    targetDurationSeconds: row.target_duration_seconds ?? 1500,
+    startedAt: row.started_at || null,
+    pausedElapsedSeconds: row.paused_elapsed_seconds ?? 0,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    participantsCount: participantsCount ?? (row.room_participants ? row.room_participants.length : undefined)
+  };
+}
+
+export function mapRoomParticipant(row: any, userName?: string, userEmail?: string): RoomParticipant {
+  return {
+    roomId: row.room_id,
+    userId: row.user_id,
+    userName: userName || row.profiles?.name || undefined,
+    userEmail: userEmail || row.profiles?.email || undefined,
+    status: row.status || 'focusing',
+    joinedAt: row.joined_at
+  };
+}
+
+export function mapRoomMessage(row: any, userName?: string): RoomMessage {
+  return {
+    id: row.id,
+    roomId: row.room_id,
+    userId: row.user_id,
+    userName: userName || row.profiles?.name || undefined,
+    content: row.content,
+    createdAt: row.created_at
   };
 }
