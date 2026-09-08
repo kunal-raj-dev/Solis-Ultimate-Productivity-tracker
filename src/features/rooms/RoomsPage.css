@@ -1,0 +1,246 @@
+/**
+ * Solis - Study Rooms Directory Styling
+ */
+
+.solis-rooms-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: var(--space-12, 48px);
+}
+
+.solis-rooms-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4, 16px);
+  flex-wrap: wrap;
+}
+
+.solis-rooms-header__title {
+  font-size: var(--text-heading-2, 1.75rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.solis-rooms-header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: rgba(255, 107, 74, 0.12);
+  color: var(--color-coral-500, #ff6b4a);
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.solis-rooms-header__badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-coral-500, #ff6b4a);
+  animation: solis-pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes solis-pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.solis-rooms-header__subtitle {
+  font-size: var(--text-body-sm, 0.875rem);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 540px;
+}
+
+.solis-rooms-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  flex-wrap: wrap;
+}
+
+.solis-rooms-search {
+  flex: 1;
+  min-width: 240px;
+  max-width: 400px;
+}
+
+.solis-rooms-filters {
+  display: flex;
+  gap: 6px;
+  background-color: var(--bg-surface, rgba(255, 255, 255, 0.04));
+  padding: 4px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.solis-rooms-filter-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-rooms-filter-btn:hover {
+  color: var(--text-primary);
+}
+
+.solis-rooms-filter-btn--active {
+  background-color: var(--bg-surface-elevated, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.solis-rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4, 16px);
+}
+
+.solis-room-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--bg-surface, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-5, 20px);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-room-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-focus, rgba(255, 107, 74, 0.3));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.solis-room-card--running {
+  border-left: 3px solid var(--color-sage-500, #10b981);
+}
+
+.solis-room-card--paused {
+  border-left: 3px solid var(--color-amber-500, #f59e0b);
+}
+
+.solis-room-card--idle {
+  border-left: 3px solid var(--border-subtle, rgba(255, 255, 255, 0.2));
+}
+
+.solis-room-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3, 12px);
+}
+
+.solis-room-card__status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.solis-room-card__status-pill--running {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: var(--color-sage-500, #10b981);
+}
+
+.solis-room-card__status-pill--paused {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: var(--color-amber-500, #f59e0b);
+}
+
+.solis-room-card__status-pill--idle {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+.solis-room-card__duration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-micro, 0.6875rem);
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.solis-room-card__title {
+  font-size: var(--text-body-lg, 1.125rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.solis-room-card__host {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-caption, 0.8125rem);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.solis-room-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-4, 16px);
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  margin-top: auto;
+}
+
+.solis-room-card__participants {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption, 0.8125rem);
+  color: var(--text-secondary);
+}
+
+.solis-room-card__enter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md, 8px);
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 600;
+  background-color: var(--color-coral-500, #ff6b4a);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.solis-room-card__enter-btn:hover {
+  background-color: var(--color-coral-600, #ea580c);
+  transform: translateY(-1px);
+}
