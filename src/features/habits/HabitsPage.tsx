@@ -21,7 +21,7 @@ import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { Habit, HabitFrequency } from '../../types/habit';
 import { Goal } from '../../types/goal';
-import { getPastNDaysISO, formatFriendlyDate, isToday } from '../../utils/date';
+import { getPastNDaysISO, isToday } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
 import './HabitsPage.css';
 
@@ -353,31 +353,20 @@ export const HabitsPage: React.FC = () => {
                     {past7Days.map((dateStr) => {
                       const isDone = habit.history[dateStr] === true;
                       const isCurrToday = isToday(dateStr);
+                      const dayLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
 
                       return (
                         <button
                           key={dateStr}
                           type="button"
                           onClick={() => handleToggleDay(habit.id, dateStr)}
-                          title={`${dateStr} (${formatFriendlyDate(dateStr)}): ${isDone ? 'Completed' : 'Missed'}`}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '4px 6px',
-                            borderRadius: '6px',
-                            background: isDone ? 'var(--color-coral-500)' : '#FFFFFF',
-                            color: isDone ? '#FFFFFF' : 'var(--text-secondary)',
-                            border: isCurrToday ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s'
-                          }}
+                          title={`${dayLabel} ${dateStr}${isCurrToday ? ' (Today)' : ''}: ${isDone ? 'Completed' : 'Missed'}`}
+                          className={`solis-habit-day-btn press-tactile ${isCurrToday ? 'solis-habit-day-btn--today' : ''} ${isDone ? 'solis-habit-day-btn--done' : ''}`}
                         >
-                          <span style={{ fontSize: '10px', fontWeight: 600 }}>
-                            {formatFriendlyDate(dateStr).slice(0, 3)}
+                          <span className="solis-habit-day-label">
+                            {dayLabel}
                           </span>
-                          <span style={{ fontSize: '12px' }}>
+                          <span className="solis-habit-day-status">
                             {isDone ? '✓' : '—'}
                           </span>
                         </button>

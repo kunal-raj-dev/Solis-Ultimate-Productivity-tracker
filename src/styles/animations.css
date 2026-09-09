@@ -113,6 +113,45 @@
 .delay-500 { animation-delay: 500ms; }
 
 /* --------------------------------------------------------------------------
+   VIEW TRANSITION API (Modern Browser SPA Continuity)
+   -------------------------------------------------------------------------- */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: 180ms var(--ease-spatial) both fadeOut;
+}
+
+::view-transition-new(root) {
+  animation: 260ms var(--ease-spatial) both fadeIn;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.99); }
+}
+
+@keyframes checkmarkPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-check-pop {
+  animation: checkmarkPop 240ms var(--ease-spring) forwards;
+}
+
+.press-tactile {
+  transition: transform var(--duration-instant) var(--ease-tactile),
+              box-shadow var(--duration-instant) var(--ease-tactile);
+}
+
+.press-tactile:active {
+  transform: scale(0.98);
+}
+
+/* --------------------------------------------------------------------------
    PREFERS-REDUCED-MOTION ACCESSIBILITY OVERRIDES
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
@@ -125,9 +164,15 @@
     scroll-behavior: auto !important;
   }
 
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+
   .solis-atmosphere-orb,
   .animate-pulse-subtle,
-  .skeleton-shimmer {
+  .skeleton-shimmer,
+  .animate-check-pop {
     animation: none !important;
   }
 }

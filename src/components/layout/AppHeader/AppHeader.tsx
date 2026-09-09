@@ -39,7 +39,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch }) => {
     <header className="solis-app-header">
       <div className="solis-app-header__left">
         <div className="solis-app-header__date">
-          <span>{formattedDate}</span>
+          <span className="solis-app-header__date-day">{formattedDate}</span>
           <span className="solis-app-header__time-dot">·</span>
           <span className="solis-app-header__time">{formattedTime}</span>
         </div>

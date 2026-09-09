@@ -83,6 +83,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  min-width: 0;
 }
 
 .solis-notes-index__header {
@@ -118,6 +119,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .solis-note-card:hover {
@@ -175,6 +177,7 @@
   flex-direction: column;
   gap: var(--space-xl);
   position: relative;
+  min-width: 0;
 }
 
 @media (min-width: 1200px) {
@@ -257,15 +260,18 @@
 .solis-notes-canvas__title-input {
   width: 100%;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
-  font-weight: 400;
-  line-height: 1.2;
+  font-size: clamp(1.6rem, 3.2vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--text-primary);
   border: none;
   background: transparent;
   outline: none;
   padding: 0;
+  resize: none;
+  field-sizing: content;
+  min-height: 1.3em;
 }
 
 .solis-notes-canvas__title-input::placeholder {

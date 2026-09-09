@@ -35,7 +35,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   padding: var(--space-xl);
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -44,26 +44,37 @@
   overflow: hidden;
 }
 
+.solis-subject-world-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--border-subtle);
+  transition: opacity var(--transition-fast);
+}
+
 .solis-subject-world-tile:hover {
   border-color: var(--border-default);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.3);
   transform: translateY(-2px);
 }
 
-.solis-subject-world-tile--coral {
-  border-top: 3px solid var(--color-coral-500);
+.solis-subject-world-tile--coral::before {
+  background: linear-gradient(90deg, var(--color-coral-500), rgba(230, 90, 65, 0.3));
 }
 
-.solis-subject-world-tile--amber {
-  border-top: 3px solid var(--color-amber-500);
+.solis-subject-world-tile--amber::before {
+  background: linear-gradient(90deg, var(--color-amber-500), rgba(217, 119, 6, 0.3));
 }
 
-.solis-subject-world-tile--lavender {
-  border-top: 3px solid var(--color-lavender-500);
+.solis-subject-world-tile--lavender::before {
+  background: linear-gradient(90deg, var(--color-lavender-500), rgba(167, 139, 250, 0.3));
 }
 
-.solis-subject-world-tile--sage {
-  border-top: 3px solid var(--color-sage-500);
+.solis-subject-world-tile--sage::before {
+  background: linear-gradient(90deg, var(--color-sage-500), rgba(16, 185, 129, 0.3));
 }
 
 .solis-subject-world-header {
@@ -76,7 +87,8 @@
 .solis-subject-world-title {
   font-family: var(--font-display);
   font-size: var(--text-heading-3);
-  font-weight: 400;
+  font-weight: 500;
+  letter-spacing: -0.015em;
   color: var(--text-primary);
   margin-top: 4px;
 }
@@ -90,8 +102,8 @@
 
 /* Subject Learning Health Summary Breakdown */
 .solis-subject-learning-health {
-  margin: 10px 0 6px;
-  padding: 8px 10px;
+  margin: 12px 0 8px;
+  padding: 10px 12px;
   background: var(--bg-surface-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -100,34 +112,40 @@
 .solis-subject-learning-health__header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin-bottom: 8px;
 }
 
 .solis-subject-learning-health__title {
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .solis-subject-learning-health__topics-count {
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .solis-subject-learning-health__pills {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .solis-health-pill {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 3px 8px;
   border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
+  letter-spacing: 0.02em;
 }
 
 .solis-health-pill--strong {

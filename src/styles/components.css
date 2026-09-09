@@ -170,3 +170,36 @@
   --table-row-height: 40px;
 }
 
+/* --------------------------------------------------------------------------
+   EDITORIAL SPATIAL PRIMITIVES (De-cardified Architecture)
+   -------------------------------------------------------------------------- */
+.editorial-section {
+  position: relative;
+  margin-bottom: var(--space-2xl);
+}
+
+.editorial-rule {
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: var(--space-xl) 0;
+  border: none;
+}
+
+.spatial-surface {
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--duration-swift) var(--ease-spatial),
+              box-shadow var(--duration-swift) var(--ease-spatial);
+}
+
+.spatial-surface--interactive:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-card);
+}
+
+.spatial-surface--subtle {
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid transparent;
+}
+

@@ -331,7 +331,7 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
                   <div className="solis-subject-learning-health__header">
                     <span className="solis-subject-learning-health__title">{health.overallStatusText}</span>
                     <span className="solis-subject-learning-health__topics-count">
-                      {health.topicsAssessedCount}/{health.totalTopicsCount} assessed
+                      {health.topicsAssessedCount} / {health.totalTopicsCount} assessed
                     </span>
                   </div>
                   <div className="solis-subject-learning-health__pills">

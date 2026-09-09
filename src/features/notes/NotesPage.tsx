@@ -80,6 +80,14 @@ export const NotesPage: React.FC = () => {
   const [isRetrying, setIsRetrying] = useState(false);
 
   const hasInitializedSelectionRef = useRef(false);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (titleTextareaRef.current) {
+      titleTextareaRef.current.style.height = 'auto';
+      titleTextareaRef.current.style.height = `${titleTextareaRef.current.scrollHeight}px`;
+    }
+  }, [title, selectedNote]);
 
   const handleCreateFlashcardFromNote = async (cardData: any) => {
     try {
@@ -625,10 +633,15 @@ export const NotesPage: React.FC = () => {
             </div>
 
             {/* Title Input */}
-            <input
-              type="text"
+            <textarea
+              ref={titleTextareaRef}
               value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
+              onChange={(e) => {
+                handleTitleChange(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              rows={1}
               placeholder="Title of this thinking piece..."
               className="solis-notes-canvas__title-input"
             />

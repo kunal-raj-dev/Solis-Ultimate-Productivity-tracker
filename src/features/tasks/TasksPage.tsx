@@ -12,9 +12,10 @@ import {
   AlertCircle,
   X,
   Sparkles,
-  Check
+  Check,
+  Flame
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
@@ -47,6 +48,7 @@ import './TasksPage.css';
 export const TasksPage: React.FC = () => {
   const { addToast } = useToast();
   const { openGuide } = useGuide();
+  const navigate = useNavigate();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
@@ -54,6 +56,10 @@ export const TasksPage: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [isRetrying, setIsRetrying] = useState(false);
   const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+
+  // Quick Capture State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
 
   // URL Params for deep linking
   const [searchParams] = useSearchParams();
@@ -191,6 +197,33 @@ export const TasksPage: React.FC = () => {
     } catch {
       setTasks(prevTasks);
       addToast({ title: 'Could not toggle task', type: 'error' });
+    }
+  };
+
+  const handleQuickCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = quickTitle.trim();
+    if (!trimmed) return;
+
+    setIsQuickSubmitting(true);
+    try {
+      const created = await dataService.tasks.createTask({
+        title: trimmed,
+        category: (selectedCategory !== 'all' ? selectedCategory : 'study') as TaskCategory,
+        priority: 'medium',
+        dueDate: getISODateString(new Date())
+      });
+      setTasks((prev) => [created, ...prev]);
+      setQuickTitle('');
+      addToast({ title: 'Task Captured', description: created.title, type: 'success' });
+    } catch (err) {
+      addToast({
+        title: 'Could not capture task',
+        description: err instanceof Error ? err.message : 'Please check input',
+        type: 'error'
+      });
+    } finally {
+      setIsQuickSubmitting(false);
     }
   };
 
@@ -428,6 +461,29 @@ export const TasksPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Capture Bar (Capture -> Clarify -> Execute) */}
+      <form onSubmit={handleQuickCreate} className="solis-task-quick-capture">
+        <Sparkles size={16} color="var(--color-coral-500)" className="solis-task-quick-sparkle" />
+        <input
+          type="text"
+          value={quickTitle}
+          onChange={(e) => setQuickTitle(e.target.value)}
+          placeholder="Capture a deliberate intention... (Press Enter to commit)"
+          className="solis-task-quick-input"
+          disabled={isQuickSubmitting}
+          aria-label="Quick capture task"
+        />
+        <Button
+          type="submit"
+          variant="accent"
+          size="sm"
+          disabled={!quickTitle.trim() || isQuickSubmitting}
+          isLoading={isQuickSubmitting}
+        >
+          Capture
+        </Button>
+      </form>
+
       {/* Tasks List */}
       {syncStatus === 'error' && tasks.length > 0 && (
         <div
@@ -596,7 +652,29 @@ export const TasksPage: React.FC = () => {
                   </div>
 
                   {/* Right Actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {task.status !== 'completed' && (
+                      <Button
+                        variant="subtle"
+                        size="sm"
+                        className="tactile-press"
+                        leftIcon={<Flame size={13} color="var(--color-coral-500)" />}
+                        onClick={() =>
+                          navigate('/app/focus', {
+                            state: {
+                              title: task.title,
+                              subjectId: task.subjectId,
+                              durationMinutes: task.estimatedMinutes || 25
+                            }
+                          })
+                        }
+                        title="Launch Focus Session on this Task"
+                        aria-label={`Launch focus on ${task.title}`}
+                      >
+                        Focus
+                      </Button>
+                    )}
+
                     <Button
                       variant="ghost"
                       size="sm"

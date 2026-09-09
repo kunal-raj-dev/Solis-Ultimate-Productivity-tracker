@@ -412,8 +412,8 @@ export const DashboardPage: React.FC = () => {
         />
       )}
 
-      {/* 01 // ARRIVAL SCENE & CONTINUITY */}
-      <SceneContainer sceneNumber="01 // ARRIVAL" sceneTitle="Daily Rhythm & Focus Field">
+      {/* ARRIVAL HERO & FOCUS CONTINUITY */}
+      <SceneContainer variant="canvas">
         <div className="solis-arrival-content">
           <div>
             <div className="solis-arrival-greeting__meta">
@@ -594,8 +594,8 @@ export const DashboardPage: React.FC = () => {
         )}
       </SceneContainer>
 
-      {/* 02 // SCULPTURAL MOMENTUM SCENE (CALM & ENCOURAGING) */}
-      <SceneContainer sceneNumber="02 // MOMENTUM" sceneTitle="Daily Resonance & Cognitive Velocity">
+      {/* COGNITIVE VELOCITY & MOMENTUM PULSE */}
+      <SceneContainer variant="canvas">
         {cognitiveReport.status !== 'optimal' && (
           <div style={{ marginBottom: 'var(--space-md)' }}>
             <CognitiveLoadAlert report={cognitiveReport} />

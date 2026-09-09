@@ -87,7 +87,7 @@
 
 .solis-import-stat__num {
   font-family: var(--font-heading);
-  font-size: var(--text-h3);
+  font-size: var(--text-heading-3);
   font-weight: 700;
   color: var(--color-coral-500);
   line-height: 1.1;

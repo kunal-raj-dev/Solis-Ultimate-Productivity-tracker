@@ -15,6 +15,7 @@ import { StudyPlanAgenda } from './components/StudyPlanAgenda';
 import { StudyResourceGrid } from './components/StudyResourceGrid';
 import { SyllabusTopicTree } from './components/SyllabusTopicTree';
 import { SubjectFormModals } from './components/SubjectFormModals';
+import './StudyPage.css';
 
 export const StudyPage: React.FC = () => {
   const { addToast } = useToast();

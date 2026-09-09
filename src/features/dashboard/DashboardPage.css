@@ -197,32 +197,36 @@
   color: var(--color-lavender-400);
 }
 
-/* Continuity Memory Strip */
+/* Continuity Focus Horizon Strip */
 .solis-continuity-strip {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
   background: var(--bg-surface-primary);
-  border: 1px solid var(--color-coral-200);
-  border-radius: var(--radius-xl);
-  padding: 12px 20px;
-  box-shadow: 0 4px 20px rgba(230, 90, 65, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--color-coral-500);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  box-shadow: var(--shadow-subtle);
   flex-wrap: wrap;
-  transition: all var(--transition-fast);
+  transition: all var(--duration-swift) var(--ease-spatial);
 }
 
 .solis-continuity-strip:hover {
-  border-color: var(--color-coral-400);
+  border-color: var(--border-default);
+  border-left-color: var(--color-coral-400);
+  box-shadow: var(--shadow-card);
 }
 
 .solis-continuity-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .solis-continuity-title {
+  font-family: var(--font-interface);
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--text-primary);
@@ -234,23 +238,24 @@
 }
 
 /* --------------------------------------------------------------------------
-   02 // SCULPTURAL MOMENTUM SCENE
+   02 // COGNITIVE VELOCITY & MOMENTUM PULSE (Sculptural & Adaptive)
    -------------------------------------------------------------------------- */
 .solis-momentum-hero {
-  background: linear-gradient(145deg, #181615 0%, #241D19 50%, #351C15 100%);
-  color: var(--color-ivory-50);
-  border-radius: var(--radius-2xl);
+  background: var(--bg-surface-primary);
+  color: var(--text-primary);
+  border-radius: var(--radius-xl);
   padding: var(--space-2xl);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  transition: border-color var(--duration-swift) var(--ease-spatial);
 }
 
 @media (max-width: 640px) {
   .solis-momentum-hero {
     padding: var(--space-lg) var(--space-md);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
   }
   .solis-momentum-hero__layout {
     gap: var(--space-lg);
@@ -259,7 +264,7 @@
 
 @media (min-width: 1024px) {
   .solis-momentum-hero {
-    padding: var(--space-3xl);
+    padding: var(--space-2xl) var(--space-3xl);
   }
 }
 
@@ -281,25 +286,25 @@
 
 .solis-momentum-score-sculpture {
   font-family: var(--font-display);
-  font-size: clamp(3.75rem, 8vw, 6.5rem);
+  font-size: clamp(3.5rem, 7vw, 5.75rem);
   font-weight: 300;
-  line-height: 0.9;
+  line-height: 0.95;
   letter-spacing: -0.04em;
-  color: var(--color-ivory-50);
+  color: var(--text-primary);
   display: flex;
   align-items: baseline;
 }
 
 .solis-momentum-score-sculpture span {
   font-size: 1.75rem;
-  color: var(--color-coral-300);
+  color: var(--color-coral-500);
   margin-left: 4px;
 }
 
 .solis-momentum-quad-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md);
+  gap: var(--space-sm);
 }
 
 @media (max-width: 420px) {
@@ -310,11 +315,17 @@
 }
 
 .solis-momentum-quad-pill {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  backdrop-filter: blur(8px);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  transition: border-color var(--duration-swift) var(--ease-spatial),
+              transform var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-momentum-quad-pill:hover {
+  border-color: var(--border-default);
+  transform: translateY(-1px);
 }
 
 /* --------------------------------------------------------------------------

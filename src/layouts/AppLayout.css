@@ -6,7 +6,7 @@
 }
 
 .solis-app-shell--focus {
-  background-color: #100E0D;
+  background-color: var(--bg-canvas);
 }
 
 .solis-app-main-wrapper {

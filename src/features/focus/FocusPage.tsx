@@ -180,6 +180,7 @@ export const FocusPage: React.FC = () => {
           <ParallaxLayer speed={0} style={{ width: '100%', maxWidth: '680px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {/* Top Sanctuary Navigation Zone */}
             <div
+              className="solis-focus-peripheral"
               style={{
                 width: '100%',
                 display: 'flex',
@@ -244,7 +245,7 @@ export const FocusPage: React.FC = () => {
             </div>
 
             {/* Soundscape Synthesizer Bar */}
-            <div className="solis-soundscape-bar">
+            <div className="solis-soundscape-bar solis-focus-peripheral">
               <Headphones size={15} style={{ color: soundscape !== 'none' ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.4)', flexShrink: 0 }} />
               <div style={{ width: '220px' }}>
                 <CustomSelect
@@ -295,6 +296,7 @@ export const FocusPage: React.FC = () => {
 
             {/* Top preset switcher & Acoustic bell */}
             <div
+              className="solis-focus-peripheral"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -349,7 +351,7 @@ export const FocusPage: React.FC = () => {
             </div>
 
             {/* Custom Subject Selector (Subject Worlds) */}
-            <div style={{ width: '100%', maxWidth: '360px', marginBottom: 'var(--space-md)', position: 'relative', zIndex: 10 }}>
+            <div className="solis-focus-peripheral" style={{ width: '100%', maxWidth: '360px', marginBottom: 'var(--space-md)', position: 'relative', zIndex: 10 }}>
               <CustomSelect
                 variant="dark"
                 value={selectedSubjectId}

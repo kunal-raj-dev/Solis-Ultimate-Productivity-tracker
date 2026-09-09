@@ -30,15 +30,25 @@
   letter-spacing: 0.01em;
 }
 
+.solis-app-header__date-day {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
 .solis-app-header__time-dot {
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .solis-app-header__time {
   color: var(--text-primary);
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
 
 .solis-app-header__right {
@@ -51,18 +61,25 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: 6px 12px;
-  background-color: var(--bg-surface-primary);
-  border: 1px solid var(--border-default);
+  padding: 6px 14px;
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   font-size: var(--text-caption);
-  color: var(--text-muted);
-  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+  transition: all var(--duration-swift) var(--ease-spatial);
+  cursor: pointer;
 }
 
 .solis-app-header__search-btn:hover {
-  border-color: var(--border-strong);
+  background-color: var(--bg-surface-tertiary);
+  border-color: var(--border-default);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.solis-app-header__search-btn:active {
+  transform: translateY(0);
 }
 
 .solis-app-header__kbd {
