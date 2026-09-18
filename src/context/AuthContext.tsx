@@ -86,9 +86,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
 
+    // React to dataService repository switches (e.g. switching between Mock and Supabase via OfflineBanner)
+    const unsubscribeDataService = dataService.subscribe(() => {
+      syncUserSession();
+    });
+
     return () => {
       isMountedRef.current = false;
       if (unsubscribeSupabase) unsubscribeSupabase();
+      if (unsubscribeDataService) unsubscribeDataService();
     };
   }, [syncUserSession]);
 

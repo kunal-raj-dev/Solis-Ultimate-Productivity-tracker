@@ -7,43 +7,53 @@ export class SupabaseAuthService implements IAuthService {
   constructor(private ctx: SupabaseServiceContext) {}
 
   getCurrentUser = async (): Promise<UserProfile | null> => {
-    // Fast-path: Check local session first to eliminate redundant HTTP roundtrips
-    const { data: { session } } = await this.ctx.client.auth.getSession();
-    let targetUser = session?.user;
+    try {
+      // Fast-path: Check local session first to eliminate redundant HTTP roundtrips
+      const { data: { session } } = await this.ctx.client.auth.getSession();
+      let targetUser = session?.user;
 
-    if (!targetUser) {
-      const { data: { user }, error } = await this.ctx.client.auth.getUser();
-      if (error || !user) return null;
-      targetUser = user;
+      if (!targetUser) {
+        // Guard network fetch with a 6s timeout against sleeping / paused Supabase instances
+        const userPromise = this.ctx.client.auth.getUser();
+        const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((resolve) =>
+          setTimeout(() => resolve({ data: { user: null }, error: new Error('Supabase getUser timed out after 6000ms') }), 6000)
+        );
+        const { data: { user }, error } = await Promise.race([userPromise, timeoutPromise]);
+        if (error || !user) return null;
+        targetUser = user;
+      }
+
+      const { data: profile, error: profileErr } = await this.ctx.client
+        .from('profiles')
+        .select('*')
+        .eq('id', targetUser.id)
+        .single();
+
+      if (profileErr || !profile) {
+        return {
+          id: targetUser.id,
+          name: targetUser.user_metadata?.name || 'Solis Scholar',
+          email: targetUser.email || '',
+          focusField: targetUser.user_metadata?.focus_field || 'Systems Architecture & Computational Design',
+          createdAt: targetUser.created_at,
+          updatedAt: targetUser.created_at,
+          preferences: {
+            theme: 'light',
+            soundEnabled: true,
+            defaultFocusDurationMinutes: 25,
+            defaultBreakDurationMinutes: 5,
+            dailyStudyGoalMinutes: 180,
+            dailyTasksGoalCount: 5,
+            focusGradientTheme: 'momentum'
+          }
+        };
+      }
+
+      return mapProfile(profile);
+    } catch (err) {
+      console.warn('[SupabaseAuthService] Session retrieval error or timeout:', err);
+      return null;
     }
-
-    const { data: profile, error: profileErr } = await this.ctx.client
-      .from('profiles')
-      .select('*')
-      .eq('id', targetUser.id)
-      .single();
-
-    if (profileErr || !profile) {
-      return {
-        id: targetUser.id,
-        name: targetUser.user_metadata?.name || 'Solis Scholar',
-        email: targetUser.email || '',
-        focusField: targetUser.user_metadata?.focus_field || 'Systems Architecture & Computational Design',
-        createdAt: targetUser.created_at,
-        updatedAt: targetUser.created_at,
-        preferences: {
-          theme: 'light',
-          soundEnabled: true,
-          defaultFocusDurationMinutes: 25,
-          defaultBreakDurationMinutes: 5,
-          dailyStudyGoalMinutes: 180,
-          dailyTasksGoalCount: 5,
-          focusGradientTheme: 'momentum'
-        }
-      };
-    }
-
-    return mapProfile(profile);
   };
 
   login = async (credentials: LoginCredentials): Promise<AuthSession> => {
