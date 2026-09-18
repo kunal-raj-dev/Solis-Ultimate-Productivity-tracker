@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "verify": "tsc -b && vitest run && vite build"
+    "verify": "tsc -b && vitest run && vite build",
+    "keepalive": "node scripts/keepalive.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
