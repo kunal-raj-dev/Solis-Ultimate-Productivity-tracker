@@ -6,7 +6,6 @@ import { AppHeader } from '../components/layout/AppHeader/AppHeader';
 import { MobileNav } from '../components/layout/MobileNav/MobileNav';
 import { AtmosphereCanvas } from '../components/layout/AtmosphereCanvas/AtmosphereCanvas';
 import { CommandPalette } from '../components/layout/CommandPalette/CommandPalette';
-import { OfflineBanner } from '../components/feedback/OfflineBanner/OfflineBanner';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { FocusProvider } from '../context/FocusContext';
 import { MiniFocusPlayer } from '../components/layout/MiniFocusPlayer/MiniFocusPlayer';
@@ -36,7 +35,6 @@ export const AppLayout: React.FC = () => {
           {!isFocus && <Sidebar />}
 
           <div className="solis-app-main-wrapper">
-            <OfflineBanner />
             {!isFocus && <AppHeader onOpenSearch={() => setIsCommandOpen(true)} />}
             <main className={cn('solis-app-view', isFocus && 'solis-app-view--focus')}>
               <Outlet />

@@ -6,6 +6,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { DataProvider } from '../context/DataContext';
 import { GuideProvider } from '../context/GuideContext';
 import { ToastContainer } from '../components/feedback/Toast/ToastContainer';
+import { OfflineBanner } from '../components/feedback/OfflineBanner/OfflineBanner';
 import { ErrorBoundary } from '../components/feedback/ErrorBoundary/ErrorBoundary';
 
 export const RootLayout: React.FC = () => {
@@ -16,6 +17,7 @@ export const RootLayout: React.FC = () => {
           <DataProvider>
             <ToastProvider>
               <GuideProvider>
+                <OfflineBanner />
                 <Outlet />
                 <ToastContainer />
               </GuideProvider>
