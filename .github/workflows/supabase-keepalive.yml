@@ -1,0 +1,35 @@
+name: Solis Supabase & Uptime Keepalive
+
+on:
+  schedule:
+    # Runs every 2 days at 06:00 UTC to prevent Supabase 7-day free tier inactivity pause
+    - cron: '0 6 */2 * *'
+  workflow_dispatch:
+    # Allows manual one-click trigger from GitHub Actions tab
+
+jobs:
+  keepalive:
+    name: Supabase & Web Inactivity Preventer
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Execute High-Reliability Keepalive
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://tmxrupqgttaxlcrrcubt.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_-vxrkvw_6Ef3rwFd957ymw_gfmM99Co' }}
+          SITE_URL: ${{ secrets.SITE_URL || 'https://solis-ultimate-productivity-tracker.vercel.app' }}
+        run: |
+          node scripts/keepalive.mjs
