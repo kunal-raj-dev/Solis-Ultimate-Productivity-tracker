@@ -37,7 +37,7 @@ import { StudySubject, StudySession, StudyPlanItem, StudyTopic } from '../../typ
 import { Note, NoteFilterOptions } from '../../types/note';
 import { FocusSession } from '../../types/focus';
 import { Habit } from '../../types/habit';
-import { Goal, GoalMilestone } from '../../types/goal';
+import { Goal, GoalMilestone, GoalStatus } from '../../types/goal';
 import { Flashcard, CardRating, ReviewQueueItem } from '../../types/learning';
 import { RecurringStudyRoutine } from '../../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../../types/resource';
@@ -916,6 +916,7 @@ export class MockDataService implements IDataService {
         mode: session.mode || 'pomodoro',
         durationMinutes: session.durationMinutes || 25,
         breakDurationMinutes: session.breakDurationMinutes,
+        taskId: session.taskId,
         subjectId: session.subjectId,
         subjectName: sub?.name,
         planItemId: session.planItemId,
@@ -923,6 +924,11 @@ export class MockDataService implements IDataService {
         title: session.title || 'Deep Focus Pod Session',
         completed: session.completed ?? true,
         interruptionsCount: session.interruptionsCount || 0,
+        flowQuality: session.flowQuality,
+        soundscapeType: session.soundscapeType,
+        targetOutcome: session.targetOutcome,
+        checkpointCompleted: session.checkpointCompleted,
+        parkedThoughts: session.parkedThoughts ? [...session.parkedThoughts] : undefined,
         notes: session.notes?.trim() || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1048,6 +1054,20 @@ export class MockDataService implements IDataService {
       }
 
       const sub = goal.subjectId ? this._subjects.find((s) => s.id === goal.subjectId) : undefined;
+      const initialMilestones: GoalMilestone[] = (goal.milestones || []).map((m, idx) => ({
+        id: m.id || `m_${Date.now()}_${idx}`,
+        title: m.title.trim(),
+        targetDate: m.targetDate || '',
+        completed: m.completed || false,
+        completedAt: m.completed ? new Date().toISOString() : undefined
+      }));
+      const completedCount = initialMilestones.filter((m) => m.completed).length;
+      const progressPercentage = initialMilestones.length > 0
+        ? Math.round((completedCount / initialMilestones.length) * 100)
+        : 0;
+
+      const initialStatus: GoalStatus = goal.status || (progressPercentage === 100 && initialMilestones.length > 0 ? 'completed' : 'active');
+
       const newGoal: Goal = {
         id: `gol_${Date.now()}`,
         subjectId: goal.subjectId,
@@ -1055,13 +1075,18 @@ export class MockDataService implements IDataService {
         title: goal.title!.trim(),
         description: goal.description ? goal.description.trim() : undefined,
         horizon: goal.horizon || 'medium_term',
-        status: goal.status || 'active',
+        status: initialStatus,
         category: goal.category || 'academic',
+        experienceType: goal.experienceType || 'standard',
+        targetScore: goal.targetScore,
+        examWeight: goal.examWeight !== undefined && goal.examWeight !== null ? Number(goal.examWeight) : undefined,
+        projectRepositoryUrl: goal.projectRepositoryUrl,
+        deliverables: goal.deliverables || [],
         targetDate: goal.targetDate || getISODateString(new Date()),
-        progressPercentage: 0,
+        progressPercentage,
         priority: goal.priority || 'high',
         color: goal.color || 'coral',
-        milestones: goal.milestones || [],
+        milestones: initialMilestones,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -1082,6 +1107,11 @@ export class MockDataService implements IDataService {
         ...updates,
         updatedAt: new Date().toISOString()
       };
+
+      if ('targetScore' in updates && !updates.targetScore) delete updated.targetScore;
+      if ('examWeight' in updates && (updates.examWeight === null || updates.examWeight === undefined)) delete updated.examWeight;
+      if ('projectRepositoryUrl' in updates && !updates.projectRepositoryUrl) delete updated.projectRepositoryUrl;
+      if ('deliverables' in updates && (!updates.deliverables || updates.deliverables.length === 0)) updated.deliverables = [];
 
       this._goals[index] = updated;
       this.notify();
@@ -1117,8 +1147,40 @@ export class MockDataService implements IDataService {
       const total = goal.milestones.length;
       const completed = goal.milestones.filter((m) => m.completed).length;
       goal.progressPercentage = Math.round((completed / total) * 100);
+      if (goal.progressPercentage === 100) {
+        goal.status = 'completed';
+      } else if (goal.status === 'completed') {
+        goal.status = 'active';
+      }
       goal.updatedAt = new Date().toISOString();
 
+      this.notify();
+      return JSON.parse(JSON.stringify(goal));
+    },
+
+    updateMilestone: async (goalId: string, milestoneId: string, updates: Partial<GoalMilestone>): Promise<Goal> => {
+      await delay(20);
+      const goal = this._goals.find((g) => g.id === goalId);
+      if (!goal) throw new Error(`Goal ${goalId} not found`);
+
+      const milestone = goal.milestones.find((m) => m.id === milestoneId);
+      if (!milestone) throw new Error(`Milestone ${milestoneId} not found`);
+
+      if (updates.title !== undefined) milestone.title = updates.title.trim();
+      if (updates.targetDate !== undefined) milestone.targetDate = updates.targetDate;
+      if (updates.completed !== undefined) {
+        milestone.completed = updates.completed;
+        milestone.completedAt = updates.completed ? new Date().toISOString() : undefined;
+      }
+
+      const total = goal.milestones.length;
+      const completed = goal.milestones.filter((m) => m.completed).length;
+      goal.progressPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      if (goal.progressPercentage === 100) goal.status = 'completed';
+      else if (goal.status === 'completed') goal.status = 'active';
+
+      goal.updatedAt = new Date().toISOString();
       this.notify();
       return JSON.parse(JSON.stringify(goal));
     },
@@ -1155,6 +1217,11 @@ export class MockDataService implements IDataService {
       const total = goal.milestones.length;
       const completed = goal.milestones.filter((m) => m.completed).length;
       goal.progressPercentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+      if (total > 0 && goal.progressPercentage === 100) {
+        goal.status = 'completed';
+      } else if (goal.status === 'completed') {
+        goal.status = 'active';
+      }
       goal.updatedAt = new Date().toISOString();
 
       this.notify();

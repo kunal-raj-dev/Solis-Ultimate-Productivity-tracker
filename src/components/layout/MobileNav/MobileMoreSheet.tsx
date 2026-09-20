@@ -39,7 +39,7 @@ const MORE_SECTIONS = [
     items: [
       {
         id: 'notes',
-        label: 'Knowledge Studio',
+        label: 'Knowledge & Notes',
         path: '/app/notes',
         description: 'External memory & intellectual synthesis',
         icon: FileText,
@@ -52,15 +52,15 @@ const MORE_SECTIONS = [
     items: [
       {
         id: 'habits',
-        label: 'Rituals & Consistency',
+        label: 'Habits & Rituals',
         path: '/app/habits',
-        description: 'Daily consistency matrix',
+        description: 'Daily consistency matrix & streak tracking',
         icon: Repeat,
         color: 'sage'
       },
       {
         id: 'goals',
-        label: 'Goal Horizons',
+        label: 'Goals',
         path: '/app/goals',
         description: 'Milestone progression trajectories',
         icon: Target,
@@ -68,9 +68,9 @@ const MORE_SECTIONS = [
       },
       {
         id: 'analytics',
-        label: 'Cognitive Rhythm',
+        label: 'Analytics',
         path: '/app/analytics',
-        description: 'Study velocity & intensity constellation',
+        description: 'Study velocity, trends & time distribution',
         icon: BarChart3,
         color: 'amber'
       },
@@ -89,7 +89,7 @@ const MORE_SECTIONS = [
     items: [
       {
         id: 'settings',
-        label: 'Preferences',
+        label: 'Settings',
         path: '/app/settings',
         description: 'Study parameters & learner profile',
         icon: Sliders,

@@ -2,41 +2,32 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus,
   Target,
-  CheckCircle2,
-  Circle,
-  Trash2,
-  Edit2,
   Sparkles,
-  X,
-  GraduationCap,
-  FolderGit2
+  FilterX
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Card } from '../../components/ui/Card/Card';
-import { Progress } from '../../components/ui/Progress/Progress';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Modal } from '../../components/feedback/Modal/Modal';
-import { Input } from '../../components/ui/Input/Input';
-import { DatePicker } from '../../components/ui/DatePicker';
-import { CustomSelect } from '../../components/ui/Select/CustomSelect';
-import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { ExamWorkspaceModal } from '../../components/features/Goals/ExamWorkspaceModal';
 import { ProjectWorkspaceModal } from '../../components/features/Goals/ProjectWorkspaceModal';
+import { GoalHeaderStats } from './components/GoalHeaderStats';
+import { GoalFilterBar, SortOption } from './components/GoalFilterBar';
+import { GoalCard } from './components/GoalCard';
+import { GoalModal } from './components/GoalModal';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
-import { Goal, GoalHorizon, GoalExperienceType } from '../../types/goal';
+import { Goal, GoalHorizon, GoalExperienceType, GoalStatus } from '../../types/goal';
 import { StudySubject, StudyTopic } from '../../types/study';
 import { Flashcard } from '../../types/learning';
 import { Task } from '../../types/task';
 import { StudyResource } from '../../types/resource';
 import { Habit } from '../../types/habit';
-import { PriorityLevel } from '../../types/common';
-import { ValidationError } from '../../utils/validation';
 import './GoalsPage.css';
 
 export const GoalsPage: React.FC = () => {
@@ -44,6 +35,7 @@ export const GoalsPage: React.FC = () => {
   const { openGuide } = useGuide();
   const navigate = useNavigate();
 
+  // Core Data State
   const [goals, setGoals] = useState<Goal[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [topics, setTopics] = useState<StudyTopic[]>([]);
@@ -55,11 +47,16 @@ export const GoalsPage: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [isRetrying, setIsRetrying] = useState(false);
 
-  // Active subjects only for goal linkages
-  const activeSubjects = useMemo(() => subjects.filter((s) => s.status !== 'archived'), [subjects]);
+  // Filter & Sort State
+  const [selectedHorizon, setSelectedHorizon] = useState<GoalHorizon | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedExpType, setSelectedExpType] = useState<GoalExperienceType | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<GoalStatus | 'all'>('active');
+  const [sortBy, setSortBy] = useState<SortOption>('date_asc');
 
-  // Modals
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // Modals State
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
   const [selectedExamGoal, setSelectedExamGoal] = useState<Goal | null>(null);
@@ -67,22 +64,8 @@ export const GoalsPage: React.FC = () => {
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
-  // Form State
-  const [goalTitle, setGoalTitle] = useState('');
-  const [goalDesc, setGoalDesc] = useState('');
-  const [goalExpType, setGoalExpType] = useState<GoalExperienceType>('standard');
-  const [goalSubjectId, setGoalSubjectId] = useState('');
-  const [goalHorizon, setGoalHorizon] = useState<GoalHorizon>('medium_term');
-  const [goalCat, setGoalCat] = useState<'academic' | 'career' | 'skill' | 'personal'>('academic');
-  const [goalTargetDate, setGoalTargetDate] = useState('2026-12-31');
-  const [goalPriority, setGoalPriority] = useState<PriorityLevel>('high');
-  const [goalTargetScore, setGoalTargetScore] = useState('95%');
-  const [goalExamWeight, setGoalExamWeight] = useState('40');
-  const [goalRepoUrl, setGoalRepoUrl] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
-
-  // Inline milestone inputs per goal
-  const [newMilestoneTitles, setNewMilestoneTitles] = useState<Record<string, string>>({});
+  // Active subjects only for goal linkages
+  const activeSubjects = useMemo(() => subjects.filter((s) => s.status !== 'archived'), [subjects]);
 
   const loadGoals = useCallback(async (isInitial = false) => {
     if (isInitial) setInitialLoadStatus('loading');
@@ -94,7 +77,7 @@ export const GoalsPage: React.FC = () => {
         dataService.study.getSubjects(),
         dataService.tasks.getTasks(),
         dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([]),
-        dataService.resources ? dataService.resources.getResources() : Promise.resolve([]) ,
+        dataService.resources ? dataService.resources.getResources() : Promise.resolve([]),
         dataService.habits ? dataService.habits.getHabits() : Promise.resolve([])
       ]);
 
@@ -110,7 +93,9 @@ export const GoalsPage: React.FC = () => {
       if (subsRes.status === 'fulfilled') {
         setSubjects(subsRes.value);
         try {
-          const topicArrays = await Promise.all(subsRes.value.map((s) => dataService.study.getTopics(s.id).catch(() => [])));
+          const topicArrays = await Promise.all(
+            subsRes.value.map((s) => dataService.study.getTopics(s.id).catch(() => []))
+          );
           setTopics(topicArrays.flat());
         } catch {
           // secondary topics
@@ -121,7 +106,6 @@ export const GoalsPage: React.FC = () => {
       if (cardsRes.status === 'fulfilled') setFlashcards(cardsRes.value);
       if (resourcesRes.status === 'fulfilled') setResources(resourcesRes.value);
       if (habitsRes.status === 'fulfilled') setHabits(habitsRes.value);
-
     } catch (err) {
       console.error('Failed to load goals data:', err);
       setGoals((current) => {
@@ -147,84 +131,30 @@ export const GoalsPage: React.FC = () => {
   };
 
   const openCreateModal = () => {
-    setGoalTitle('');
-    setGoalDesc('');
-    setGoalExpType('standard');
-    setGoalSubjectId(activeSubjects[0]?.id || '');
-    setGoalHorizon('medium_term');
-    setGoalCat('academic');
-    setGoalTargetDate('2026-12-31');
-    setGoalPriority('high');
-    setGoalTargetScore('95%');
-    setGoalExamWeight('40');
-    setGoalRepoUrl('');
-    setFormError(null);
-    setIsCreateModalOpen(true);
+    setEditingGoal(null);
+    setIsGoalModalOpen(true);
   };
 
   const openEditModal = (g: Goal) => {
     setEditingGoal(g);
-    setGoalTitle(g.title);
-    setGoalDesc(g.description || '');
-    setGoalExpType(g.experienceType || 'standard');
-    setGoalSubjectId(g.subjectId || (activeSubjects[0]?.id ?? ''));
-    setGoalHorizon(g.horizon);
-    setGoalCat(g.category);
-    setGoalTargetDate(g.targetDate);
-    setGoalPriority(g.priority);
-    setGoalTargetScore(g.targetScore || '95%');
-    setGoalExamWeight(String(g.examWeight || '40'));
-    setGoalRepoUrl(g.projectRepositoryUrl || '');
-    setFormError(null);
+    setIsGoalModalOpen(true);
   };
 
-  const handleSaveGoal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
+  const handleSaveGoal = async (goalData: Partial<Goal>) => {
     const prevGoals = goals;
-
     try {
       if (editingGoal) {
-        const updated = await dataService.goals.updateGoal(editingGoal.id, {
-          title: goalTitle,
-          description: goalDesc,
-          experienceType: goalExpType,
-          subjectId: goalSubjectId || undefined,
-          horizon: goalHorizon,
-          category: goalCat,
-          targetDate: goalTargetDate,
-          priority: goalPriority,
-          targetScore: goalExpType === 'exam' ? goalTargetScore : undefined,
-          examWeight: goalExpType === 'exam' ? parseInt(goalExamWeight, 10) || 40 : undefined,
-          projectRepositoryUrl: goalExpType === 'project' ? goalRepoUrl : undefined
-        });
+        const updated = await dataService.goals.updateGoal(editingGoal.id, goalData);
         setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-        setEditingGoal(null);
         addToast({ title: 'Goal Horizon Updated', description: updated.title, type: 'success' });
       } else {
-        const created = await dataService.goals.createGoal({
-          title: goalTitle,
-          description: goalDesc,
-          experienceType: goalExpType,
-          subjectId: goalSubjectId || undefined,
-          horizon: goalHorizon,
-          category: goalCat,
-          targetDate: goalTargetDate,
-          priority: goalPriority,
-          color: goalExpType === 'exam' ? 'coral' : goalExpType === 'project' ? 'amber' : 'sage',
-          targetScore: goalExpType === 'exam' ? goalTargetScore : undefined,
-          examWeight: goalExpType === 'exam' ? parseInt(goalExamWeight, 10) || 40 : undefined,
-          projectRepositoryUrl: goalExpType === 'project' ? goalRepoUrl : undefined,
-          milestones: []
-        });
+        const created = await dataService.goals.createGoal(goalData);
         setGoals((prev) => [...prev, created]);
-        setIsCreateModalOpen(false);
         addToast({ title: 'Goal Horizon Established', description: created.title, type: 'success' });
       }
     } catch (err) {
       setGoals(prevGoals);
-      if (err instanceof ValidationError) setFormError(err.message);
-      else setFormError(err instanceof Error ? err.message : 'Error saving goal');
+      throw err;
     }
   };
 
@@ -260,16 +190,12 @@ export const GoalsPage: React.FC = () => {
     }
   };
 
-  const handleAddMilestone = async (goalId: string, e: React.FormEvent) => {
-    e.preventDefault();
-    const title = newMilestoneTitles[goalId]?.trim();
-    if (!title) return;
+  const handleAddMilestone = async (goalId: string, title: string, targetDate?: string) => {
     const prevGoals = goals;
-
     try {
-      const updated = await dataService.goals.addMilestone(goalId, { title });
+      const updated = await dataService.goals.addMilestone(goalId, { title, targetDate });
       setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
-      setNewMilestoneTitles((prev) => ({ ...prev, [goalId]: '' }));
+      addToast({ title: 'Milestone Added', description: title, type: 'success' });
     } catch (err) {
       setGoals(prevGoals);
       addToast({
@@ -285,16 +211,114 @@ export const GoalsPage: React.FC = () => {
     try {
       const updated = await dataService.goals.deleteMilestone(goalId, milestoneId);
       setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
+      addToast({ title: 'Milestone removed', type: 'info' });
     } catch {
       setGoals(prevGoals);
       addToast({ title: 'Could not remove milestone', type: 'error' });
     }
   };
 
+  const handleToggleStatus = async (goal: Goal) => {
+    const newStatus: GoalStatus = goal.status === 'completed' ? 'active' : 'completed';
+    const prevGoals = goals;
+    try {
+      const updated = await dataService.goals.updateGoal(goal.id, { status: newStatus });
+      setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+      addToast({
+        title: newStatus === 'completed' ? 'Horizon Completed!' : 'Horizon Reactivated',
+        description: goal.title,
+        type: 'success'
+      });
+    } catch {
+      setGoals(prevGoals);
+      addToast({ title: 'Failed to update status', type: 'error' });
+    }
+  };
+
+  const handleLaunchFocus = (subjectId?: string, title?: string) => {
+    navigate(
+      `/app/focus?subjectId=${subjectId || ''}&title=${encodeURIComponent(title || 'Horizon Focus')}`
+    );
+  };
+
+  const handleScrollToGoal = (goalId: string) => {
+    const el = document.getElementById(`goal-card-${goalId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.transition = 'box-shadow 0.3s ease';
+      el.style.boxShadow = '0 0 0 3px var(--color-coral-500)';
+      setTimeout(() => {
+        el.style.boxShadow = '';
+      }, 1500);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setSelectedHorizon('all');
+    setSelectedExpType('all');
+    setSelectedCategory('all');
+    setSelectedStatus('active');
+    setSearchQuery('');
+    setSortBy('date_asc');
+  };
+
+  // Filter & Sort Logic
+  const filteredGoals = useMemo(() => {
+    return goals
+      .filter((g) => {
+        // Horizon filter
+        if (selectedHorizon !== 'all' && g.horizon !== selectedHorizon) return false;
+
+        // Experience mode filter
+        if (selectedExpType !== 'all') {
+          const type = g.experienceType || 'standard';
+          if (type !== selectedExpType) return false;
+        }
+
+        // Category filter
+        if (selectedCategory !== 'all' && g.category !== selectedCategory) return false;
+
+        // Status filter
+        if (selectedStatus !== 'all' && g.status !== selectedStatus) return false;
+
+        // Search query
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim();
+          const matchTitle = g.title.toLowerCase().includes(q);
+          const matchDesc = g.description?.toLowerCase().includes(q);
+          const matchSubject = g.subjectName?.toLowerCase().includes(q);
+          const matchDeliverables = g.deliverables?.some((d) => d.toLowerCase().includes(q));
+          if (!matchTitle && !matchDesc && !matchSubject && !matchDeliverables) return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'date_asc') {
+          return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
+        }
+        if (sortBy === 'priority_desc') {
+          const rank: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+          return (rank[b.priority] || 0) - (rank[a.priority] || 0);
+        }
+        if (sortBy === 'progress_desc') {
+          return b.progressPercentage - a.progressPercentage;
+        }
+        if (sortBy === 'progress_asc') {
+          return a.progressPercentage - b.progressPercentage;
+        }
+        if (sortBy === 'title_asc') {
+          return a.title.localeCompare(b.title);
+        }
+        return 0;
+      });
+  }, [goals, selectedHorizon, selectedExpType, selectedCategory, selectedStatus, searchQuery, sortBy]);
+
   return (
     <div>
+      {/* 1. Header with CTA */}
       <SectionHeader
-        tag={<Badge variant="lavender">Long-term Horizons</Badge>}
+        tag={<Badge variant="lavender">Strategic Horizons</Badge>}
         title="Goal Horizons & Milestones"
         subtitle="Connect semester milestones and multi-year vision to daily actionable momentum."
         guideId="goal-horizons"
@@ -306,6 +330,7 @@ export const GoalsPage: React.FC = () => {
         }
       />
 
+      {/* 2. Offline / Server Sync Warning */}
       {syncStatus === 'error' && goals.length > 0 && (
         <div
           style={{
@@ -324,7 +349,7 @@ export const GoalsPage: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sparkles size={14} color="var(--color-amber-500)" />
-            <span>Couldn't sync latest goals with server. Displaying last saved version.</span>
+            <span>Couldn't sync latest goals with server. Displaying cached version.</span>
           </div>
           <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
             Retry Sync
@@ -332,10 +357,12 @@ export const GoalsPage: React.FC = () => {
         </div>
       )}
 
+      {/* 3. Loading, Error, or Main Content */}
       {initialLoadStatus === 'loading' && goals.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Skeleton height="200px" />
-          <Skeleton height="200px" />
+          <Skeleton height="120px" />
+          <Skeleton height="240px" />
+          <Skeleton height="240px" />
         </div>
       ) : initialLoadStatus === 'error' && goals.length === 0 ? (
         <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
@@ -351,6 +378,7 @@ export const GoalsPage: React.FC = () => {
         </Card>
       ) : goals.length === 0 ? (
         <EmptyState
+          illustration="observatory"
           icon={Target}
           title="No long-term goal horizons set"
           description="Define clear exam, project, or long-term horizons to anchor and direct your daily focus sessions."
@@ -358,331 +386,98 @@ export const GoalsPage: React.FC = () => {
           onAction={openCreateModal}
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {goals.map((goal) => {
-            const doneCount = goal.milestones.filter((m) => m.completed).length;
-            const totalCount = goal.milestones.length;
+        <>
+          {/* 4. Strategic Executive Overview */}
+          <GoalHeaderStats
+            goals={goals}
+            onLaunchFocus={handleLaunchFocus}
+            onScrollToGoal={handleScrollToGoal}
+          />
 
-            return (
-              <Card key={goal.id}>
-                {/* Header */}
-                <div className="solis-goal-card-header">
-                  <div style={{ flex: 1, minWidth: '240px' }}>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <Badge variant={goal.experienceType === 'exam' ? 'coral' : goal.experienceType === 'project' ? 'amber' : 'neutral'}>
-                        {goal.experienceType === 'exam' ? 'Exam Workspace' : goal.experienceType === 'project' ? 'Project Workspace' : 'Goal'}
-                      </Badge>
-                      <Badge variant="neutral">{goal.category}</Badge>
-                      <Badge variant="neutral">{goal.horizon.replace('_', ' ')}</Badge>
-                      {goal.subjectName && <Badge variant="neutral">{goal.subjectName}</Badge>}
-                      {goal.status === 'completed' && <Badge variant="sage">Completed</Badge>}
-                    </div>
+          {/* 5. Filter & Sort Bar */}
+          <GoalFilterBar
+            goals={goals}
+            selectedHorizon={selectedHorizon}
+            onSelectHorizon={setSelectedHorizon}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedExpType={selectedExpType}
+            onSelectExpType={setSelectedExpType}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            selectedStatus={selectedStatus}
+            onSelectStatus={setSelectedStatus}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onResetFilters={handleResetFilters}
+          />
 
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-heading-2)', color: 'var(--text-primary)' }}>
-                      {goal.title}
-                    </h3>
-                    {goal.description && (
-                      <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        {goal.description}
-                      </p>
-                    )}
-
-                    {goal.experienceType === 'exam' && (
-                      <div style={{ marginTop: '10px' }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          leftIcon={<GraduationCap size={14} />}
-                          onClick={() => {
-                            setSelectedExamGoal(goal);
-                            setIsExamModalOpen(true);
-                          }}
-                        >
-                          Open Exam Command Workspace →
-                        </Button>
-                      </div>
-                    )}
-
-                    {goal.experienceType === 'project' && (
-                      <div style={{ marginTop: '10px' }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          leftIcon={<FolderGit2 size={14} />}
-                          onClick={() => {
-                            setSelectedProjectGoal(goal);
-                            setIsProjectModalOpen(true);
-                          }}
-                        >
-                          Open Project Engineering Workspace →
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="solis-goal-card-actions">
-                    <div>
-                      <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>Target Deadline</div>
-                      <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>{goal.targetDate}</div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <Button variant="ghost" size="sm" onClick={() => openEditModal(goal)} aria-label="Edit goal">
-                        <Edit2 size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeletingGoalId(goal.id)}
-                        aria-label="Delete goal"
-                        style={{ color: 'var(--status-error)' }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress */}
-                <div style={{ margin: '18px 0 16px' }}>
-                  <Progress
-                    value={goal.progressPercentage}
-                    variant="momentum"
-                    showValueText
-                    label={`Milestones Completed: ${doneCount} of ${totalCount}`}
-                  />
-                </div>
-
-                {/* Milestones Manager */}
-                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
-                    Milestones Checklist
-                  </h4>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '10px', marginBottom: '12px' }}>
-                    {goal.milestones.map((m) => (
-                      <div
-                        key={m.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '8px 12px',
-                          borderRadius: '6px',
-                          backgroundColor: m.completed ? 'var(--status-success-bg)' : 'var(--bg-surface-secondary)',
-                          border: '1px solid var(--border-subtle)'
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleToggleMilestone(goal.id, m.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', textAlign: 'left', flex: 1 }}
-                        >
-                          {m.completed ? (
-                            <CheckCircle2 size={16} color="var(--status-success)" />
-                          ) : (
-                            <Circle size={16} color="var(--text-muted)" />
-                          )}
-                          <span
-                            style={{
-                              fontSize: 'var(--text-caption)',
-                              textDecoration: m.completed ? 'line-through' : 'none',
-                              color: m.completed ? 'var(--text-muted)' : 'var(--text-primary)',
-                              fontWeight: 500
-                            }}
-                          >
-                            {m.title}
-                          </span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMilestone(goal.id, m.id)}
-                          style={{ color: 'var(--text-muted)', padding: '2px', background: 'none', border: 'none' }}
-                          title="Remove milestone"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Add Milestone Form */}
-                  <form onSubmit={(e) => handleAddMilestone(goal.id, e)} className="solis-goal-milestone-form" style={{ display: 'flex', gap: '8px', maxWidth: '420px' }}>
-                    <Input
-                      placeholder="Add milestone step..."
-                      value={newMilestoneTitles[goal.id] || ''}
-                      onChange={(e) => setNewMilestoneTitles((prev) => ({ ...prev, [goal.id]: e.target.value }))}
-                    />
-                    <Button variant="secondary" size="sm" type="submit" leftIcon={<Plus size={14} />}>
-                      Add
-                    </Button>
-                  </form>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+          {/* 6. Goals Cards List */}
+          {filteredGoals.length === 0 ? (
+            <Card style={{ textAlign: 'center', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <FilterX size={32} color="var(--text-muted)" />
+              <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+                No goal horizons match the current filters.
+              </div>
+              <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', margin: 0 }}>
+                Try adjusting your search query, horizon tabs, or status filters.
+              </p>
+              <Button variant="secondary" size="sm" onClick={handleResetFilters}>
+                Clear All Filters
+              </Button>
+            </Card>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {filteredGoals.map((goal) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  topics={topics}
+                  flashcards={flashcards}
+                  tasks={tasks}
+                  habits={habits}
+                  onOpenEdit={openEditModal}
+                  onConfirmDelete={(id) => setDeletingGoalId(id)}
+                  onToggleMilestone={handleToggleMilestone}
+                  onAddMilestone={handleAddMilestone}
+                  onDeleteMilestone={handleDeleteMilestone}
+                  onOpenExamWorkspace={(g) => {
+                    setSelectedExamGoal(g);
+                    setIsExamModalOpen(true);
+                  }}
+                  onOpenProjectWorkspace={(g) => {
+                    setSelectedProjectGoal(g);
+                    setIsProjectModalOpen(true);
+                  }}
+                  onLaunchFocus={handleLaunchFocus}
+                  onToggleStatus={handleToggleStatus}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Create / Edit Goal Modal */}
-      <Modal
-        isOpen={isCreateModalOpen || editingGoal !== null}
+      {/* 7. Create / Edit Goal Modal */}
+      <GoalModal
+        isOpen={isGoalModalOpen}
         onClose={() => {
-          setIsCreateModalOpen(false);
+          setIsGoalModalOpen(false);
           setEditingGoal(null);
         }}
-        title={editingGoal ? 'Edit Goal Horizon' : 'Establish Goal Horizon'}
-      >
-        <form onSubmit={handleSaveGoal} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {formError && (
-            <div style={{ color: 'var(--status-error)', fontSize: 'var(--text-caption)' }}>
-              {formError}
-            </div>
-          )}
+        editingGoal={editingGoal}
+        activeSubjects={activeSubjects}
+        onSave={handleSaveGoal}
+      />
 
-          <Input
-            label="Goal Statement"
-            placeholder="e.g. Master Distributed Systems Architecture & Capstone"
-            value={goalTitle}
-            onChange={(e) => setGoalTitle(e.target.value)}
-            required
-            autoFocus
-          />
-
-          <Textarea
-            label="Vision / Objective"
-            placeholder="Why this horizon matters to your intellectual momentum..."
-            value={goalDesc}
-            onChange={(e) => setGoalDesc(e.target.value)}
-          />
-
-          <div className="solis-goals-form-grid">
-            <CustomSelect
-              label="Goal Experience Mode"
-              value={goalExpType}
-              onChange={(val) => setGoalExpType(val as GoalExperienceType)}
-              options={[
-                { value: 'standard', label: 'Standard Milestone Goal' },
-                { value: 'exam', label: 'Exam Preparation Command' },
-                { value: 'project', label: 'Project Engineering Workspace' }
-              ]}
-            />
-
-            {activeSubjects.length > 0 && (
-              <CustomSelect
-                label="Associated Study Subject"
-                value={goalSubjectId}
-                onChange={setGoalSubjectId}
-                options={[
-                  { value: '', label: 'General / No Subject' },
-                  ...activeSubjects.map((s: StudySubject) => ({ value: s.id, label: s.name }))
-                ]}
-              />
-            )}
-          </div>
-
-          {goalExpType === 'exam' && (
-            <div className="solis-goals-form-grid--nested">
-              <Input
-                label="Target Exam Score / Grade"
-                placeholder="e.g. 95% (Distinction)"
-                value={goalTargetScore}
-                onChange={(e) => setGoalTargetScore(e.target.value)}
-              />
-              <Input
-                label="Exam Weight (% of Final Grade)"
-                type="number"
-                placeholder="e.g. 40"
-                value={goalExamWeight}
-                onChange={(e) => setGoalExamWeight(e.target.value)}
-              />
-            </div>
-          )}
-
-          {goalExpType === 'project' && (
-            <div style={{ padding: '12px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-              <Input
-                label="Project Repository / Research URL"
-                placeholder="https://github.com/scholar/storage-engine"
-                value={goalRepoUrl}
-                onChange={(e) => setGoalRepoUrl(e.target.value)}
-              />
-            </div>
-          )}
-
-          <div className="solis-goals-form-grid">
-            <CustomSelect
-              label="Horizon Period"
-              value={goalHorizon}
-              onChange={(val) => setGoalHorizon(val as GoalHorizon)}
-              options={[
-                { value: 'short_term', label: 'Short-Term (1-3 months)' },
-                { value: 'medium_term', label: 'Medium-Term (Semester)' },
-                { value: 'long_term', label: 'Long-Term (1-2 years)' },
-                { value: 'vision', label: 'Life Vision' }
-              ]}
-            />
-
-            <CustomSelect
-              label="Category"
-              value={goalCat}
-              onChange={(val) => setGoalCat(val as any)}
-              options={[
-                { value: 'academic', label: 'Academic & Courses' },
-                { value: 'career', label: 'Career & Industry' },
-                { value: 'skill', label: 'Cognitive Skill' },
-                { value: 'personal', label: 'Personal Growth' }
-              ]}
-            />
-          </div>
-
-          <div className="solis-goals-form-grid">
-            <DatePicker
-              label="Target Completion Date"
-              value={goalTargetDate}
-              onChange={setGoalTargetDate}
-            />
-
-            <CustomSelect
-              label="Priority"
-              value={goalPriority}
-              onChange={(val) => setGoalPriority(val as PriorityLevel)}
-              options={[
-                { value: 'urgent', label: 'Urgent' },
-                { value: 'high', label: 'High' },
-                { value: 'medium', label: 'Medium' },
-                { value: 'low', label: 'Low' }
-              ]}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => {
-                setIsCreateModalOpen(false);
-                setEditingGoal(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="accent" type="submit" leftIcon={<Sparkles size={14} />}>
-              {editingGoal ? 'Update Goal' : 'Establish Goal'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
+      {/* 8. Delete Confirmation Modal */}
       <Modal
         isOpen={deletingGoalId !== null}
         onClose={() => setDeletingGoalId(null)}
         title="Delete Goal Horizon"
       >
         <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Are you sure you want to delete this goal horizon and its milestones?
+          Are you sure you want to delete this goal horizon and its milestones? This action cannot be undone.
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
           <Button variant="ghost" onClick={() => setDeletingGoalId(null)}>
@@ -698,7 +493,7 @@ export const GoalsPage: React.FC = () => {
         </div>
       </Modal>
 
-      {/* Exam Command Workspace Modal */}
+      {/* 9. Exam Command Workspace Modal */}
       <ExamWorkspaceModal
         isOpen={isExamModalOpen}
         onClose={() => {
@@ -721,11 +516,11 @@ export const GoalsPage: React.FC = () => {
         }}
         onLaunchFocus={(subjectId, title) => {
           setIsExamModalOpen(false);
-          navigate(`/app/focus?subjectId=${subjectId || ''}&title=${encodeURIComponent(title || 'Exam Focus')}`);
+          handleLaunchFocus(subjectId, title);
         }}
       />
 
-      {/* Project Engineering Workspace Modal */}
+      {/* 10. Project Engineering Workspace Modal */}
       <ProjectWorkspaceModal
         isOpen={isProjectModalOpen}
         onClose={() => {
@@ -743,7 +538,7 @@ export const GoalsPage: React.FC = () => {
         }}
         onLaunchFocus={(subjectId, title) => {
           setIsProjectModalOpen(false);
-          navigate(`/app/focus?subjectId=${subjectId || ''}&title=${encodeURIComponent(title || 'Project Sprint')}`);
+          handleLaunchFocus(subjectId, title);
         }}
       />
     </div>

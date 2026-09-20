@@ -13,7 +13,8 @@ import {
   X,
   Sparkles,
   Check,
-  Flame
+  Flame,
+  Target
 } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
@@ -40,6 +41,7 @@ import {
   TaskSortField
 } from '../../types/task';
 import { StudySubject } from '../../types/study';
+import { Goal } from '../../types/goal';
 import { PriorityLevel } from '../../types/common';
 import { formatFriendlyDate, getISODateString } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
@@ -52,6 +54,7 @@ export const TasksPage: React.FC = () => {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [isRetrying, setIsRetrying] = useState(false);
@@ -85,6 +88,7 @@ export const TasksPage: React.FC = () => {
   const [formCategory, setFormCategory] = useState<TaskCategory>('study');
   const [formPriority, setFormPriority] = useState<PriorityLevel>('medium');
   const [formSubjectId, setFormSubjectId] = useState<string>('');
+  const [formGoalId, setFormGoalId] = useState<string>('');
   const [formDueDate, setFormDueDate] = useState(getISODateString(new Date()));
   const [formDueTime, setFormDueTime] = useState('18:00');
   const [formEstimatedMinutes, setFormEstimatedMinutes] = useState('30');
@@ -103,6 +107,7 @@ export const TasksPage: React.FC = () => {
     setFormCategory('study');
     setFormPriority('medium');
     setFormSubjectId('');
+    setFormGoalId(searchParams.get('goalId') || '');
     setFormDueDate(getISODateString(new Date()));
     setFormDueTime('18:00');
     setFormEstimatedMinutes('30');
@@ -110,21 +115,22 @@ export const TasksPage: React.FC = () => {
     setFormError(null);
     setShowMoreOptions(false);
     setIsCreateModalOpen(true);
-  }, []);
+  }, [searchParams]);
 
   const loadTasks = useCallback(async (isInitial = false) => {
     if (isInitial) setInitialLoadStatus('loading');
     else setSyncStatus('syncing');
 
     try {
-      const [dataRes, subRes] = await Promise.allSettled([
+      const [dataRes, subRes, goalRes] = await Promise.allSettled([
         dataService.tasks.getTasks({
           category: selectedCategory as any,
           timeFilter: selectedTimeFilter,
           search: searchQuery,
           sortBy
         }),
-        dataService.study.getSubjects()
+        dataService.study.getSubjects(),
+        dataService.goals.getGoals()
       ]);
 
       if (dataRes.status === 'fulfilled') {
@@ -138,6 +144,9 @@ export const TasksPage: React.FC = () => {
 
       if (subRes.status === 'fulfilled') {
         setSubjects(subRes.value);
+      }
+      if (goalRes.status === 'fulfilled') {
+        setGoals(goalRes.value);
       }
     } catch (err) {
       console.error('Failed to load tasks data:', err);
@@ -234,12 +243,13 @@ export const TasksPage: React.FC = () => {
     setFormCategory(task.category);
     setFormPriority(task.priority);
     setFormSubjectId(task.subjectId || '');
+    setFormGoalId(task.goalId || '');
     setFormDueDate(task.dueDate || getISODateString(new Date()));
     setFormDueTime(task.dueTime || '18:00');
     setFormEstimatedMinutes(String(task.estimatedMinutes || 30));
     setFormTags(task.tags.join(', '));
     setFormError(null);
-    setShowMoreOptions(Boolean(task.description || task.tags.length > 0 || task.subjectId));
+    setShowMoreOptions(Boolean(task.description || task.tags.length > 0 || task.subjectId || task.goalId));
     setIsCreateModalOpen(true);
   };
 
@@ -262,6 +272,7 @@ export const TasksPage: React.FC = () => {
           category: formCategory,
           priority: formPriority,
           subjectId: formSubjectId || undefined,
+          goalId: formGoalId || undefined,
           dueDate: formDueDate,
           dueTime: formDueTime,
           estimatedMinutes: parseInt(formEstimatedMinutes, 10) || 30,
@@ -278,6 +289,7 @@ export const TasksPage: React.FC = () => {
           category: formCategory,
           priority: formPriority,
           subjectId: formSubjectId || undefined,
+          goalId: formGoalId || undefined,
           dueDate: formDueDate,
           dueTime: formDueTime,
           estimatedMinutes: parseInt(formEstimatedMinutes, 10) || 30,
@@ -385,9 +397,9 @@ export const TasksPage: React.FC = () => {
   return (
     <div>
       <SectionHeader
-        tag={<Badge variant="coral">Task Sanctuary</Badge>}
-        title="Intentional Tasks"
-        subtitle="Curate deliberate focus items with nested subtasks, priority ordering, and deterministic progress."
+        tag={<Badge variant="coral">Tasks</Badge>}
+        title="Tasks & Execution"
+        subtitle="Clarify your intentions, break down complexity, and drive daily momentum with focused execution."
         guideId="task-sanctuary"
         onOpenGuide={openGuide}
         actions={
@@ -521,7 +533,7 @@ export const TasksPage: React.FC = () => {
         <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
           <AlertCircle size={28} color="var(--status-error)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
-            We couldn't load your task sanctuary.
+            We couldn't load your tasks.
           </div>
           <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>
             A network or server connectivity error occurred.
@@ -532,9 +544,10 @@ export const TasksPage: React.FC = () => {
         </Card>
       ) : tasks.length === 0 ? (
         <EmptyState
+          illustration="tasks"
           icon={CheckCircle2}
           title={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Your task space is clear" : "No tasks match the active filters"}
-          description={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Decide what deserves your attention today. Create an intentional task and attach it to a subject to track momentum." : "Your sanctuary has no items matching the current filter. Adjust your criteria or capture a new task."}
+          description={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Decide what deserves your attention today. Create an intentional task and attach it to a subject to track momentum." : "No tasks match the active filters. Adjust your criteria or capture a new task."}
           actionLabel="Create Intentional Task"
           onAction={openCreateModal}
         />
@@ -589,6 +602,23 @@ export const TasksPage: React.FC = () => {
                           return linkedSub ? (
                             <Badge variant={(linkedSub.color as BadgeVariant) || 'coral'}>
                               {linkedSub.name}
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {(() => {
+                          const linkedGoal = goals.find((g) => g.id === task.goalId);
+                          return linkedGoal ? (
+                            <Badge
+                              variant="amber"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate('/app/goals');
+                              }}
+                              title={`Linked Goal: ${linkedGoal.title}`}
+                            >
+                              <Target size={11} />
+                              <span>{linkedGoal.title}</span>
                             </Badge>
                           ) : null;
                         })()}
@@ -660,8 +690,9 @@ export const TasksPage: React.FC = () => {
                         className="tactile-press"
                         leftIcon={<Flame size={13} color="var(--color-coral-500)" />}
                         onClick={() =>
-                          navigate('/app/focus', {
+                          navigate(`/app/focus?taskId=${task.id}`, {
                             state: {
+                              taskId: task.id,
                               title: task.title,
                               subjectId: task.subjectId,
                               durationMinutes: task.estimatedMinutes || 25
@@ -978,6 +1009,16 @@ export const TasksPage: React.FC = () => {
               options={[
                 { value: '', label: 'No Subject Link' },
                 ...activeSubjects.map((s: StudySubject) => ({ value: s.id, label: s.name, badge: s.code }))
+              ]}
+            />
+
+            <CustomSelect
+              label="Linked Goal"
+              value={formGoalId}
+              onChange={(val) => setFormGoalId(val)}
+              options={[
+                { value: '', label: 'No Goal Link' },
+                ...goals.filter((g) => g.status === 'active').map((g: Goal) => ({ value: g.id, label: g.title }))
               ]}
             />
           </div>

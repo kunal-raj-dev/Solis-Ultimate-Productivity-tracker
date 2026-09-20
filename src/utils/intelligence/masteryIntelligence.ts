@@ -55,8 +55,8 @@ export function calculateExamReadiness(params: {
   const { goal, topics, flashcards, habits } = params;
 
   // 1. Topics Mastery Score (35%)
-  const subjectTopics = topics.filter((t) => !goal.subjectId || t.subjectId === goal.subjectId);
-  let topicsScore = 75; // Default baseline
+  const subjectTopics = goal.subjectId ? topics.filter((t) => t.subjectId === goal.subjectId) : topics;
+  let topicsScore = 0;
   if (subjectTopics.length > 0) {
     const scoreMap: Record<string, number> = { mastered: 100, learning: 60, unstudied: 20 };
     const totalMastery = subjectTopics.reduce((acc, t) => acc + (scoreMap[t.masteryLevel] || 50), 0);
@@ -64,8 +64,8 @@ export function calculateExamReadiness(params: {
   }
 
   // 2. SM-2 Flashcard Retention Score (30%)
-  const relevantCards = flashcards.filter((c) => !goal.subjectId || c.subjectId === goal.subjectId);
-  let retentionScore = 80;
+  const relevantCards = goal.subjectId ? flashcards.filter((c) => c.subjectId === goal.subjectId) : flashcards;
+  let retentionScore = 0;
   if (relevantCards.length > 0) {
     const now = new Date().getTime();
     const scoredCards = relevantCards.map((c) => {
@@ -82,14 +82,14 @@ export function calculateExamReadiness(params: {
 
   // 3. Linked Habit Consistency Score (20%)
   const linkedHabits = habits.filter((h) => h.goalId === goal.id);
-  let habitScore = 70;
+  let habitScore = 0;
   if (linkedHabits.length > 0) {
     const avgStreak = linkedHabits.reduce((acc, h) => acc + h.currentStreak, 0) / linkedHabits.length;
     habitScore = Math.min(100, Math.round(avgStreak * 10));
   }
 
   // 4. Milestone Completion Score (15%)
-  let milestoneScore = 50;
+  let milestoneScore = 0;
   if (goal.milestones && goal.milestones.length > 0) {
     const completed = goal.milestones.filter((m) => m.completed).length;
     milestoneScore = Math.round((completed / goal.milestones.length) * 100);
@@ -104,8 +104,8 @@ export function calculateExamReadiness(params: {
   );
 
   // Grade & Diagnostics
-  let grade: ExamReadinessResult['grade'] = 'Prepared';
-  let gradeColor: ExamReadinessResult['gradeColor'] = 'sage';
+  let grade: ExamReadinessResult['grade'] = 'At Risk';
+  let gradeColor: ExamReadinessResult['gradeColor'] = 'lavender';
 
   if (readinessScore >= 85) {
     grade = 'Exceptional';
@@ -124,22 +124,33 @@ export function calculateExamReadiness(params: {
   // Calculate Days Remaining
   const targetDateMs = new Date(goal.targetDate).getTime();
   const todayMs = new Date().getTime();
-  const daysRemaining = Math.max(0, Math.ceil((targetDateMs - todayMs) / (1000 * 60 * 60 * 24)));
+  const daysRemaining = isNaN(targetDateMs)
+    ? 0
+    : Math.max(0, Math.ceil((targetDateMs - todayMs) / (1000 * 60 * 60 * 24)));
 
   // Risk Diagnostics Generation
   const riskDiagnostics: string[] = [];
-  if (topicsScore < 60) {
+  if (subjectTopics.length === 0) {
+    riskDiagnostics.push('No syllabus topics linked to this exam. Add study topics to track concept mastery.');
+  } else if (topicsScore < 60) {
     riskDiagnostics.push(`Syllabus topics mastery is low (${topicsScore}%). Complete core concept drills.`);
   }
-  if (retentionScore < 60) {
+
+  if (relevantCards.length === 0) {
+    riskDiagnostics.push('No flashcard deck linked to this exam. Create flashcards to enable spaced repetition.');
+  } else if (retentionScore < 60) {
     riskDiagnostics.push(`Flashcard retention is decaying (${retentionScore}%). Run active recall reviews.`);
   }
+
   if (linkedHabits.length === 0) {
     riskDiagnostics.push('No daily consistency habit is linked to this exam.');
   } else if (habitScore < 40) {
     riskDiagnostics.push('Consistency ritual streak is broken. Re-anchor 20m daily review block.');
   }
-  if (milestoneScore < 50 && daysRemaining <= 14) {
+
+  if (!goal.milestones || goal.milestones.length === 0) {
+    riskDiagnostics.push('No milestones defined. Break down this exam horizon into target checkpoints.');
+  } else if (milestoneScore < 50 && daysRemaining <= 14) {
     riskDiagnostics.push(`Milestone progress lagging (${milestoneScore}%) with only ${daysRemaining} days remaining.`);
   }
 

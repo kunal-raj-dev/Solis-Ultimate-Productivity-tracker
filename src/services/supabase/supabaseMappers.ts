@@ -161,6 +161,7 @@ export function mapFocusSession(row: any, subjectName?: string): FocusSession {
     mode: row.mode || 'pomodoro',
     durationMinutes: row.duration_minutes,
     breakDurationMinutes: row.break_duration_minutes || undefined,
+    taskId: row.task_id || undefined,
     subjectId: row.subject_id || undefined,
     subjectName,
     planItemId: row.plan_item_id || undefined,
@@ -168,7 +169,11 @@ export function mapFocusSession(row: any, subjectName?: string): FocusSession {
     title: row.title || 'Deep Focus Session',
     completed: row.completed ?? true,
     interruptionsCount: row.interruptions_count ?? 0,
+    flowQuality: row.flow_quality ?? undefined,
+    soundscapeType: row.soundscape_type ?? undefined,
+    targetOutcome: row.target_outcome ?? undefined,
     notes: row.notes || undefined,
+    parkedThoughts: row.parked_thoughts || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };

@@ -18,6 +18,7 @@ import { Container } from '../../components/layout/Container/Container';
 import { ScrollReveal } from '../../components/motion/ScrollReveal';
 import { ParallaxLayer } from '../../components/parallax/ParallaxLayer';
 import { Progress } from '../../components/ui/Progress/Progress';
+import { ScholarObservatoryIllustration } from '../../components/illustrations';
 import './LandingPage.css';
 
 export const LandingPage: React.FC = () => {
@@ -61,8 +62,15 @@ export const LandingPage: React.FC = () => {
             </div>
           </ScrollReveal>
 
+          {/* Handcrafted Editorial Scholar Sanctuary Artwork */}
+          <ScrollReveal delayMs={400}>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '28px auto 8px', maxWidth: '440px' }}>
+              <ScholarObservatoryIllustration width="100%" height={260} />
+            </div>
+          </ScrollReveal>
+
           {/* Interactive Atmospheric Preview Card */}
-          <ScrollReveal delayMs={450}>
+          <ScrollReveal delayMs={480}>
             <div className="solis-landing-preview-wrapper">
               <ParallaxLayer speed={0.03}>
                 <div className="solis-landing-preview-card">

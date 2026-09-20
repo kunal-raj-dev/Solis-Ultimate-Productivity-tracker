@@ -54,6 +54,11 @@ export class SupabaseGoalService implements IGoalService {
         horizon: goal.horizon || 'medium_term',
         status: goal.status || 'active',
         category: goal.category || 'academic',
+        experience_type: goal.experienceType || 'standard',
+        target_score: goal.targetScore || null,
+        exam_weight: goal.examWeight !== undefined && goal.examWeight !== null ? Number(goal.examWeight) : null,
+        project_repository_url: goal.projectRepositoryUrl || null,
+        deliverables: goal.deliverables || [],
         target_date: goal.targetDate || getISODateString(new Date()),
         priority: goal.priority || 'high',
         color: goal.color || 'coral'
@@ -63,23 +68,45 @@ export class SupabaseGoalService implements IGoalService {
 
     if (error || !data) throw error || new Error('Failed to create goal');
 
+    if (goal.milestones && goal.milestones.length > 0) {
+      const milestoneInserts = goal.milestones.map((m) => ({
+        goal_id: data.id,
+        user_id: userId,
+        title: m.title.trim(),
+        target_date: m.targetDate || null,
+        completed: m.completed || false
+      }));
+      await this.ctx.client.from('goal_milestones').insert(milestoneInserts);
+
+      const allCompleted = goal.milestones.every((m) => m.completed);
+      if (allCompleted && (!goal.status || goal.status === 'active')) {
+        await this.ctx.client.from('goals').update({ status: 'completed' }).eq('id', data.id).eq('user_id', userId);
+      }
+    }
+
     this.ctx.notify();
-    return mapGoal(data, [], goal.subjectName);
+    const all = await this.getGoals();
+    return all.find((g) => g.id === data.id)!;
   };
 
   updateGoal = async (id: string, updates: Partial<Goal>): Promise<Goal> => {
     const userId = await this.ctx.getUserId();
     const payload: any = { updated_at: new Date().toISOString() };
 
-    if (updates.title !== undefined) payload.title = updates.title.trim();
-    if (updates.description !== undefined) payload.description = updates.description.trim();
-    if (updates.horizon !== undefined) payload.horizon = updates.horizon;
-    if (updates.status !== undefined) payload.status = updates.status;
-    if (updates.category !== undefined) payload.category = updates.category;
-    if (updates.targetDate !== undefined) payload.target_date = updates.targetDate;
-    if (updates.priority !== undefined) payload.priority = updates.priority;
-    if (updates.color !== undefined) payload.color = updates.color;
-    if (updates.subjectId !== undefined) payload.subject_id = updates.subjectId || null;
+    if ('title' in updates && updates.title !== undefined) payload.title = updates.title.trim();
+    if ('description' in updates) payload.description = updates.description ? updates.description.trim() : null;
+    if ('horizon' in updates && updates.horizon !== undefined) payload.horizon = updates.horizon;
+    if ('status' in updates && updates.status !== undefined) payload.status = updates.status;
+    if ('category' in updates && updates.category !== undefined) payload.category = updates.category;
+    if ('experienceType' in updates && updates.experienceType !== undefined) payload.experience_type = updates.experienceType;
+    if ('targetScore' in updates) payload.target_score = updates.targetScore || null;
+    if ('examWeight' in updates) payload.exam_weight = updates.examWeight !== undefined && updates.examWeight !== null ? Number(updates.examWeight) : null;
+    if ('projectRepositoryUrl' in updates) payload.project_repository_url = updates.projectRepositoryUrl || null;
+    if ('deliverables' in updates) payload.deliverables = updates.deliverables || [];
+    if ('targetDate' in updates && updates.targetDate !== undefined) payload.target_date = updates.targetDate;
+    if ('priority' in updates && updates.priority !== undefined) payload.priority = updates.priority;
+    if ('color' in updates && updates.color !== undefined) payload.color = updates.color;
+    if ('subjectId' in updates) payload.subject_id = updates.subjectId || null;
 
     const { data, error } = await this.ctx.client
       .from('goals')
@@ -128,8 +155,45 @@ export class SupabaseGoalService implements IGoalService {
     if (error) throw error;
 
     const all = await this.getGoals();
+    const goal = all.find((g) => g.id === goalId)!;
+    if (goal.status === 'completed') {
+      await this.updateGoal(goalId, { status: 'active' });
+    }
+
     this.ctx.notify();
-    return all.find((g) => g.id === goalId)!;
+    const refreshed = await this.getGoals();
+    return refreshed.find((g) => g.id === goalId)!;
+  };
+
+  updateMilestone = async (goalId: string, milestoneId: string, updates: Partial<GoalMilestone>): Promise<Goal> => {
+    const userId = await this.ctx.getUserId();
+    const payload: any = {};
+    if (updates.title !== undefined) payload.title = updates.title.trim();
+    if (updates.targetDate !== undefined) payload.target_date = updates.targetDate || null;
+    if (updates.completed !== undefined) {
+      payload.completed = updates.completed;
+      payload.completed_at = updates.completed ? new Date().toISOString() : null;
+    }
+
+    const { error } = await this.ctx.client
+      .from('goal_milestones')
+      .update(payload)
+      .eq('id', milestoneId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    const all = await this.getGoals();
+    const goal = all.find((g) => g.id === goalId)!;
+    if (goal.progressPercentage === 100 && goal.status !== 'completed') {
+      await this.updateGoal(goalId, { status: 'completed' });
+    } else if (goal.progressPercentage < 100 && goal.status === 'completed') {
+      await this.updateGoal(goalId, { status: 'active' });
+    }
+
+    this.ctx.notify();
+    const refreshed = await this.getGoals();
+    return refreshed.find((g) => g.id === goalId)!;
   };
 
   toggleMilestone = async (goalId: string, milestoneId: string): Promise<Goal> => {
@@ -163,7 +227,8 @@ export class SupabaseGoalService implements IGoalService {
     }
 
     this.ctx.notify();
-    return goal;
+    const refreshed = await this.getGoals();
+    return refreshed.find((g) => g.id === goalId)!;
   };
 
   deleteMilestone = async (goalId: string, milestoneId: string): Promise<Goal> => {
@@ -175,7 +240,16 @@ export class SupabaseGoalService implements IGoalService {
       .eq('user_id', userId);
 
     const all = await this.getGoals();
+    const goal = all.find((g) => g.id === goalId)!;
+
+    if (goal.milestones.length > 0 && goal.progressPercentage === 100 && goal.status !== 'completed') {
+      await this.updateGoal(goalId, { status: 'completed' });
+    } else if (goal.progressPercentage < 100 && goal.status === 'completed') {
+      await this.updateGoal(goalId, { status: 'active' });
+    }
+
     this.ctx.notify();
-    return all.find((g) => g.id === goalId)!;
+    const refreshed = await this.getGoals();
+    return refreshed.find((g) => g.id === goalId)!;
   };
 }

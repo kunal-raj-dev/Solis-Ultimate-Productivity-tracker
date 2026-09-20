@@ -14,24 +14,24 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
       },
       {
         id: 'tasks',
-        label: 'Task Sanctuary',
+        label: 'Tasks',
         path: '/app/tasks',
         iconName: 'CheckCircle2',
-        description: 'Intentional decision surface'
+        description: 'Focused execution & task management'
       },
       {
         id: 'study',
-        label: 'Study Studio',
+        label: 'Study & Syllabus',
         path: '/app/study',
         iconName: 'BookOpen',
         description: 'Living syllabus & topic roadmap'
       },
       {
         id: 'focus',
-        label: 'Focus Sanctuary',
+        label: 'Focus Room',
         path: '/app/focus',
         iconName: 'Flame',
-        description: 'Immersive distraction-free room'
+        description: 'Immersive distraction-free deep work timer'
       },
       {
         id: 'rooms',
@@ -48,7 +48,7 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
     items: [
       {
         id: 'notes',
-        label: 'Knowledge Studio',
+        label: 'Knowledge & Notes',
         path: '/app/notes',
         iconName: 'FileText',
         description: 'External memory & intellectual synthesis'
@@ -61,24 +61,24 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
     items: [
       {
         id: 'habits',
-        label: 'Rituals & Consistency',
+        label: 'Habits & Rituals',
         path: '/app/habits',
         iconName: 'Repeat',
-        description: 'Daily consistency matrix'
+        description: 'Daily consistency matrix & streak tracking'
       },
       {
         id: 'goals',
-        label: 'Goal Horizons',
+        label: 'Goals',
         path: '/app/goals',
         iconName: 'Target',
         description: 'Milestone progression trajectories'
       },
       {
         id: 'analytics',
-        label: 'Cognitive Rhythm',
+        label: 'Analytics',
         path: '/app/analytics',
         iconName: 'BarChart3',
-        description: 'Study velocity & intensity constellation'
+        description: 'Study velocity, trends & time distribution'
       },
       {
         id: 'review',
@@ -95,7 +95,7 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
     items: [
       {
         id: 'settings',
-        label: 'Preferences',
+        label: 'Settings',
         path: '/app/settings',
         iconName: 'Sliders',
         description: 'Study parameters & learner profile'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -10,9 +10,11 @@ import {
   Bookmark,
   ArrowLeft,
   BookOpen,
-  Save
+  Save,
+  Download,
+  Flame
 } from 'lucide-react';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Input } from '../../components/ui/Input/Input';
@@ -24,6 +26,8 @@ import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog/ConfirmationDialog';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
+import { MarkdownReadingView } from '../../components/features/Notes/MarkdownReadingView';
+import { calculateNoteMetrics, serializeNoteToMarkdown } from '../../utils/notes/markdownParser';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
@@ -50,6 +54,7 @@ export const NotesPage: React.FC = () => {
   const { openGuide } = useGuide();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [notes, setNotes] = useState<Note[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
@@ -74,6 +79,31 @@ export const NotesPage: React.FC = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [noteViewMode, setNoteViewMode] = useState<'edit' | 'read' | 'split'>('edit');
+
+  const noteMetrics = useMemo(() => calculateNoteMetrics(content), [content]);
+
+  const handleExportMarkdown = () => {
+    if (!selectedNote) return;
+    const currentSubject = subjects.find((s) => s.id === subjectId);
+    const md = serializeNoteToMarkdown({
+      title: title || 'Untitled Note',
+      content,
+      category,
+      subjectName: currentSubject?.name,
+      tags,
+      updatedAt: selectedNote.updatedAt
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(title || 'solis-note').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    addToast({ title: 'Markdown Exported', description: 'Downloaded note as .md document.', type: 'success' });
+  };
 
   const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
@@ -343,6 +373,23 @@ export const NotesPage: React.FC = () => {
     setSaveStatus('unsaved');
   };
 
+  const handleToggleMarkdownTask = (taskIndex: number, completed: boolean) => {
+    let currentMatchIndex = 0;
+    const updatedContent = content.replace(
+      /^([-*]\s+\[)([ xX])(\]\s+.*)$/gm,
+      (match, prefix, _check, suffix) => {
+        if (currentMatchIndex === taskIndex) {
+          currentMatchIndex++;
+          return `${prefix}${completed ? 'x' : ' '}${suffix}`;
+        }
+        currentMatchIndex++;
+        return match;
+      }
+    );
+
+    handleContentChange(updatedContent);
+  };
+
   const handleCategoryChange = (val: string) => {
     const cat = val as NoteCategory;
     setCategory(cat);
@@ -601,6 +648,21 @@ export const NotesPage: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  leftIcon={<Flame size={13} color="var(--color-coral-500)" />}
+                  onClick={() => {
+                    const query = new URLSearchParams();
+                    if (subjectId) query.set('subjectId', subjectId);
+                    query.set('title', `Study Note: ${title || 'Knowledge Note'}`);
+                    navigate(`/app/focus?${query.toString()}`);
+                  }}
+                  title="Deep Focus on this Note"
+                >
+                  Focus
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
                   leftIcon={<BrainCircuit size={13} />}
                   onClick={() => setIsCardModalOpen(true)}
                   style={{ color: 'var(--color-coral-500)' }}
@@ -674,16 +736,74 @@ export const NotesPage: React.FC = () => {
               />
             </div>
 
-            {/* Thinking Body */}
-            <textarea
-              value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Write structured insights, mathematical derivations, architecture proofs, or lecture syntheses..."
-              className="solis-notes-canvas__body"
-            />
+            {/* Editorial Reading & Mode Toolbar */}
+            <div className="solis-notes-toolbar">
+              <div className="solis-notes-toolbar__left">
+                <SegmentedControl
+                  variant="pills"
+                  size="sm"
+                  value={noteViewMode}
+                  onChange={(val) => setNoteViewMode(val as 'edit' | 'read' | 'split')}
+                  options={[
+                    { value: 'edit', label: 'Edit' },
+                    { value: 'read', label: 'Read' },
+                    { value: 'split', label: 'Split' }
+                  ]}
+                />
+                <span className="solis-notes-toolbar__metrics">
+                  {noteMetrics.wordCount} words • ~{noteMetrics.readingTimeMinutes}m read
+                </span>
+              </div>
+
+              <div className="solis-notes-toolbar__right">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Download size={13} />}
+                  onClick={handleExportMarkdown}
+                  title="Export note as formatted .md file"
+                >
+                  Export .md
+                </Button>
+              </div>
+            </div>
+
+            {/* Thinking Body according to active mode */}
+            {noteViewMode === 'edit' && (
+              <textarea
+                value={content}
+                onChange={(e) => handleContentChange(e.target.value)}
+                placeholder="Write structured insights, mathematical derivations, architecture proofs, or lecture syntheses..."
+                className="solis-notes-canvas__body"
+              />
+            )}
+
+            {noteViewMode === 'read' && (
+              <div style={{ minHeight: '480px' }}>
+                <MarkdownReadingView content={content} onToggleTask={handleToggleMarkdownTask} />
+              </div>
+            )}
+
+            {noteViewMode === 'split' && (
+              <div className="solis-notes-split-container">
+                <div className="solis-notes-split-pane">
+                  <textarea
+                    value={content}
+                    onChange={(e) => handleContentChange(e.target.value)}
+                    placeholder="Write structured markdown..."
+                    className="solis-notes-canvas__body"
+                    style={{ minHeight: '480px' }}
+                  />
+                </div>
+                <div className="solis-notes-split-pane solis-notes-split-pane--preview">
+                  <MarkdownReadingView content={content} onToggleTask={handleToggleMarkdownTask} />
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <EmptyState
+            illustration="notes"
             icon={FileText}
             title="Your Thinking Sanctuary"
             description="Select an existing insight or create a new thinking canvas to begin distillation."

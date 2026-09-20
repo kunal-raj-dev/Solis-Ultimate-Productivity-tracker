@@ -155,7 +155,7 @@ export const ActivationWelcomeModal: React.FC<ActivationWelcomeModalProps> = ({
                   <CheckCircle2 size={16} />
                 </div>
                 <div className="solis-activation-loop-stage">1. DECIDE</div>
-                <div className="solis-activation-loop-env">Task Sanctuary</div>
+                <div className="solis-activation-loop-env">Tasks</div>
               </div>
 
               <div className="solis-activation-loop-card">
@@ -163,7 +163,7 @@ export const ActivationWelcomeModal: React.FC<ActivationWelcomeModalProps> = ({
                   <Flame size={16} />
                 </div>
                 <div className="solis-activation-loop-stage">2. DO</div>
-                <div className="solis-activation-loop-env">Focus Sanctuary</div>
+                <div className="solis-activation-loop-env">Focus Room</div>
               </div>
 
               <div className="solis-activation-loop-card">
@@ -171,7 +171,7 @@ export const ActivationWelcomeModal: React.FC<ActivationWelcomeModalProps> = ({
                   <FileText size={16} />
                 </div>
                 <div className="solis-activation-loop-stage">3. CAPTURE</div>
-                <div className="solis-activation-loop-env">Knowledge Studio</div>
+                <div className="solis-activation-loop-env">Knowledge & Notes</div>
               </div>
 
               <div className="solis-activation-loop-card">
@@ -192,7 +192,7 @@ export const ActivationWelcomeModal: React.FC<ActivationWelcomeModalProps> = ({
             </div>
 
             <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.5 }}>
-              Study Studio and Goal Horizons provide the overarching syllabus and milestone structure for these daily actions.
+              Study & Syllabus and Goals provide the overarching syllabus and milestone structure for these daily actions.
             </p>
 
             <div className="solis-activation-actions">

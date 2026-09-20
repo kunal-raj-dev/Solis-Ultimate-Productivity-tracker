@@ -92,6 +92,7 @@ export interface IGoalService {
   updateGoal(id: string, updates: Partial<Goal>): Promise<Goal>;
   deleteGoal(id: string): Promise<boolean>;
   addMilestone(goalId: string, milestone: Partial<GoalMilestone>): Promise<Goal>;
+  updateMilestone?(goalId: string, milestoneId: string, updates: Partial<GoalMilestone>): Promise<Goal>;
   toggleMilestone(goalId: string, milestoneId: string): Promise<Goal>;
   deleteMilestone(goalId: string, milestoneId: string): Promise<Goal>;
 }

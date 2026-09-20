@@ -285,7 +285,15 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handleLaunchTimeBlockFocus = (block: TimeBlock) => {
-    navigate(`/app/focus?subjectId=${block.subjectId || ''}&title=${encodeURIComponent(block.title)}`);
+    const params = new URLSearchParams();
+    if (block.subjectId) params.set('subjectId', block.subjectId);
+    params.set('title', block.title);
+    if (block.type === 'task_deadline') {
+      params.set('taskId', block.entityId);
+    } else if (block.type === 'study_plan') {
+      params.set('planId', block.entityId);
+    }
+    navigate(`/app/focus?${params.toString()}`);
   };
 
   const handleSaveEveningClosure = async (refData: Partial<DailyReflection>) => {
@@ -448,7 +456,7 @@ export const DashboardPage: React.FC = () => {
               leftIcon={<Flame size={18} />}
               onClick={() => navigate('/app/focus')}
             >
-              Enter Sanctuary
+              Enter Focus Room
             </Button>
             <button
               type="button"
@@ -842,7 +850,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <Link to="/app/tasks">
                 <Button variant="ghost" size="sm" rightIcon={<ArrowRight size={14} />}>
-                  Task Sanctuary
+                  Tasks
                 </Button>
               </Link>
             </div>
@@ -978,29 +986,48 @@ export const DashboardPage: React.FC = () => {
               <div className="solis-flow-section__title">
                 <Repeat size={18} color="var(--color-sage-500)" />
                 <span>Daily Rituals</span>
+                <Badge variant="sage">{habits.filter((h) => h.completedToday).length}/{habits.length}</Badge>
               </div>
               <Link to="/app/habits">
-                <Button variant="ghost" size="sm">Constellation</Button>
+                <Button variant="ghost" size="sm">Habits & Rituals</Button>
               </Link>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {habits.slice(0, 3).map((h) => (
-                <div key={h.id} className="solis-habit-dot-row">
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>{h.title}</div>
-                    <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
-                      🔥 {h.currentStreak} day streak
+            {habits.length === 0 ? (
+              <div style={{ padding: '16px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                  No daily rituals established. Build your first habit.
+                </p>
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  style={{ marginTop: '8px' }}
+                  onClick={() => navigate('/app/habits')}
+                >
+                  Create Habit
+                </Button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {habits.slice(0, 4).map((h) => (
+                  <div key={h.id} className="solis-habit-dot-row">
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', textDecoration: h.completedToday ? 'line-through' : 'none' }}>
+                        {h.title}
+                      </div>
+                      <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                        🔥 {h.currentStreak} day streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}
+                      </div>
                     </div>
+                    <Checkbox
+                      checked={h.completedToday}
+                      onChange={() => handleToggleHabit(h.id)}
+                      aria-label={`Toggle habit ${h.title}`}
+                    />
                   </div>
-                  <Checkbox
-                    checked={h.completedToday}
-                    onChange={() => handleToggleHabit(h.id)}
-                    aria-label={`Toggle habit ${h.title}`}
-                  />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Recent Reflections Strip */}

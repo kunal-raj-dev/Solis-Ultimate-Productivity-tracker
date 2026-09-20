@@ -12,6 +12,18 @@
   margin: 0 auto;
 }
 
+.solis-empty-state--illustrated {
+  padding: var(--space-xl) var(--space-lg);
+}
+
+.solis-empty-state__illustration-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.04));
+}
+
 .solis-empty-state__icon-wrap {
   width: 52px;
   height: 52px;

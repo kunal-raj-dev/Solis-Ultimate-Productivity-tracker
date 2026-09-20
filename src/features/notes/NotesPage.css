@@ -327,3 +327,69 @@
   padding: 0;
   display: flex;
 }
+
+/* Editorial Reading & Mode Toolbar */
+.solis-notes-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-md);
+}
+
+.solis-notes-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.solis-notes-toolbar__metrics {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-notes-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Split View Layout */
+.solis-notes-split-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  width: 100%;
+  min-height: 520px;
+}
+
+.solis-notes-split-pane {
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.solis-notes-split-pane--preview {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 28px;
+}
+
+@media (max-width: 900px) {
+  .solis-notes-split-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .solis-notes-split-pane--preview {
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}
+

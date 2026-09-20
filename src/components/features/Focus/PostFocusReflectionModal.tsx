@@ -14,11 +14,17 @@ export interface PostFocusReflectionModalProps {
   subjectName?: string;
   topicTitle?: string;
   targetOutcome?: string;
+  taskId?: string;
+  taskTitle?: string;
+  planItemId?: string;
+  parkedThoughts?: Array<{ id: string; text: string; type: string }>;
   onSaveSession: (data: {
     flowQuality: number;
     interruptionsCount: number;
     notes?: string;
     synthesizeNote: boolean;
+    completeLinkedTask?: boolean;
+    completePlanItem?: boolean;
   }) => Promise<void>;
 }
 
@@ -29,12 +35,20 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
   subjectName,
   topicTitle,
   targetOutcome,
+  taskId,
+  taskTitle,
+  planItemId,
+  parkedThoughts,
   onSaveSession
 }) => {
   const [flowQuality, setFlowQuality] = useState<number>(4);
-  const [interruptions, setInterruptions] = useState<number>(0);
+  const [interruptions, setInterruptions] = useState<number>(() =>
+    parkedThoughts ? Math.min(4, parkedThoughts.length) : 0
+  );
   const [notes, setNotes] = useState('');
   const [synthesizeNote, setSynthesizeNote] = useState(false);
+  const [completeLinkedTask, setCompleteLinkedTask] = useState(true);
+  const [completePlanItem, setCompletePlanItem] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   if (!isOpen) return null;
@@ -47,7 +61,9 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
         flowQuality,
         interruptionsCount: interruptions,
         notes: notes.trim() || undefined,
-        synthesizeNote
+        synthesizeNote,
+        completeLinkedTask: taskId ? completeLinkedTask : undefined,
+        completePlanItem: planItemId ? completePlanItem : undefined
       });
       onClose();
     } catch (err) {
@@ -129,6 +145,26 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
           </div>
         </div>
 
+        {/* Parked Thoughts During Session */}
+        {parkedThoughts && parkedThoughts.length > 0 && (
+          <div style={{ padding: '10px 12px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <span style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Parked Thoughts Captured ({parkedThoughts.length})
+              </span>
+              <span style={{ fontSize: '11px', color: 'var(--color-coral-500)', fontWeight: 500 }}>Preserved in System</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '100px', overflowY: 'auto' }}>
+              {parkedThoughts.map((pt) => (
+                <div key={pt.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }}>• {pt.text}</span>
+                  <Badge variant="neutral" style={{ fontSize: '10px', textTransform: 'capitalize' }}>{pt.type}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Key Takeaways & Distillations */}
         <Textarea
           label="Key Insights & Distillations"
@@ -137,6 +173,40 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
         />
+
+        {/* Linked Task Completion Option */}
+        {taskTitle && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <Checkbox
+              checked={completeLinkedTask}
+              onChange={(e) => setCompleteLinkedTask(e.target.checked)}
+              aria-label="Mark linked task completed"
+            />
+            <div style={{ fontSize: 'var(--text-body-sm)' }}>
+              <span style={{ fontWeight: 600 }}>Mark Linked Task as Completed</span>
+              <span style={{ display: 'block', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                "{taskTitle}" will be marked completed with logged focus time.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Linked Study Plan Item Completion Option */}
+        {planItemId && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <Checkbox
+              checked={completePlanItem}
+              onChange={(e) => setCompletePlanItem(e.target.checked)}
+              aria-label="Mark study plan item completed"
+            />
+            <div style={{ fontSize: 'var(--text-body-sm)' }}>
+              <span style={{ fontWeight: 600 }}>Mark Study Syllabus Item as Completed</span>
+              <span style={{ display: 'block', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                Updates your daily study plan & syllabus progress.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* 1-Click Note Synthesis Option */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)' }}>
@@ -159,7 +229,7 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
             Skip Reflection
           </Button>
           <Button variant="primary" size="sm" type="submit" isLoading={isSaving} leftIcon={<Check size={14} />}>
-            Record & Close Sanctuary
+            Record & Complete Session
           </Button>
         </div>
       </form>

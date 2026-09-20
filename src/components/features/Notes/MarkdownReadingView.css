@@ -1,0 +1,236 @@
+/* Solis Editorial Markdown Reading Canvas */
+
+.solis-markdown-view {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--space-md) 0 var(--space-3xl);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+  line-height: var(--leading-relaxed);
+  animation: solis-fade-in 0.15s ease-out;
+}
+
+.solis-markdown-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-1);
+  font-weight: 500;
+  line-height: 1.25;
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.solis-markdown-h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-xs);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.solis-markdown-h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 500;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-xs);
+  color: var(--color-coral-500);
+}
+
+.solis-markdown-p {
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+  line-height: 1.65;
+}
+
+/* Callouts */
+.solis-markdown-callout {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin: var(--space-md) 0;
+  border-left: 3px solid;
+  background: var(--bg-surface-secondary);
+}
+
+.solis-markdown-callout--NOTE {
+  border-color: var(--color-lavender-500, #7E69AB);
+  background: rgba(126, 105, 171, 0.08);
+}
+
+.solis-markdown-callout--KEY,
+.solis-markdown-callout--INSIGHT {
+  border-color: var(--color-amber-500, #D9822B);
+  background: rgba(217, 130, 43, 0.08);
+}
+
+.solis-markdown-callout--THEOREM {
+  border-color: var(--color-coral-500, #E65A41);
+  background: rgba(230, 90, 65, 0.08);
+}
+
+.solis-markdown-callout--WARNING {
+  border-color: var(--status-warning, #D9822B);
+  background: var(--status-warning-bg);
+}
+
+.solis-markdown-callout__icon {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.solis-markdown-callout__content {
+  flex: 1;
+  font-size: var(--text-body-sm);
+}
+
+.solis-markdown-callout__tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+/* Code Blocks */
+.solis-markdown-code-block {
+  background: var(--color-charcoal-900, #1A1817);
+  color: #FAF8F5;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin: var(--space-md) 0;
+  overflow: hidden;
+}
+
+.solis-markdown-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.solis-markdown-code-content {
+  padding: 12px 16px;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Math Notation */
+.solis-markdown-math-block {
+  text-align: center;
+  padding: 16px 20px;
+  background: var(--bg-surface-secondary);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  margin: var(--space-md) 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  overflow-x: auto;
+}
+
+.solis-markdown-math-inline {
+  font-family: var(--font-display);
+  font-style: italic;
+  padding: 1px 4px;
+  background: var(--bg-surface-secondary);
+  border-radius: var(--radius-xs);
+  color: var(--color-coral-500);
+}
+
+/* Blockquotes */
+.solis-markdown-blockquote {
+  border-left: 3px solid var(--color-amber-500);
+  padding: 8px 16px;
+  margin: var(--space-md) 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+}
+
+/* Task Checkboxes */
+.solis-markdown-task {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  font-size: var(--text-body);
+}
+
+/* Inline Tokens */
+.solis-markdown-inline-code {
+  font-family: var(--font-mono, monospace);
+  font-size: 12.5px;
+  padding: 2px 6px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  color: var(--color-coral-500);
+}
+
+.solis-markdown-inline-tag {
+  color: var(--color-amber-600);
+  font-weight: 500;
+}
+
+/* Links */
+.solis-markdown-link {
+  color: var(--color-coral-500, #E65A41);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+}
+
+.solis-markdown-link:hover {
+  opacity: 0.8;
+}
+
+/* Numbered Lists */
+.solis-markdown-numbered-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.solis-markdown-list-num {
+  color: var(--color-coral-500, #E65A41);
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 18px;
+}
+
+/* Callout Titles and Bodies */
+.solis-markdown-callout__title {
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.solis-markdown-callout__body {
+  line-height: 1.6;
+  white-space: pre-line;
+}
+

@@ -1,0 +1,199 @@
+/* Solis Cognitive Drift Pad — Interruption Shield */
+
+.solis-drift-pad-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 9, 8, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: solis-fade-in 0.15s ease-out;
+}
+
+.solis-drift-pad {
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-charcoal-900, #161413);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(230, 90, 65, 0.15);
+  overflow: hidden;
+  animation: solis-slide-up 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #FAF8F5;
+}
+
+.solis-drift-pad__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.solis-drift-pad__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-drift-pad__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: #FAF8F5;
+  letter-spacing: -0.01em;
+}
+
+.solis-drift-pad__badge {
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(230, 90, 65, 0.2);
+  color: var(--color-coral-400, #F0705A);
+  border: 1px solid rgba(230, 90, 65, 0.3);
+}
+
+.solis-drift-pad__close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.solis-drift-pad__close:hover {
+  color: #FAF8F5;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.solis-drift-pad__body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solis-drift-pad__type-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.solis-drift-pad__type-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-drift-pad__type-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FAF8F5;
+}
+
+.solis-drift-pad__type-btn--active {
+  background: rgba(230, 90, 65, 0.18);
+  border-color: var(--color-coral-500, #E65A41);
+  color: #FFF;
+  font-weight: 600;
+}
+
+.solis-drift-pad__input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  color: #FAF8F5;
+  font-family: var(--font-interface);
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  min-height: 72px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.solis-drift-pad__input:focus {
+  border-color: var(--color-coral-400, #F0705A);
+  box-shadow: 0 0 0 2px rgba(230, 90, 65, 0.25);
+}
+
+.solis-drift-pad__input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.solis-drift-pad__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+}
+
+.solis-drift-pad__hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: var(--font-interface);
+}
+
+.solis-drift-pad__recent-list {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px 20px 16px;
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-drift-pad__recent-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 4px;
+}
+
+.solis-drift-pad__thought-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.solis-drift-pad__thought-type {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}

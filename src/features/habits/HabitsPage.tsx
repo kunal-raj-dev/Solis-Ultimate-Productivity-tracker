@@ -257,6 +257,7 @@ export const HabitsPage: React.FC = () => {
         </Card>
       ) : habits.length === 0 ? (
         <EmptyState
+          illustration="focus"
           icon={Flame}
           title="No daily rituals configured yet"
           description="Rituals in Solis focus on long-term consistency over streak anxiety. Form an atomic study or wellness habit to build steady daily momentum."

@@ -44,13 +44,18 @@ export class SupabaseFocusService implements IFocusService {
         mode: session.mode || 'pomodoro',
         duration_minutes: session.durationMinutes || 25,
         break_duration_minutes: session.breakDurationMinutes || null,
+        task_id: session.taskId || null,
         subject_id: session.subjectId || null,
         plan_item_id: session.planItemId || null,
         topic: session.topic?.trim() || null,
         title: session.title || 'Deep Focus Pod Session',
         completed: session.completed ?? true,
         interruptions_count: session.interruptionsCount || 0,
-        notes: session.notes?.trim() || null
+        flow_quality: session.flowQuality || null,
+        soundscape_type: session.soundscapeType || null,
+        target_outcome: session.targetOutcome?.trim() || null,
+        notes: session.notes?.trim() || null,
+        parked_thoughts: session.parkedThoughts || []
       })
       .select()
       .single();

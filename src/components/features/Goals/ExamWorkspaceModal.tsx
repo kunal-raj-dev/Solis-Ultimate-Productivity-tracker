@@ -46,17 +46,18 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
   const diffTime = targetDateObj.getTime() - today.getTime();
   const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  const subjectTopics = topics.filter((t) => !goal.subjectId || t.subjectId === goal.subjectId);
+  const subjectTopics = goal.subjectId ? topics.filter((t) => t.subjectId === goal.subjectId) : [];
+  const subjectFlashcards = goal.subjectId ? flashcards.filter((c) => c.subjectId === goal.subjectId) : [];
   const masteredCount = subjectTopics.filter((t) => t.masteryLevel === 'mastered').length;
   const masteryPercentage = subjectTopics.length > 0
     ? Math.round((masteredCount / subjectTopics.length) * 100)
     : 0;
-  const completedMilestones = goal.milestones.filter((m) => m.completed).length;
+  const completedMilestones = (goal.milestones || []).filter((m) => m.completed).length;
 
   const readiness = calculateExamReadiness({
     goal,
-    topics,
-    flashcards,
+    topics: subjectTopics,
+    flashcards: subjectFlashcards,
     habits: habits || []
   });
 

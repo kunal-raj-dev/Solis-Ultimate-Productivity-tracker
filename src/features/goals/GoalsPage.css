@@ -1,7 +1,949 @@
 /* ==========================================================================
-   SOLIS — GOALS PAGE RESPONSIVE STYLES
+   SOLIS — GOAL HORIZONS & COMMAND CENTER STYLES
+   Direction & Strategic Momentum Design System
    ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. STATS GRID & STRATEGIC DIRECTION CARDS
+   -------------------------------------------------------------------------- */
+.solis-goals-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.solis-goals-stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.solis-goals-stat-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+.solis-goals-stat-card--highlight {
+  background: linear-gradient(135deg, var(--bg-surface-primary) 0%, var(--bg-surface-secondary) 100%);
+  border-color: var(--color-lavender-300, rgba(147, 112, 219, 0.2));
+}
+
+.solis-goals-stat-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.solis-goals-stat-card__icon--coral {
+  background-color: var(--color-coral-100, rgba(232, 110, 80, 0.12));
+  color: var(--color-coral-500);
+}
+
+.solis-goals-stat-card__icon--sage {
+  background-color: var(--color-sage-100, rgba(107, 142, 35, 0.12));
+  color: var(--color-sage-600);
+}
+
+.solis-goals-stat-card__icon--amber {
+  background-color: var(--color-amber-100, rgba(217, 130, 43, 0.12));
+  color: var(--color-amber-600);
+}
+
+.solis-goals-stat-card__icon--lavender {
+  background-color: var(--color-lavender-100, rgba(147, 112, 219, 0.12));
+  color: var(--color-lavender-500, #8A63D2);
+}
+
+.solis-goals-stat-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.solis-goals-stat-card__label {
+  display: block;
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.solis-goals-stat-card__value {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.solis-goals-stat-card__subvalue {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.solis-goals-stat-card__badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.solis-goals-stat-card__nearest-title {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.solis-goals-stat-card__nearest-title:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.solis-goals-stat-card__focus-title {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.solis-goals-stat-card__empty-text {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   2. FILTER BAR & HORIZON TABS
+   -------------------------------------------------------------------------- */
+.solis-goals-filter-wrapper {
+  margin-bottom: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.solis-goals-horizon-tabs {
+  display: flex;
+  gap: 6px;
+  background-color: var(--bg-surface-secondary);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.solis-goals-horizon-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.solis-goals-horizon-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.solis-goals-horizon-tab:hover {
+  color: var(--text-primary);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.solis-goals-horizon-tab--active {
+  background-color: var(--bg-surface-primary);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.solis-goals-horizon-tab__count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-muted);
+}
+
+.solis-goals-horizon-tab--active .solis-goals-horizon-tab__count {
+  background-color: var(--color-coral-100, rgba(232, 110, 80, 0.15));
+  color: var(--color-coral-600, #E86E50);
+}
+
+.solis-goals-filter-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.solis-goals-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 240px;
+  max-width: 380px;
+}
+
+.solis-goals-search-field__icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.solis-goals-search-field__input {
+  width: 100%;
+  height: 36px;
+  padding: 0 30px 0 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  font-size: var(--text-caption);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.solis-goals-search-field__input:focus {
+  border-color: var(--color-coral-500);
+  box-shadow: 0 0 0 2px rgba(232, 110, 80, 0.15);
+}
+
+.solis-goals-search-field__clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.solis-goals-filter-dropdowns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.solis-goals-select-sm {
+  min-width: 140px;
+}
+
+.solis-goals-select-sm .solis-select-wrapper {
+  margin-bottom: 0;
+}
+
+.solis-goals-select-sm .solis-select {
+  height: 36px;
+  padding: 4px 10px;
+  font-size: var(--text-caption);
+}
+
+.solis-goals-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-goals-reset-btn:hover {
+  color: var(--status-error);
+  border-color: var(--status-error);
+}
+
+/* --------------------------------------------------------------------------
+   3. GOAL CARD STYLES
+   -------------------------------------------------------------------------- */
+.solis-goal-card {
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.solis-goal-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+.solis-goal-card--completed {
+  opacity: 0.85;
+  background-color: var(--bg-surface-secondary);
+}
+
+.solis-goal-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.solis-goal-card__deadline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  background-color: var(--bg-surface-secondary);
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  font-weight: 500;
+}
+
+.solis-goal-card__countdown-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: var(--color-sage-100, rgba(107, 142, 35, 0.12));
+  color: var(--color-sage-600);
+}
+
+.solis-goal-card__countdown-tag--urgent {
+  background-color: var(--color-coral-100, rgba(232, 110, 80, 0.15));
+  color: var(--color-coral-600);
+}
+
+.solis-goal-card__countdown-tag--overdue {
+  background-color: var(--status-error-bg);
+  color: var(--status-error);
+}
+
+.solis-goal-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.solis-goal-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-goal-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.solis-goal-card__desc {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Exam Strip */
+.solis-goal-card__exam-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(232, 110, 80, 0.06) 0%, rgba(232, 110, 80, 0.02) 100%);
+  border: 1px solid rgba(232, 110, 80, 0.15);
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__exam-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__exam-pill {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-goal-card__readiness-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.solis-goal-card__readiness-btn:hover {
+  opacity: 0.85;
+}
+
+.solis-goal-card__readiness-btn--sage {
+  background-color: var(--color-sage-100, rgba(107, 142, 35, 0.15));
+  color: var(--color-sage-700, #466318);
+}
+
+.solis-goal-card__readiness-btn--amber {
+  background-color: var(--color-amber-100, rgba(217, 130, 43, 0.15));
+  color: var(--color-amber-700, #9A5B15);
+}
+
+.solis-goal-card__readiness-btn--coral {
+  background-color: var(--color-coral-100, rgba(232, 110, 80, 0.15));
+  color: var(--color-coral-700, #B8472B);
+}
+
+.solis-goal-card__readiness-btn--lavender {
+  background-color: var(--color-lavender-100, rgba(147, 112, 219, 0.15));
+  color: var(--color-lavender-700, #6741B0);
+}
+
+/* Project Strip */
+.solis-goal-card__project-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(217, 130, 43, 0.06) 0%, rgba(217, 130, 43, 0.02) 100%);
+  border: 1px solid rgba(217, 130, 43, 0.15);
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__project-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-caption);
+  color: var(--color-coral-500);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.solis-goal-card__repo-link:hover {
+  text-decoration: underline;
+}
+
+.solis-goal-card__deliverables-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+/* Linked Habits */
+.solis-goal-card__habits-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__habits-label {
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.solis-goal-card__habits-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__habit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Progress Section */
+.solis-goal-card__progress-section {
+  margin: 4px 0;
+}
+
+/* Milestones Checklist Section */
+.solis-goal-card__milestones-section {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.solis-goal-card__milestones-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solis-goal-card__milestones-label {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.solis-goal-card__add-milestone-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: var(--text-caption);
+  color: var(--color-coral-500);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease;
+}
+
+.solis-goal-card__add-milestone-trigger:hover {
+  background-color: var(--color-coral-100, rgba(232, 110, 80, 0.1));
+}
+
+.solis-goal-card__milestone-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 8px;
+}
+
+.solis-goal-card__milestone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  transition: all 0.15s ease;
+}
+
+.solis-goal-card__milestone-item:hover {
+  border-color: var(--border-medium);
+}
+
+.solis-goal-card__milestone-item--completed {
+  background-color: var(--status-success-bg, rgba(107, 142, 35, 0.06));
+  border-color: rgba(107, 142, 35, 0.2);
+}
+
+.solis-goal-card__milestone-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  text-align: left;
+  flex: 1;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+}
+
+.solis-goal-card__milestone-icon--done {
+  color: var(--status-success);
+  flex-shrink: 0;
+}
+
+.solis-goal-card__milestone-icon--todo {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.solis-goal-card__milestone-text {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-goal-card__milestone-item--completed .solis-goal-card__milestone-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.solis-goal-card__milestone-date {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.solis-goal-card__milestone-date--overdue {
+  color: var(--status-error);
+  font-weight: 600;
+}
+
+.solis-goal-card__milestone-delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.solis-goal-card__milestone-delete:hover {
+  opacity: 1;
+  color: var(--status-error);
+}
+
+.solis-goal-card__milestones-empty {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.solis-goal-card__inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-subtle);
+}
+
+.solis-goal-card__inline-input {
+  flex: 1;
+  min-width: 180px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  font-size: var(--text-caption);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.solis-goal-card__inline-input:focus {
+  border-color: var(--color-coral-500);
+}
+
+.solis-goal-card__inline-date {
+  height: 34px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-primary);
+  font-size: var(--text-caption);
+  color: var(--text-primary);
+  outline: none;
+}
+
+/* Card Footer */
+.solis-goal-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.solis-goal-card__footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   4. GOAL MODAL STYLES
+   -------------------------------------------------------------------------- */
+.solis-goal-modal__error-banner {
+  padding: 8px 12px;
+  background-color: var(--status-error-bg);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-md);
+  color: var(--status-error);
+  font-size: var(--text-caption);
+  font-weight: 500;
+}
+
+.solis-goal-modal__tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.solis-goal-modal__tab {
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-goal-modal__tab:hover {
+  color: var(--text-primary);
+}
+
+.solis-goal-modal__tab--active {
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.solis-goal-modal__label {
+  display: block;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.solis-goal-modal__mode-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.solis-goal-modal__mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-secondary);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.solis-goal-modal__mode-card:hover {
+  border-color: var(--border-medium);
+  background-color: var(--bg-surface-primary);
+}
+
+.solis-goal-modal__mode-card--active {
+  border-color: var(--color-coral-500);
+  background-color: var(--bg-surface-primary);
+  box-shadow: 0 0 0 2px rgba(232, 110, 80, 0.15);
+}
+
+.solis-goal-modal__mode-icon {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.solis-goal-modal__mode-icon--coral {
+  color: var(--color-coral-500);
+}
+
+.solis-goal-modal__mode-icon--amber {
+  color: var(--color-amber-500);
+}
+
+.solis-goal-modal__mode-title {
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.solis-goal-modal__mode-desc {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.solis-goal-modal__deliverables-section {
+  padding: 12px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-goal-modal__deliverables-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.solis-goal-modal__deliverable-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background-color: var(--bg-surface-primary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: var(--text-caption);
+}
+
+.solis-goal-modal__milestones-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.solis-goal-modal__milestone-preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.solis-goal-modal__step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--bg-surface-primary);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.solis-goal-modal__item-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.solis-goal-modal__item-remove:hover {
+  color: var(--status-error);
+}
+
+.solis-goal-modal__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 14px;
+  margin-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   5. FORM GRIDS & RESPONSIVE BREAKPOINTS
+   -------------------------------------------------------------------------- */
 .solis-goals-form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -18,29 +960,72 @@
   border: 1px solid var(--border-subtle);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1024px) {
+  .solis-goals-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .solis-goals-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .solis-goals-modal__mode-selector {
+    grid-template-columns: 1fr;
+  }
+
   .solis-goals-form-grid,
   .solis-goals-form-grid--nested {
     grid-template-columns: 1fr;
     gap: var(--space-sm);
   }
 
-  .solis-goal-card-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+  .solis-goal-card {
+    padding: 16px;
   }
 
-  .solis-goal-card-actions {
-    display: flex;
+  .solis-goal-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .solis-goal-card__header-right {
     justify-content: space-between;
-    align-items: center;
     width: 100%;
     border-top: 1px dashed var(--border-subtle);
     padding-top: 8px;
   }
 
-  .solis-goal-milestone-form {
-    max-width: 100% !important;
+  .solis-goal-card__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .solis-goal-card__footer-left,
+  .solis-goal-card__footer-right {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .solis-goal-card__footer-left button,
+  .solis-goal-card__footer-right button {
+    flex: 1;
+  }
+
+  .solis-goals-filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .solis-goals-search-field {
+    max-width: 100%;
+  }
+
+  .solis-goals-filter-dropdowns {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 }

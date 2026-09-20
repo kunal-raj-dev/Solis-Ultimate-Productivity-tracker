@@ -13,6 +13,13 @@ export interface AmbientSound {
   volume: number;
 }
 
+export interface ParkedThought {
+  id: string;
+  text: string;
+  type: 'task' | 'note' | 'question';
+  timestamp: string;
+}
+
 export interface FocusSession extends BaseEntity {
   mode: FocusModeType;
   durationMinutes: number;
@@ -30,6 +37,7 @@ export interface FocusSession extends BaseEntity {
   soundscapeType?: SoundscapeType;
   targetOutcome?: string;
   checkpointCompleted?: boolean;
+  parkedThoughts?: ParkedThought[];
 }
 
 export interface FocusTimerState {

@@ -1,0 +1,59 @@
+/* Solis Editorial Illustrations — Theme-aware Vector Styles */
+
+.solis-illustration {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  user-select: none;
+  overflow: visible;
+}
+
+.solis-illustration--floating {
+  animation: solis-illus-float 6s ease-in-out infinite;
+}
+
+.solis-illustration--pulsing {
+  animation: solis-illus-pulse 4s ease-in-out infinite;
+}
+
+.solis-illustration--orbiting {
+  transform-origin: center;
+  animation: solis-illus-rotate 40s linear infinite;
+}
+
+@keyframes solis-illus-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes solis-illus-pulse {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes solis-illus-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solis-illustration--floating,
+  .solis-illustration--pulsing,
+  .solis-illustration--orbiting {
+    animation: none !important;
+  }
+}

@@ -210,3 +210,238 @@
   margin-top: var(--space-md);
   animation: pulse-slow 3s infinite ease-in-out;
 }
+
+/* Cognitive Drift Pad Trigger Button */
+.solis-focus-drift-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.solis-focus-drift-trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(230, 90, 65, 0.4);
+  color: #FAF8F5;
+}
+
+.solis-drift-kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================================
+   FLAGSHIP EXPERIENCE: ZEN IMMERSION & BREATHING AURA
+   ============================================================ */
+
+.solis-focus-sanctuary--zen {
+  justify-content: center;
+  padding: var(--space-md);
+}
+
+.solis-focus-sanctuary--zen .solis-focus-peripheral {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-16px) scale(0.96);
+  max-height: 0;
+  margin: 0 !important;
+  overflow: hidden;
+}
+
+.solis-focus-sanctuary--zen .solis-focus-time-display {
+  font-size: clamp(4.5rem, 24vw, 13rem);
+  margin: var(--space-lg) 0;
+  text-shadow: 0 0 80px rgba(230, 90, 65, 0.45), 0 8px 40px rgba(0, 0, 0, 0.8);
+}
+
+/* Floating Zen Exit Bar */
+.solis-focus-zen-bar {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 100;
+  background: rgba(20, 18, 16, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  opacity: 0.45;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.solis-focus-zen-bar:hover,
+.solis-focus-zen-bar:focus-within {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+/* Meditative Breathing Aura Rings */
+.solis-focus-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 480px;
+  height: 480px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.solis-focus-aura__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(230, 90, 65, 0.15);
+  box-shadow: inset 0 0 40px rgba(230, 90, 65, 0.05);
+  transition: all 0.5s ease;
+}
+
+.solis-focus-aura__ring--1 {
+  width: 280px;
+  height: 280px;
+}
+
+.solis-focus-aura__ring--2 {
+  width: 380px;
+  height: 380px;
+  border-color: rgba(230, 90, 65, 0.08);
+}
+
+.solis-focus-aura__ring--3 {
+  width: 480px;
+  height: 480px;
+  border-color: rgba(230, 90, 65, 0.04);
+}
+
+.solis-focus-aura--pulsing .solis-focus-aura__ring--1 {
+  animation: breathing-ring-1 8s infinite ease-in-out;
+}
+
+.solis-focus-aura--pulsing .solis-focus-aura__ring--2 {
+  animation: breathing-ring-2 8s infinite ease-in-out 1s;
+}
+
+.solis-focus-aura--pulsing .solis-focus-aura__ring--3 {
+  animation: breathing-ring-3 8s infinite ease-in-out 2s;
+}
+
+@keyframes breathing-ring-1 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+  50% { transform: translate(-50%, -50%) scale(1.12); opacity: 0.7; }
+}
+
+@keyframes breathing-ring-2 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.2; }
+  50% { transform: translate(-50%, -50%) scale(1.18); opacity: 0.5; }
+}
+
+@keyframes breathing-ring-3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.1; }
+  50% { transform: translate(-50%, -50%) scale(1.24); opacity: 0.35; }
+}
+
+/* Soundscape Visual Pulse Bar */
+.solis-soundscape-pulse {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 14px;
+}
+
+.solis-soundscape-pulse__bar {
+  width: 2px;
+  height: 100%;
+  background: var(--color-coral-400);
+  border-radius: 2px;
+  animation: sound-bar-bounce 1.2s ease-in-out infinite alternate;
+}
+
+.solis-soundscape-pulse__bar:nth-child(2) { animation-delay: 0.2s; }
+.solis-soundscape-pulse__bar:nth-child(3) { animation-delay: 0.4s; }
+.solis-soundscape-pulse__bar:nth-child(4) { animation-delay: 0.1s; }
+
+@keyframes sound-bar-bounce {
+  0% { transform: scaleY(0.2); opacity: 0.4; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+/* Task Selector Pill in Focus Room */
+.solis-focus-task-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(230, 90, 65, 0.12);
+  border: 1px solid rgba(230, 90, 65, 0.28);
+  border-radius: var(--radius-full);
+  color: var(--color-ivory-100);
+  font-size: var(--text-caption);
+  margin-bottom: var(--space-sm);
+  max-width: 90vw;
+}
+
+.solis-focus-task-est {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  color: var(--color-coral-300);
+}
+
+.solis-focus-task-clear {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 50%;
+  transition: color 0.2s ease;
+}
+
+.solis-focus-task-clear:hover {
+  color: #fff;
+}
+
+/* Accessibility: Reduced Motion Overrides */
+@media (prefers-reduced-motion: reduce) {
+  .solis-focus-aura--pulsing .solis-focus-aura__ring--1,
+  .solis-focus-aura--pulsing .solis-focus-aura__ring--2,
+  .solis-focus-aura--pulsing .solis-focus-aura__ring--3 {
+    animation: none !important;
+    opacity: 0.35 !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+  }
+
+  .solis-soundscape-pulse__bar {
+    animation: none !important;
+    transform: scaleY(0.6) !important;
+    opacity: 0.7 !important;
+  }
+
+  .solis-focus-checkpoint-banner {
+    animation: none !important;
+  }
+}
+

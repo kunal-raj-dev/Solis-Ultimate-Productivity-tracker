@@ -1,5 +1,6 @@
 import React from 'react';
-import { BookOpen, Archive, MoreVertical, Layers, Edit2, RotateCcw, Trash2, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { BookOpen, Archive, MoreVertical, Layers, Edit2, RotateCcw, Trash2, AlertCircle, Flame } from 'lucide-react';
 import { Card } from '../../../components/ui/Card/Card';
 import { Badge, BadgeVariant } from '../../../components/ui/Badge/Badge';
 import { Button } from '../../../components/ui/Button/Button';
@@ -49,6 +50,8 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
   onArchiveSubject,
   onSetDeletingSubject
 }) => {
+  const navigate = useNavigate();
+
   if (initialLoadStatus === 'loading' && subjects.length === 0) {
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
@@ -91,6 +94,7 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
       }
       return (
         <EmptyState
+          illustration="study"
           icon={BookOpen}
           title="No active subjects yet"
           description="Create your first subject to begin building your living syllabus and study system."
@@ -168,6 +172,31 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
                       gap: '2px'
                     }}
                   >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onToggleActionMenu(null);
+                        navigate(`/app/focus?subjectId=${subject.id}&title=${encodeURIComponent(`Study: ${subject.name}`)}`);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 10px',
+                        background: 'none',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: 'var(--text-caption)',
+                        color: 'var(--color-coral-500)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%'
+                      }}
+                    >
+                      <Flame size={14} color="var(--color-coral-500)" />
+                      <span>Start Focus Block</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => {

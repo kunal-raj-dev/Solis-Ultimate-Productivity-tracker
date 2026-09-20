@@ -33,9 +33,10 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
 }) => {
   if (!isOpen || !goal) return null;
 
-  const projectTasks = tasks.filter((t) => !goal.subjectId || t.subjectId === goal.subjectId);
-  const completedMilestones = goal.milestones.filter((m) => m.completed).length;
-  const progressPercent = goal.milestones.length > 0
+  const projectTasks = goal.subjectId ? tasks.filter((t) => t.subjectId === goal.subjectId) : [];
+  const projectResources = goal.subjectId && resources ? resources.filter((r) => r.subjectId === goal.subjectId) : [];
+  const completedMilestones = (goal.milestones || []).filter((m) => m.completed).length;
+  const progressPercent = (goal.milestones || []).length > 0
     ? Math.round((completedMilestones / goal.milestones.length) * 100)
     : goal.progressPercentage;
 
@@ -143,14 +144,13 @@ export const ProjectWorkspaceModal: React.FC<ProjectWorkspaceModalProps> = ({
         </div>
 
         {/* Linked Technical Documentation & Resources */}
-        {resources && resources.filter((r) => !goal.subjectId || r.subjectId === goal.subjectId).length > 0 && (
+        {projectResources.length > 0 && (
           <div>
             <span style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
               Engineering References & Docs
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {resources
-                .filter((r) => !goal.subjectId || r.subjectId === goal.subjectId)
+              {projectResources
                 .slice(0, 3)
                 .map((res) => (
                   <div

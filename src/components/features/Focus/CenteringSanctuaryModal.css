@@ -1,0 +1,179 @@
+/* Solis Centering Sanctuary Modal & Resonant Breath Pacer */
+
+.solis-centering-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 9, 8, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: solis-fade-in 0.25s ease-out;
+}
+
+.solis-centering-modal {
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-charcoal-950, #12100F);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(217, 130, 43, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #FAF8F5;
+  text-align: center;
+  padding: 28px 24px;
+}
+
+.solis-centering-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.solis-centering-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-centering-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #FAF8F5;
+  letter-spacing: -0.01em;
+}
+
+.solis-centering-protocol-pills {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.solis-protocol-pill {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.solis-protocol-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FAF8F5;
+}
+
+.solis-protocol-pill--active {
+  background: rgba(217, 130, 43, 0.2);
+  border-color: var(--color-amber-500, #D9822B);
+  color: var(--color-amber-400, #F8C37D);
+  font-weight: 600;
+}
+
+/* Mandala Breath Circle */
+.solis-breath-stage {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solis-breath-ring-outer {
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 50%;
+  border: 1px dashed rgba(217, 130, 43, 0.25);
+  animation: solis-illus-rotate 60s linear infinite;
+}
+
+.solis-breath-orb {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(248, 195, 125, 0.4), rgba(217, 130, 43, 0.15) 60%, transparent 80%);
+  border: 1px solid rgba(248, 195, 125, 0.4);
+  box-shadow: 0 0 35px rgba(217, 130, 43, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease;
+  will-change: transform;
+}
+
+.solis-breath-orb--inhale {
+  transform: scale(1.35);
+  box-shadow: 0 0 60px rgba(248, 195, 125, 0.45);
+}
+
+.solis-breath-orb--hold {
+  transform: scale(1.35);
+  box-shadow: 0 0 45px rgba(230, 90, 65, 0.4);
+  border-color: rgba(230, 90, 65, 0.5);
+}
+
+.solis-breath-orb--exhale {
+  transform: scale(0.85);
+  box-shadow: 0 0 20px rgba(217, 130, 43, 0.15);
+}
+
+.solis-breath-orb--rest {
+  transform: scale(0.85);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.08);
+}
+
+.solis-breath-seconds {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 500;
+  color: #FAF8F5;
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-breath-instruction {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: #FAF8F5;
+  margin-bottom: 6px;
+  min-height: 36px;
+}
+
+.solis-breath-subtext {
+  font-family: var(--font-interface);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 24px;
+}
+
+.solis-centering-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 18px;
+}
+
+.solis-centering-cycle-info {
+  font-family: var(--font-interface);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}

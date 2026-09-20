@@ -104,4 +104,78 @@ describe('Phase 4 — Cross-Domain Interconnections', () => {
     const restored = await service.study.restoreSubject(subject.id);
     expect(restored.status).toBe('active');
   });
+
+  it('completes linked task and accumulates completed focus minutes on focus reflection save', async () => {
+    // 1. Create a task with estimated minutes
+    const task = await service.tasks.createTask({
+      title: 'Implement Raft Consensus Protocol',
+      category: 'study',
+      priority: 'high',
+      estimatedMinutes: 50
+    });
+    expect(task.id).toBeDefined();
+    expect(task.status).toBe('todo');
+    expect(task.completedMinutes || 0).toBe(0);
+
+    // 2. Save focus session with taskId
+    const session = await service.focus.saveFocusSession({
+      taskId: task.id,
+      mode: 'deep_flow',
+      durationMinutes: 50,
+      title: task.title,
+      completed: true,
+      flowQuality: 5
+    });
+    expect(session.taskId).toBe(task.id);
+
+    // 3. Mark task completed with logged minutes (as performed by FocusContext)
+    const updated = await service.tasks.updateTask(task.id, {
+      status: 'completed',
+      completedMinutes: (task.completedMinutes || 0) + session.durationMinutes,
+      completedAt: new Date().toISOString()
+    });
+
+    expect(updated.status).toBe('completed');
+    expect(updated.completedMinutes).toBe(50);
+    expect(updated.completedAt).toBeDefined();
+  });
+
+  it('links actionable task to weekly goal horizon when synthesized in Weekly Review', async () => {
+    // 1. Create weekly goal from commitment
+    const goal = await service.goals.createGoal({
+      title: 'Master Graph Coloring Register Allocation',
+      description: 'Complete compiler backend optimization project',
+      category: 'academic',
+      horizon: 'short_term',
+      priority: 'high',
+      targetDate: '2026-09-27',
+      experienceType: 'standard',
+      status: 'active',
+      progressPercentage: 0,
+      color: 'coral',
+      milestones: []
+    });
+    expect(goal.id).toBeDefined();
+
+    // 2. Create task referencing the newly created goalId
+    const task = await service.tasks.createTask({
+      title: 'Commitment: Master Graph Coloring Register Allocation',
+      description: 'Complete compiler backend optimization project',
+      category: 'study',
+      priority: 'high',
+      goalId: goal.id,
+      dueDate: '2026-09-27',
+      estimatedMinutes: 60,
+      tags: ['weekly-commitment']
+    });
+
+    expect(task.goalId).toBe(goal.id);
+    expect(task.tags).toContain('weekly-commitment');
+
+    // 3. Verify task appears under goal's linked tasks
+    const allTasks = await service.tasks.getTasks();
+    const linked = allTasks.filter((t) => t.goalId === goal.id);
+    expect(linked).toHaveLength(1);
+    expect(linked[0].id).toBe(task.id);
+  });
 });
