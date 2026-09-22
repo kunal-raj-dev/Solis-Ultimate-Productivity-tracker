@@ -155,6 +155,8 @@
   font-size: var(--text-body);
   font-weight: 700;
   color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 .solis-hourly-stat-lbl {
@@ -164,112 +166,181 @@
   letter-spacing: 0.5px;
 }
 
-/* 24-Hour Grid */
+/* 24-Hour Timeline Grid (De-cardified Architectural Surface) */
 .solis-hourly-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-subtle);
 }
 
 .solis-hour-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 110px 1fr;
   gap: 16px;
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  background: var(--bg-surface-elevated);
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
+  padding: 8px 16px;
+  background: transparent;
+  border-bottom: 1px solid var(--border-hairline);
+  transition: background-color var(--duration-instant) ease;
+  min-height: 52px;
+}
+
+.solis-hour-row:last-child {
+  border-bottom: none;
 }
 
 .solis-hour-row:hover {
-  border-color: var(--border-subtle);
+  background-color: var(--bg-surface-hover);
 }
 
 .solis-hour-row--now {
-  background: rgba(255, 107, 74, 0.05);
-  border-color: rgba(255, 107, 74, 0.35);
-  box-shadow: 0 0 16px rgba(255, 107, 74, 0.08);
+  background: rgba(230, 90, 65, 0.035);
+  border-left: 3px solid var(--color-coral-500);
+}
+
+.solis-hour-row--peak {
+  border-left: 2px solid var(--color-coral-400);
+}
+
+.solis-hour-row--now.solis-hour-row--peak {
+  border-left: 3px solid var(--color-coral-500);
+}
+
+.solis-hour-peak-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-coral-600);
+  background: rgba(230, 90, 65, 0.07);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  width: fit-content;
 }
 
 .solis-hour-row--past {
   opacity: 0.85;
 }
 
+.solis-hour-row--compact {
+  min-height: 28px;
+  padding: 4px 16px;
+  opacity: 0.6;
+}
+
+.solis-hour-row--compact:hover {
+  opacity: 1;
+}
+
+.solis-hour-row--compact .solis-hour-axis {
+  gap: 0;
+}
+
+.solis-hour-row--compact .solis-hour-label {
+  font-size: var(--text-micro);
+  font-weight: 500;
+}
+
+.solis-hour-row--compact .solis-hour-empty-hint {
+  font-size: 11px;
+}
+
 .solis-hour-axis {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   justify-content: flex-start;
-  padding-top: 4px;
+  padding-top: 6px;
+  user-select: none;
 }
 
 .solis-hour-label {
   font-size: var(--text-caption);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-secondary);
   font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 .solis-hour-now-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--color-coral-500);
-  background: rgba(255, 107, 74, 0.12);
-  padding: 2px 8px;
-  border-radius: 12px;
+  background: rgba(230, 90, 65, 0.08);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
   width: fit-content;
+  letter-spacing: 0.02em;
 }
 
 .solis-hour-now-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--color-coral-500);
-  animation: pulse-dot 1.8s infinite ease-in-out;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.4); opacity: 0.5; }
 }
 
 .solis-hour-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 48px;
+  gap: 6px;
+  min-height: 38px;
   justify-content: center;
+  position: relative;
 }
 
 .solis-hour-blocks-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
 }
 
-.solis-hour-empty-slot {
+.solis-hour-empty-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 36px;
+  border-radius: var(--radius-xs);
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border-subtle);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: var(--text-caption);
   cursor: pointer;
-  transition: all 0.15s ease;
+  background: transparent;
+  transition: background-color var(--duration-instant) ease;
 }
 
-.solis-hour-empty-slot:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: var(--color-coral-500);
+.solis-hour-empty-hint {
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  transition: opacity var(--duration-instant) ease, color var(--duration-instant) ease;
+  user-select: none;
+}
+
+.solis-hour-row:hover .solis-hour-empty-hint {
+  opacity: 0.75;
   color: var(--color-coral-500);
+}
+
+@media (max-width: 768px) {
+  .solis-hour-empty-hint {
+    opacity: 0.45;
+  }
 }
 
 /* Time Block Card in Hourly Grid */
@@ -508,7 +579,6 @@
 .solis-timeline-bullet--active {
   border-color: var(--color-coral-500);
   background: var(--color-coral-500);
-  box-shadow: 0 0 10px var(--color-coral-500);
 }
 
 .solis-timeline-line {
@@ -789,3 +859,102 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* ==========================================================================
+   TABULAR TASK STREAM UTILITIES
+   ========================================================================== */
+
+.solis-task-kbd-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.solis-task-kbd {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   TODAY HYBRID DESKTOP LAYOUT (TASK STREAM + HOURLY PLANNER)
+   ========================================================================== */
+.solis-tasks-today-hybrid {
+  display: grid;
+  grid-template-columns: minmax(360px, 460px) 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+@media (max-width: 1100px) {
+  .solis-tasks-today-hybrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.solis-tasks-today-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solis-tasks-today-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+}
+
+.solis-tasks-today-list-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.solis-tasks-today-list-counter {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.solis-tasks-today-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-tasks-today-empty {
+  padding: 28px 16px;
+  text-align: center;
+  background: var(--bg-surface-secondary);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.solis-tasks-today-empty p {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.solis-tasks-today-empty span {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  display: block;
+}
+
+.solis-tasks-today-grid-panel {
+  min-width: 0;
+}
+
+

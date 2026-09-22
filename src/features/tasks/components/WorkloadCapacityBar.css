@@ -1,0 +1,141 @@
+.solis-workload-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 10px 14px;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-subtle);
+  transition: all var(--transition-fast);
+}
+
+.solis-workload-bar-container--overcommitted {
+  border-color: rgba(230, 90, 65, 0.35);
+  background-color: rgba(230, 90, 65, 0.03);
+}
+
+.solis-workload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.solis-workload-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-workload-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.solis-workload-values strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.solis-workload-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.solis-workload-badge--light {
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-muted);
+}
+
+.solis-workload-badge--optimal {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.solis-workload-badge--heavy {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.solis-workload-badge--overcommitted {
+  background-color: rgba(230, 90, 65, 0.1);
+  color: var(--color-coral-600);
+}
+
+.solis-workload-progress-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--bg-surface-secondary);
+  overflow: hidden;
+}
+
+.solis-workload-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.solis-workload-progress-fill--light {
+  background-color: var(--color-charcoal-400);
+}
+
+.solis-workload-progress-fill--optimal {
+  background-color: #10b981;
+}
+
+.solis-workload-progress-fill--heavy {
+  background-color: #f59e0b;
+}
+
+.solis-workload-progress-fill--overcommitted {
+  background-color: var(--color-coral-500);
+}
+
+.solis-workload-advisory {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-workload-advisory-text {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.solis-workload-replan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-workload-replan-btn:hover {
+  border-color: var(--color-coral-500);
+  color: var(--color-coral-600);
+}

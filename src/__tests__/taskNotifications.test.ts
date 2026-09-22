@@ -140,6 +140,10 @@ describe('Solis Notification, Audio Chime & Quiet Hours Engine', () => {
 
   describe('Time Block Reminders & Fallback Dispatch', () => {
     it('triggers fallback notice when browser notifications are not granted', () => {
+      saveNotificationPreferences({
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        quietHoursEnabled: false
+      });
       const fallbackSpy = vi.fn();
 
       notifyTimeBlockStart('Distributed Consensus Proof', 45, fallbackSpy);
@@ -150,6 +154,10 @@ describe('Solis Notification, Audio Chime & Quiet Hours Engine', () => {
     });
 
     it('triggers hour review prompt fallback notice', () => {
+      saveNotificationPreferences({
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        quietHoursEnabled: false
+      });
       const fallbackSpy = vi.fn();
 
       notifyHourReviewPrompt(14, 'Distributed Consensus Proof', fallbackSpy);

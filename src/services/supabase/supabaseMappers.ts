@@ -60,6 +60,9 @@ export function mapTask(row: any, subtasks: any[] = []): Task {
     planItemId: row.plan_item_id || undefined,
     tags: row.tags || [],
     subTasks: subtasks.map(mapSubtask),
+    recurrence: row.recurrence || undefined,
+    isRecurring: row.is_recurring ?? Boolean(row.recurrence),
+    naturalLanguageInput: row.natural_language_input || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };

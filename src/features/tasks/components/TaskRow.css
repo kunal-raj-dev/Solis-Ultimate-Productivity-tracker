@@ -1,0 +1,305 @@
+.solis-task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 14px;
+  background-color: var(--bg-surface-primary);
+  border: none;
+  border-bottom: 1px solid var(--border-hairline);
+  border-radius: 0;
+  transition: background-color var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.solis-task-row:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+.solis-task-row--selected {
+  border-left: 2px solid var(--color-coral-500);
+  background-color: rgba(230, 90, 65, 0.05);
+}
+
+.solis-task-row--completed {
+  opacity: 0.65;
+  background-color: var(--bg-surface-secondary);
+}
+
+.solis-task-row--completed .solis-task-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.solis-task-check-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-default);
+  background: var(--bg-canvas);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.solis-task-check-button:hover {
+  border-color: var(--color-coral-500);
+}
+
+.solis-task-check-button--checked {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-500);
+  color: #fff;
+}
+
+.solis-task-check-icon {
+  animation: checkPop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.solis-task-priority-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.solis-task-priority-indicator--urgent {
+  background-color: var(--color-coral-500);
+}
+
+.solis-task-priority-indicator--high {
+  background-color: var(--color-amber-500);
+}
+
+.solis-task-priority-indicator--medium {
+  background-color: var(--border-default);
+}
+
+.solis-task-priority-indicator--low {
+  background-color: transparent;
+  border: 1px solid var(--text-muted);
+}
+
+.solis-task-main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-task-title-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.solis-task-title {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.solis-task-recurrence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(126, 105, 171, 0.1);
+  color: var(--color-lavender-600);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.solis-task-subtasks-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  background-color: var(--bg-surface-secondary);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.solis-task-desc-snippet {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+}
+
+.solis-task-metadata-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.solis-task-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-task-logged-span {
+  color: var(--color-coral-600);
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.solis-task-actions-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--bg-surface-elevated, var(--bg-surface-primary));
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast) var(--ease-spatial);
+  z-index: 5;
+}
+
+.solis-task-row:hover .solis-task-actions-col,
+.solis-task-row:focus-within .solis-task-actions-col,
+.solis-task-actions-col--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.solis-task-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-task-action-btn:hover {
+  background-color: var(--bg-surface-primary);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.solis-task-action-btn--focus {
+  background-color: rgba(230, 90, 65, 0.08);
+  border-color: rgba(230, 90, 65, 0.25);
+  color: var(--color-coral-600);
+}
+
+.solis-task-action-btn--focus:hover {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-500);
+  color: #fff;
+}
+
+.solis-task-action-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.solis-task-action-icon-btn:hover {
+  background-color: var(--bg-surface-secondary);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.solis-task-action-icon-btn--delete:hover {
+  color: var(--status-error);
+  border-color: rgba(225, 29, 72, 0.2);
+  background-color: rgba(225, 29, 72, 0.08);
+}
+
+.solis-task-slot-dropdown-wrapper {
+  position: relative;
+}
+
+.solis-task-slot-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  padding: 6px;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeIn 0.1s ease-out;
+}
+
+.solis-task-slot-menu-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 2px 6px 4px 6px;
+  font-weight: 600;
+}
+
+.solis-task-slot-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-sm);
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition-fast);
+}
+
+.solis-task-slot-menu-item:hover {
+  background-color: var(--bg-surface-secondary);
+  color: var(--color-coral-600);
+}

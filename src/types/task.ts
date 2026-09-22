@@ -55,6 +55,18 @@ export interface TimeBlockReviewPayload {
   rescheduleToDate?: string;
 }
 
+export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'custom';
+
+export interface TaskRecurrence {
+  frequency: RecurrenceFrequency;
+  interval?: number; // e.g., every 2 days or 2 weeks
+  daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  endDate?: string;
+  occurrenceCount?: number;
+  maxOccurrences?: number;
+  parentTaskId?: string; // Link back to series
+}
+
 export interface Task extends BaseEntity {
   title: string;
   description?: string;
@@ -72,6 +84,9 @@ export interface Task extends BaseEntity {
   timeBlockId?: string;
   subTasks: SubTask[];
   tags: string[];
+  recurrence?: TaskRecurrence;
+  isRecurring?: boolean;
+  naturalLanguageInput?: string;
 }
 
 export interface TaskFilterOptions {
@@ -82,5 +97,19 @@ export interface TaskFilterOptions {
   search?: string;
   sortBy?: TaskSortField;
   sortOrder?: TaskSortOrder;
+  isRecurring?: boolean;
+}
+
+export type WorkloadState = 'light' | 'optimal' | 'heavy' | 'overcommitted';
+
+export interface WorkloadSummary {
+  plannedTasksMinutes: number;
+  plannedBlocksMinutes: number;
+  totalPlannedMinutes: number;
+  dailyCapacityMinutes: number;
+  remainingCapacityMinutes: number;
+  overcommittedMinutes: number;
+  state: WorkloadState;
+  rescheduleCandidates: Task[];
 }
 

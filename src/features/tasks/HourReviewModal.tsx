@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CheckCircle2,
   Clock,
   AlertTriangle,
   RotateCcw,
-  Sparkles,
-  ArrowRight,
-  Calendar
+  Sparkles
 } from 'lucide-react';
 import { Modal } from '../../components/feedback/Modal/Modal';
 import { Button } from '../../components/ui/Button/Button';
@@ -14,11 +12,12 @@ import { Input } from '../../components/ui/Input/Input';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { TaskTimeBlock, TimeBlockReviewPayload } from '../../types/task';
-import { getISODateString } from '../../utils/date';
+import { getReplanSuggestions, ReplanSlot } from '../../utils/tasks/replanEngine';
 
 interface HourReviewModalProps {
   isOpen: boolean;
   block: TaskTimeBlock | null;
+  existingBlocks?: TaskTimeBlock[];
   onClose: () => void;
   onSubmit: (review: TimeBlockReviewPayload) => Promise<void>;
 }
@@ -26,6 +25,7 @@ interface HourReviewModalProps {
 export const HourReviewModal: React.FC<HourReviewModalProps> = ({
   isOpen,
   block,
+  existingBlocks = [],
   onClose,
   onSubmit
 }) => {
@@ -35,8 +35,13 @@ export const HourReviewModal: React.FC<HourReviewModalProps> = ({
   const [reflection, setReflection] = useState<string>('');
   const [blocker, setBlocker] = useState<string>('');
   const [nextAction, setNextAction] = useState<string>('');
-  const [rescheduleChoice, setRescheduleChoice] = useState<'none' | 'next_hour' | 'tomorrow'>('none');
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | 'none'>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const replanSuggestions: ReplanSlot[] = useMemo(() => {
+    if (!block) return [];
+    return getReplanSuggestions(block, existingBlocks);
+  }, [block, existingBlocks]);
 
   useEffect(() => {
     if (block) {
@@ -46,7 +51,7 @@ export const HourReviewModal: React.FC<HourReviewModalProps> = ({
       setReflection(block.reflection || '');
       setBlocker(block.blocker || '');
       setNextAction(block.nextAction || '');
-      setRescheduleChoice(block.status === 'partial' || block.status === 'missed' ? 'next_hour' : 'none');
+      setSelectedSlotIndex(block.status === 'partial' || block.status === 'missed' ? 0 : 'none');
     }
   }, [block]);
 
@@ -56,13 +61,13 @@ export const HourReviewModal: React.FC<HourReviewModalProps> = ({
     setStatus(newStatus);
     if (newStatus === 'completed') {
       setProgressPercent(100);
-      setRescheduleChoice('none');
+      setSelectedSlotIndex('none');
     } else if (newStatus === 'partial') {
       setProgressPercent(50);
-      setRescheduleChoice('next_hour');
+      setSelectedSlotIndex(0);
     } else {
       setProgressPercent(0);
-      setRescheduleChoice('next_hour');
+      setSelectedSlotIndex(0);
     }
   };
 
@@ -70,33 +75,13 @@ export const HourReviewModal: React.FC<HourReviewModalProps> = ({
     e.preventDefault();
     setIsSubmitting(true);
 
-    const now = new Date();
-    const currentHour = now.getHours();
-    const todayStr = getISODateString(now);
     let rescheduleToHour: number | undefined;
     let rescheduleToDate: string | undefined;
 
-    const blockStartMins = block.startHour * 60 + (block.startMinute || 0);
-    const blockEndMins = blockStartMins + (block.durationMinutes || 60);
-    const blockEndHour = Math.floor(blockEndMins / 60) % 24;
-
-    if (rescheduleChoice === 'next_hour') {
-      const nextHourCandidate = block.date === todayStr ? Math.max(currentHour, blockEndHour) : currentHour;
-      rescheduleToHour = (nextHourCandidate + 1) % 24;
-      if (rescheduleToHour === 0 || nextHourCandidate >= 23) {
-        // Wrapped past midnight
-        const tmrw = new Date();
-        tmrw.setDate(tmrw.getDate() + 1);
-        rescheduleToDate = getISODateString(tmrw);
-        rescheduleToHour = 9;
-      } else {
-        rescheduleToDate = todayStr;
-      }
-    } else if (rescheduleChoice === 'tomorrow') {
-      const tmrw = new Date();
-      tmrw.setDate(tmrw.getDate() + 1);
-      rescheduleToDate = getISODateString(tmrw);
-      rescheduleToHour = block.startHour;
+    if (selectedSlotIndex !== 'none' && typeof selectedSlotIndex === 'number' && replanSuggestions[selectedSlotIndex]) {
+      const chosen = replanSuggestions[selectedSlotIndex];
+      rescheduleToHour = chosen.startHour;
+      rescheduleToDate = chosen.date;
     }
 
     try {
@@ -324,83 +309,85 @@ export const HourReviewModal: React.FC<HourReviewModalProps> = ({
         {(status === 'partial' || status === 'missed') && (
           <div
             style={{
-              padding: '12px 14px',
-              backgroundColor: 'rgba(255, 107, 74, 0.08)',
+              padding: '14px 16px',
+              backgroundColor: 'rgba(230, 90, 65, 0.05)',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(255, 107, 74, 0.2)'
+              border: '1px solid rgba(230, 90, 65, 0.18)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <Sparkles size={14} color="var(--color-coral-500)" />
-              <strong style={{ fontSize: 'var(--text-caption)', color: 'var(--text-primary)' }}>
-                Frictionless Rescheduling
-              </strong>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={14} color="var(--color-coral-500)" />
+                <strong style={{ fontSize: 'var(--text-caption)', color: 'var(--text-primary)' }}>
+                  1-Click Auto-Replan Instrument
+                </strong>
+              </div>
+              <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                Select a slot to auto-schedule
+              </span>
             </div>
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setRescheduleChoice('next_hour')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: rescheduleChoice === 'next_hour' ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
-                  background: rescheduleChoice === 'next_hour' ? 'rgba(255, 107, 74, 0.18)' : 'var(--bg-surface-primary)',
-                  color: rescheduleChoice === 'next_hour' ? 'var(--color-coral-500)' : 'var(--text-primary)',
-                  fontSize: 'var(--text-caption)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <ArrowRight size={12} />
-                Move to Next Hour
-              </button>
+              {replanSuggestions.map((slot, idx) => {
+                const isSelected = selectedSlotIndex === idx;
+                return (
+                  <button
+                    key={`${slot.date}-${slot.startHour}-${idx}`}
+                    type="button"
+                    onClick={() => setSelectedSlotIndex(idx)}
+                    title={slot.reason}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: isSelected ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-hairline)',
+                      background: isSelected ? 'rgba(230, 90, 65, 0.14)' : 'var(--bg-surface-primary)',
+                      color: isSelected ? 'var(--color-coral-600)' : 'var(--text-primary)',
+                      fontSize: 'var(--text-caption)',
+                      fontWeight: isSelected ? 600 : 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: '2px',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <RotateCcw size={11} color={isSelected ? 'var(--color-coral-500)' : 'var(--text-muted)'} />
+                      <span>{slot.label}</span>
+                    </div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      {slot.reason}
+                    </span>
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
-                onClick={() => setRescheduleChoice('tomorrow')}
+                onClick={() => setSelectedSlotIndex('none')}
                 style={{
-                  padding: '6px 12px',
+                  padding: '7px 12px',
                   borderRadius: 'var(--radius-sm)',
-                  border: rescheduleChoice === 'tomorrow' ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
-                  background: rescheduleChoice === 'tomorrow' ? 'rgba(255, 107, 74, 0.18)' : 'var(--bg-surface-primary)',
-                  color: rescheduleChoice === 'tomorrow' ? 'var(--color-coral-500)' : 'var(--text-primary)',
-                  fontSize: 'var(--text-caption)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <Calendar size={12} />
-                Plan for Tomorrow
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setRescheduleChoice('none')}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: rescheduleChoice === 'none' ? '1.5px solid var(--text-muted)' : '1px solid var(--border-subtle)',
-                  background: rescheduleChoice === 'none' ? 'var(--bg-surface-secondary)' : 'var(--bg-surface-primary)',
+                  border: selectedSlotIndex === 'none' ? '1.5px solid var(--text-muted)' : '1px solid var(--border-hairline)',
+                  background: selectedSlotIndex === 'none' ? 'var(--bg-surface-secondary)' : 'var(--bg-surface-primary)',
                   color: 'var(--text-secondary)',
                   fontSize: 'var(--text-caption)',
-                  cursor: 'pointer'
+                  fontWeight: selectedSlotIndex === 'none' ? 600 : 400,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}
               >
-                Done with task
+                No reschedule / Backlog
               </button>
             </div>
 
-            {rescheduleChoice !== 'none' && (
-              <div style={{ marginTop: '10px' }}>
+            {selectedSlotIndex !== 'none' && (
+              <div style={{ marginTop: '12px' }}>
                 <Input
-                  placeholder="Optional next step note (e.g. 'Solve remaining 2 edge cases')"
+                  placeholder="Optional next step note (e.g. 'Complete remaining 2 proof lemmas')"
                   value={nextAction}
                   onChange={(e) => setNextAction(e.target.value)}
                   style={{ fontSize: 'var(--text-caption)' }}

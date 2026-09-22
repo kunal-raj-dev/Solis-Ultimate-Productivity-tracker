@@ -1,5 +1,5 @@
 .solis-next-best-action {
-  background: linear-gradient(135deg, var(--bg-surface-primary) 0%, var(--bg-surface-secondary) 100%);
+  background: var(--bg-surface-secondary);
   border: 1px solid var(--border-subtle);
   border-left: 3px solid var(--color-coral-500);
   border-radius: var(--radius-lg);
@@ -9,12 +9,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-subtle);
+  transition: border-color var(--duration-swift) var(--ease-spatial),
+              background var(--duration-swift) var(--ease-spatial);
 }
 
 .solis-next-best-action:hover {
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+  background: var(--bg-surface-hover);
 }
 
 .solis-next-best-action__content {

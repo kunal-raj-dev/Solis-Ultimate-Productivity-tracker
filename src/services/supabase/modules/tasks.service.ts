@@ -4,6 +4,7 @@ import { mapTask, mapSubtask, mapTaskTimeBlock } from '../supabaseMappers';
 
 import { isToday, isFuture, isPast, getISODateString } from '../../../utils/date';
 import { validateTaskInput, ValidationError } from '../../../utils/validation';
+import { spawnNextRecurringOccurrence } from '../../../utils/tasks/recurrenceEngine';
 import { queryCache } from '../../cache';
 import { SupabaseServiceContext } from './types';
 
@@ -85,24 +86,41 @@ export class SupabaseTaskService implements ITaskService {
 
     const userId = await this.ctx.getUserId();
 
-    const { data, error } = await this.ctx.client
+    const basePayload: any = {
+      user_id: userId,
+      subject_id: task.subjectId || null,
+      plan_item_id: task.planItemId || null,
+      title: task.title!.trim(),
+      description: task.description ? task.description.trim() : null,
+      status: task.status || 'todo',
+      priority: task.priority || 'medium',
+      category: task.category || 'study',
+      due_date: task.dueDate || getISODateString(new Date()),
+      due_time: task.dueTime || null,
+      estimated_minutes: task.estimatedMinutes || 30,
+      tags: task.tags || []
+    };
+
+    let { data, error } = await this.ctx.client
       .from('tasks')
       .insert({
-        user_id: userId,
-        subject_id: task.subjectId || null,
-        plan_item_id: task.planItemId || null,
-        title: task.title!.trim(),
-        description: task.description ? task.description.trim() : null,
-        status: task.status || 'todo',
-        priority: task.priority || 'medium',
-        category: task.category || 'study',
-        due_date: task.dueDate || getISODateString(new Date()),
-        due_time: task.dueTime || null,
-        estimated_minutes: task.estimatedMinutes || 30,
-        tags: task.tags || []
+        ...basePayload,
+        recurrence: task.recurrence || null,
+        is_recurring: Boolean(task.isRecurring || task.recurrence),
+        natural_language_input: task.naturalLanguageInput || null
       })
       .select()
       .single();
+
+    if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache') || error.message?.includes('column'))) {
+      const retryResult = await this.ctx.client
+        .from('tasks')
+        .insert(basePayload)
+        .select()
+        .single();
+      data = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error || !data) throw error || new Error('Failed to create task');
 
@@ -132,17 +150,35 @@ export class SupabaseTaskService implements ITaskService {
     if (updates.dueDate !== undefined) payload.due_date = updates.dueDate;
     if (updates.dueTime !== undefined) payload.due_time = updates.dueTime;
     if (updates.estimatedMinutes !== undefined) payload.estimated_minutes = updates.estimatedMinutes;
+    if (updates.completedMinutes !== undefined) payload.completed_minutes = updates.completedMinutes;
     if (updates.tags !== undefined) payload.tags = updates.tags;
     if (updates.subjectId !== undefined) payload.subject_id = updates.subjectId || null;
     if (updates.planItemId !== undefined) payload.plan_item_id = updates.planItemId || null;
+    if (updates.recurrence !== undefined) payload.recurrence = updates.recurrence;
+    if (updates.isRecurring !== undefined) payload.is_recurring = updates.isRecurring;
 
-    const { data, error } = await this.ctx.client
+    let { data, error } = await this.ctx.client
       .from('tasks')
       .update(payload)
       .eq('id', id)
       .eq('user_id', userId)
       .select(`*, subtasks (*)`)
       .single();
+
+    if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache') || error.message?.includes('column'))) {
+      delete payload.recurrence;
+      delete payload.is_recurring;
+      delete payload.natural_language_input;
+      const retryResult = await this.ctx.client
+        .from('tasks')
+        .update(payload)
+        .eq('id', id)
+        .eq('user_id', userId)
+        .select(`*, subtasks (*)`)
+        .single();
+      data = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error || !data) throw error || new Error(`Task ${id} update failed`);
 
@@ -168,7 +204,21 @@ export class SupabaseTaskService implements ITaskService {
     if (!task) throw new Error(`Task ${id} not found`);
 
     const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-    return this.updateTask(id, { status: newStatus });
+    const updated = await this.updateTask(id, { status: newStatus });
+
+    // When completing a recurring task, spawn next occurrence
+    if (newStatus === 'completed' && updated.isRecurring && updated.recurrence) {
+      const nextOccurrence = spawnNextRecurringOccurrence(updated);
+      if (nextOccurrence) {
+        try {
+          await this.createTask(nextOccurrence);
+        } catch (err) {
+          console.error('Failed to spawn next recurring occurrence in Supabase:', err);
+        }
+      }
+    }
+
+    return updated;
   };
 
   addSubTask = async (taskId: string, title: string): Promise<SubTask> => {

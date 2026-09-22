@@ -140,10 +140,14 @@ export const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({
                           leftIcon={<Flame size={12} color="var(--color-coral-500)" />}
                           onClick={() =>
                             navigate(
-                              block.taskId ? `/app/focus?taskId=${block.taskId}` : '/app/focus',
+                              block.taskId
+                                ? `/app/focus?taskId=${block.taskId}&blockId=${block.id}`
+                                : `/app/focus?blockId=${block.id}`,
                               {
                                 state: {
                                   title: block.taskTitle,
+                                  taskId: block.taskId,
+                                  blockId: block.id,
                                   subjectId: block.subjectId,
                                   durationMinutes: block.durationMinutes
                                 }

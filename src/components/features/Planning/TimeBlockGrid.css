@@ -27,11 +27,13 @@
 }
 
 .solis-timeblock-stat-value {
-  font-family: var(--font-display);
+  font-family: var(--font-interface);
   font-size: var(--text-heading-3);
   font-weight: 600;
   color: var(--text-primary);
   margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
 .solis-timeblock-conflict-banner {

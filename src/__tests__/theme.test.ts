@@ -76,7 +76,7 @@ function applyThemeEngine(
     rootElement.classList.add('dark');
     rootElement.setAttribute('data-theme', 'dark');
     rootElement.style.colorScheme = 'dark';
-    metaElement.setAttribute('content', '#141211');
+    metaElement.setAttribute('content', '#0E0C0B');
   } else {
     rootElement.classList.remove('dark');
     rootElement.setAttribute('data-theme', 'light');
@@ -120,7 +120,7 @@ describe('Solis Theme System & Night Mode Semantic Synchronization', () => {
     expect(state.isDark).toBe(true);
     expect(root.classList.contains('dark')).toBe(true);
     expect(root.getAttribute('data-theme')).toBe('dark');
-    expect(meta.getAttribute('content')).toBe('#141211');
+    expect(meta.getAttribute('content')).toBe('#0E0C0B');
   });
 
   it('preserves returning user stored Day preference', () => {
@@ -154,7 +154,7 @@ describe('Solis Theme System & Night Mode Semantic Synchronization', () => {
     expect(root.classList.contains('dark')).toBe(true);
     expect(root.getAttribute('data-theme')).toBe('dark');
     expect(root.style.colorScheme).toBe('dark');
-    expect(meta.getAttribute('content')).toBe('#141211');
+    expect(meta.getAttribute('content')).toBe('#0E0C0B');
     expect(mockLocalStorage.getItem('solis-theme')).toBe('dark');
   });
 

@@ -58,6 +58,7 @@ import {
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
 import { UserProfile, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
 import { isToday, isPast, isFuture, getISODateString, isThisWeek } from '../../utils/date';
+import { spawnNextRecurringOccurrence } from '../../utils/tasks/recurrenceEngine';
 import { calculateStreaks } from '../../utils/streaks';
 import { calculateDailySummary } from '../../utils/productivity';
 import { calculateNextCardReview } from '../../utils/learning/spacedRepetition';
@@ -426,21 +427,24 @@ export class MockDataService implements IDataService {
       }
 
       const newTask: Task = {
-        id: `tsk_${Date.now()}`,
+        id: `tsk_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         title: task.title!.trim(),
         description: task.description ? task.description.trim() : undefined,
         status: task.status || 'todo',
         priority: task.priority || 'medium',
         category: task.category || 'study',
-        dueDate: task.dueDate || getISODateString(new Date()),
+        dueDate: task.dueDate !== undefined ? task.dueDate : getISODateString(new Date()),
         dueTime: task.dueTime || undefined,
         estimatedMinutes: task.estimatedMinutes || 30,
-        completedMinutes: 0,
+        completedMinutes: task.completedMinutes || 0,
         subjectId: task.subjectId,
         goalId: task.goalId,
         planItemId: task.planItemId,
         subTasks: task.subTasks || [],
         tags: task.tags || [],
+        recurrence: task.recurrence,
+        isRecurring: Boolean(task.isRecurring || task.recurrence),
+        naturalLanguageInput: task.naturalLanguageInput,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -493,7 +497,25 @@ export class MockDataService implements IDataService {
       const task = await this.tasks.getTaskById(id);
       if (!task) throw new Error(`Task with id ${id} not found`);
       const newStatus = task.status === 'completed' ? 'todo' : 'completed';
-      return this.tasks.updateTask(id, { status: newStatus });
+      const updated = await this.tasks.updateTask(id, { status: newStatus });
+
+      // If completing a recurring task, spawn the next occurrence
+      if (newStatus === 'completed' && updated.isRecurring && updated.recurrence) {
+        const nextOccurrencePayload = spawnNextRecurringOccurrence(updated);
+        if (nextOccurrencePayload) {
+          const alreadyExists = this._tasks.some(
+            (t) =>
+              t.recurrence?.parentTaskId === (updated.recurrence?.parentTaskId || updated.id) &&
+              t.dueDate === nextOccurrencePayload.dueDate &&
+              t.status !== 'completed'
+          );
+          if (!alreadyExists) {
+            await this.tasks.createTask(nextOccurrencePayload);
+          }
+        }
+      }
+
+      return updated;
     },
 
     addSubTask: async (taskId: string, title: string): Promise<SubTask> => {

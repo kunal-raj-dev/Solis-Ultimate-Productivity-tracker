@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -8,15 +8,22 @@ import {
   Plus,
   Flame,
   Edit2,
-  Trash2
+  Trash2,
+  Calendar
 } from 'lucide-react';
 import { Task, TaskTimeBlock } from '../../types/task';
+import { ExternalCalendarEvent } from '../../types/calendar';
+import { calendarService } from '../../services/calendar/calendar.service';
 import { StudySubject } from '../../types/study';
 import { Goal } from '../../types/goal';
 import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
 import { Progress } from '../../components/ui/Progress/Progress';
 import { getISODateString } from '../../utils/date';
+import { hapticsEngine } from '../../utils/focus/hapticsEngine';
+import { calculateWorkload } from '../../utils/tasks/workloadCalculator';
+import { WorkloadCapacityBar } from './components/WorkloadCapacityBar';
+import { getReplanSuggestions } from '../../utils/tasks/replanEngine';
 
 interface HourlyPlannerViewProps {
   selectedDate: string;
@@ -29,6 +36,9 @@ interface HourlyPlannerViewProps {
   onOpenReviewBlock: (block: TaskTimeBlock) => void;
   onDeleteBlock: (blockId: string) => void;
   onToggleBlockComplete: (block: TaskTimeBlock) => void;
+  onScheduleTaskToHour?: (task: Task, hour: number) => Promise<void>;
+  onAutoReplanCandidates?: () => void;
+  onQuickReplanBlock?: (block: TaskTimeBlock, targetDate: string, targetHour: number) => Promise<void>;
 }
 
 export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
@@ -41,12 +51,22 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   onOpenEditBlock,
   onOpenReviewBlock,
   onDeleteBlock,
-  onToggleBlockComplete
+  onToggleBlockComplete,
+  onScheduleTaskToHour,
+  onAutoReplanCandidates,
+  onQuickReplanBlock
 }) => {
   const navigate = useNavigate();
   const currentHourRef = useRef<HTMLDivElement>(null);
   const [currentHour, setCurrentHour] = useState<number>(new Date().getHours());
   const [currentMinute, setCurrentMinute] = useState<number>(new Date().getMinutes());
+  const [viewMode, setViewMode] = useState<'workday' | '24h'>('workday');
+  const [isUnscheduledShelfOpen, setIsUnscheduledShelfOpen] = useState(false);
+
+  const handleToggleBlock = (block: TaskTimeBlock) => {
+    hapticsEngine.playMechanicalTick();
+    onToggleBlockComplete(block);
+  };
 
   // Keep clock updated
   useEffect(() => {
@@ -64,6 +84,27 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   const isToday = !selectedDate || selectedDate === todayStr;
   const isPastDate = selectedDate < todayStr;
 
+  // Workload Realism Calculation
+  const workload = useMemo(() => {
+    return calculateWorkload({
+      date: selectedDate,
+      tasks,
+      timeBlocks
+    });
+  }, [selectedDate, tasks, timeBlocks]);
+
+  // Unscheduled tasks for this date
+  const scheduledTaskIds = useMemo(() => {
+    return new Set(timeBlocks.map((b) => b.taskId).filter(Boolean) as string[]);
+  }, [timeBlocks]);
+
+  const unscheduledTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (t.status === 'completed' || t.status === 'archived') return false;
+      return t.dueDate === selectedDate && !scheduledTaskIds.has(t.id);
+    });
+  }, [tasks, selectedDate, scheduledTaskIds]);
+
   // Auto-scroll to active hour once on mount if viewing today
   useEffect(() => {
     if (!isToday) return;
@@ -74,6 +115,32 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
     }, 250);
     return () => clearTimeout(timer);
   }, [isToday]);
+
+  const [externalEvents, setExternalEvents] = useState<ExternalCalendarEvent[]>(() => calendarService.getEvents());
+
+  useEffect(() => {
+    const unsub = calendarService.subscribe(() => {
+      setExternalEvents(calendarService.getEvents());
+    });
+    return () => unsub();
+  }, []);
+
+  const externalEventsByHour = useMemo(() => {
+    const map = new Map<number, ExternalCalendarEvent[]>();
+    externalEvents.forEach((ev) => {
+      if (!ev.isBusy) return;
+      const startIso = ev.startTime.slice(0, 10);
+      const endIso = ev.endTime.slice(0, 10);
+      if (startIso !== selectedDate && endIso !== selectedDate) return;
+
+      const startDate = new Date(ev.startTime);
+      const h = startDate.getHours();
+      const existing = map.get(h) || [];
+      existing.push(ev);
+      map.set(h, existing);
+    });
+    return map;
+  }, [externalEvents, selectedDate]);
 
   // Group time blocks by start hour
   const blocksByHour = new Map<number, TaskTimeBlock[]>();
@@ -113,6 +180,60 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
 
   return (
     <div className="solis-hourly-planner">
+      {/* 1. Workload Realism & Capacity Bar */}
+      <div style={{ marginBottom: '14px' }}>
+        <WorkloadCapacityBar
+          workload={workload}
+          onAutoReplanCandidates={onAutoReplanCandidates}
+        />
+      </div>
+
+      {/* 2. Unscheduled Tasks Shelf (if any tasks due today are not in a time block) */}
+      {unscheduledTasks.length > 0 && onScheduleTaskToHour && (
+        <div className="solis-unscheduled-shelf">
+          <div className="solis-unscheduled-shelf-header">
+            <span className="solis-unscheduled-shelf-title">
+              Unscheduled Today ({unscheduledTasks.length}):
+            </span>
+            <button
+              type="button"
+              className="solis-unscheduled-toggle-btn"
+              onClick={() => setIsUnscheduledShelfOpen((prev) => !prev)}
+            >
+              {isUnscheduledShelfOpen ? 'Collapse' : 'Show tasks to slot'}
+            </button>
+          </div>
+
+          {isUnscheduledShelfOpen && (
+            <div className="solis-unscheduled-tasks-list">
+              {unscheduledTasks.map((t) => (
+                <div key={t.id} className="solis-unscheduled-task-chip">
+                  <span className="solis-unscheduled-task-name">{t.title}</span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      className="solis-slot-chip-btn"
+                      onClick={() => onScheduleTaskToHour(t, currentHour)}
+                      title={`Slot to Current Hour (${formatHourLabel(currentHour)})`}
+                    >
+                      Slot Now
+                    </button>
+                    <button
+                      type="button"
+                      className="solis-slot-chip-btn"
+                      onClick={() => onScheduleTaskToHour(t, (currentHour + 1) % 24)}
+                      title="Slot to Next Hour"
+                    >
+                      +1h
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Horizon Day Summary Strip */}
       <div className="solis-hourly-summary-bar">
         <div className="solis-hourly-summary-stats">
@@ -164,7 +285,14 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <Button
+            variant={viewMode === 'workday' ? 'primary' : 'subtle'}
+            size="sm"
+            onClick={() => setViewMode((prev) => (prev === 'workday' ? '24h' : 'workday'))}
+          >
+            {viewMode === 'workday' ? 'Workday (8 AM – 8 PM)' : 'All 24 Hours'}
+          </Button>
           {isToday && (
             <Button variant="subtle" size="sm" onClick={scrollToNow} leftIcon={<Clock size={13} />}>
               Jump to Now ({formatHourLabel(currentHour)})
@@ -181,24 +309,47 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
         </div>
       </div>
 
-      {/* 24-Hour Grid Container */}
+      {/* Hourly Grid Container */}
       <div className="solis-hourly-grid">
-        {Array.from({ length: 24 }, (_, hour) => {
+        {Array.from({ length: 24 }, (_, hour) => hour)
+          .filter((hour) => {
+            if (viewMode === '24h') return true;
+            const hasBlocks = (blocksByHour.get(hour) || []).length > 0;
+            const isCurrent = isToday && hour === currentHour;
+            return (hour >= 8 && hour <= 20) || hasBlocks || isCurrent;
+          })
+          .map((hour) => {
           const isNow = isToday && hour === currentHour;
           const isPastHour = isPastDate || (isToday && hour < currentHour);
           const isUpcoming = !isPastDate && !isToday ? true : (isToday && hour > currentHour);
+          const isPeakCircadian = hour >= 9 && hour <= 12;
           const blocks = blocksByHour.get(hour) || [];
           const hasBlocks = blocks.length > 0;
+          const isCompact = viewMode === '24h' && (hour < 8 || hour > 20) && !hasBlocks && !isNow;
 
           return (
             <div
               key={hour}
               ref={isNow ? currentHourRef : undefined}
-              className={`solis-hour-row ${isNow ? 'solis-hour-row--now' : ''} ${isPastHour ? 'solis-hour-row--past' : ''} ${isUpcoming ? 'solis-hour-row--upcoming' : ''}`}
+              className={`solis-hour-row ${isNow ? 'solis-hour-row--now' : ''} ${isPeakCircadian ? 'solis-hour-row--peak' : ''} ${isPastHour ? 'solis-hour-row--past' : ''} ${isUpcoming ? 'solis-hour-row--upcoming' : ''} ${isCompact ? 'solis-hour-row--compact' : ''}`}
             >
+              {/* Living Time Needle for Current Hour */}
+              {isNow && (
+                <div
+                  className="solis-living-needle"
+                  style={{
+                    top: `${Math.min(100, Math.max(0, (currentMinute / 60) * 100))}%`
+                  }}
+                  title={`Living Time Needle: ${formatHourLabel(currentHour)} (${currentMinute}m)`}
+                />
+              )}
+
               {/* Hour Timestamp Axis */}
               <div className="solis-hour-axis">
                 <span className="solis-hour-label">{formatHourLabel(hour)}</span>
+                {isPeakCircadian && (
+                  <span className="solis-hour-peak-badge">Peak Focus</span>
+                )}
                 {isNow && (
                   <span className="solis-hour-now-badge">
                     <span className="solis-hour-now-dot" />
@@ -209,6 +360,33 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
 
               {/* Hour Slot Content */}
               <div className="solis-hour-content">
+                {/* External Calendar Events for this hour */}
+                {externalEventsByHour.get(hour)?.map((ev) => (
+                  <div
+                    key={ev.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      marginBottom: '6px',
+                      borderRadius: 'var(--radius-sm)',
+                      backgroundColor: 'rgba(167, 139, 250, 0.08)',
+                      border: '1px dashed rgba(167, 139, 250, 0.4)',
+                      fontSize: 'var(--text-caption)'
+                    }}
+                  >
+                    <Calendar size={13} color="var(--color-lavender-500)" />
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{ev.title}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-micro)' }}>
+                      ({ev.startTime.slice(11, 16)}–{ev.endTime.slice(11, 16)})
+                    </span>
+                    <Badge variant="neutral" style={{ fontSize: '10px', marginLeft: 'auto' }}>
+                      {ev.calendarName}
+                    </Badge>
+                  </div>
+                ))}
+
                 {hasBlocks ? (
                   <div className="solis-hour-blocks-list">
                     {blocks.map((block) => {
@@ -233,7 +411,7 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
                                 <button
                                   type="button"
                                   className="solis-time-block-check-btn"
-                                  onClick={() => onToggleBlockComplete(block)}
+                                  onClick={() => handleToggleBlock(block)}
                                   aria-label={`Toggle complete ${block.taskTitle}`}
                                 >
                                   {isComplete ? (
@@ -294,10 +472,14 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
                                     leftIcon={<Flame size={12} color="var(--color-coral-500)" />}
                                     onClick={() =>
                                       navigate(
-                                        block.taskId ? `/app/focus?taskId=${block.taskId}` : '/app/focus',
+                                        block.taskId
+                                          ? `/app/focus?taskId=${block.taskId}&blockId=${block.id}`
+                                          : `/app/focus?blockId=${block.id}`,
                                         {
                                           state: {
                                             title: block.taskTitle,
+                                            taskId: block.taskId,
+                                            blockId: block.id,
                                             subjectId: block.subjectId,
                                             durationMinutes: block.durationMinutes || 45
                                           }
@@ -317,6 +499,24 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
                                 >
                                   Review
                                 </Button>
+
+                                {onQuickReplanBlock && (isNeedsReview || isMissed) && (
+                                  <Button
+                                    variant="subtle"
+                                    size="sm"
+                                    className="tactile-press"
+                                    leftIcon={<RotateCcw size={12} color="var(--color-coral-500)" />}
+                                    onClick={() => {
+                                      const suggestions = getReplanSuggestions(block, timeBlocks, currentHour);
+                                      if (suggestions.length > 0) {
+                                        onQuickReplanBlock(block, suggestions[0].date, suggestions[0].startHour);
+                                      }
+                                    }}
+                                    title="Auto-replan to next available free slot"
+                                  >
+                                    Replan
+                                  </Button>
+                                )}
 
                                 <button
                                   type="button"
@@ -377,14 +577,24 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
                     })}
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    className="solis-hour-empty-slot"
+                  <div
+                    className="solis-hour-empty-canvas"
                     onClick={() => onOpenCreateBlock(hour)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenCreateBlock(hour);
+                      }
+                    }}
+                    aria-label={`Plan time block at ${formatHourLabel(hour)}`}
                   >
-                    <Plus size={13} />
-                    <span>Plan this hour ({formatHourLabel(hour)})</span>
-                  </button>
+                    <span className="solis-hour-empty-hint">
+                      <Plus size={12} />
+                      <span>Plan {formatHourLabel(hour)}</span>
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

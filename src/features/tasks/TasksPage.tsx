@@ -8,10 +8,9 @@ import {
   ChevronRight,
   AlertCircle
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
-import { Badge } from '../../components/ui/Badge/Badge';
 import { Card } from '../../components/ui/Card/Card';
 import { Input } from '../../components/ui/Input/Input';
 import { DatePicker, TimePicker } from '../../components/ui/DatePicker';
@@ -45,11 +44,17 @@ import { TaskPriorityMatrix } from './TaskPriorityMatrix';
 import { TaskReviewSummary } from './TaskReviewSummary';
 import { CreateTimeBlockModal } from './CreateTimeBlockModal';
 import { HourReviewModal } from './HourReviewModal';
+import { SmartTaskInput } from './components/SmartTaskInput';
+import { TaskRow } from './components/TaskRow';
+import { calculateWorkload } from '../../utils/tasks/workloadCalculator';
+import { getReplanSuggestions } from '../../utils/tasks/replanEngine';
+import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 import './TasksPage.css';
 
 export const TasksPage: React.FC = () => {
   const { addToast } = useToast();
   const { openGuide } = useGuide();
+  const navigate = useNavigate();
 
   // Core Data State
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -71,10 +76,6 @@ export const TasksPage: React.FC = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewingBlock, setReviewingBlock] = useState<TaskTimeBlock | null>(null);
 
-  // Quick Capture State
-  const [quickTitle, setQuickTitle] = useState('');
-  const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
-
   // URL Params for deep linking
   const [searchParams] = useSearchParams();
 
@@ -91,7 +92,56 @@ export const TasksPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [deletedTasksStack, setDeletedTasksStack] = useState<Task[]>([]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const smartInputRef = React.useRef<HTMLInputElement>(null);
+  const lastCompletedTaskIdRef = React.useRef<{ id: string; timestamp: number } | null>(null);
+
+  // Workload Realism & Metrics
+  const activeTasksCount = useMemo(() => tasks.filter((t) => t.status !== 'completed').length, [tasks]);
+  const scheduledMinutes = useMemo(
+    () => timeBlocks.reduce((acc, b) => acc + (b.durationMinutes || 60), 0),
+    [timeBlocks]
+  );
+  const scheduledHours = useMemo(() => (scheduledMinutes / 60).toFixed(1), [scheduledMinutes]);
+  const workload = useMemo(
+    () => calculateWorkload({ date: selectedDate, tasks, timeBlocks }),
+    [selectedDate, tasks, timeBlocks]
+  );
+
+  const workloadLabel = useMemo(() => {
+    switch (workload.state) {
+      case 'light':
+        return 'Light Capacity';
+      case 'optimal':
+        return 'Optimal Focus';
+      case 'heavy':
+        return 'Heavy Horizon';
+      case 'overcommitted':
+        return 'Overcommitted';
+      default:
+        return 'Balanced';
+    }
+  }, [workload.state]);
+
+  const todayTasks = useMemo(() => {
+    return tasks.filter((t) => t.dueDate === selectedDate);
+  }, [tasks, selectedDate]);
+
+  const inboxTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      if (t.dueDate) return false;
+      if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchTitle = t.title.toLowerCase().includes(q);
+        const matchDesc = t.description?.toLowerCase().includes(q) || false;
+        const matchTag = t.tags?.some((tag) => tag.toLowerCase().includes(q)) || false;
+        if (!matchTitle && !matchDesc && !matchTag) return false;
+      }
+      return true;
+    });
+  }, [tasks, selectedCategory, searchQuery]);
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
@@ -195,17 +245,84 @@ export const TasksPage: React.FC = () => {
     }
   }, [searchParams, openCreateModal]);
 
-  // Keyboard Shortcuts (N = New Task, T = Today View, 1..5 = Mode Switching)
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const undoShortcutLabel = isMac ? '⌘Z' : 'Ctrl+Z';
+
+  const handleUndoDelete = useCallback(async () => {
+    if (deletedTasksStack.length === 0) return;
+    const toRestore = deletedTasksStack[0];
+    setDeletedTasksStack((prev) => prev.slice(1));
+    try {
+      const recreated = await dataService.tasks.createTask({
+        title: toRestore.title,
+        description: toRestore.description,
+        category: toRestore.category,
+        priority: toRestore.priority,
+        subjectId: toRestore.subjectId,
+        goalId: toRestore.goalId,
+        dueDate: toRestore.dueDate,
+        dueTime: toRestore.dueTime,
+        estimatedMinutes: toRestore.estimatedMinutes,
+        tags: toRestore.tags,
+        subTasks: toRestore.subTasks
+      });
+      setTasks((prev) => [recreated, ...prev]);
+      addToast({ title: 'Task Restored', description: recreated.title, type: 'success' });
+    } catch {
+      addToast({ title: 'Could not restore task', type: 'error' });
+    }
+  }, [deletedTasksStack, addToast]);
+
+  const handleUndoCompletion = useCallback(async (taskId?: string) => {
+    const id = taskId || lastCompletedTaskIdRef.current?.id;
+    if (!id) return;
+    const target = tasks.find((t) => t.id === id);
+    if (!target) return;
+    hapticsEngine.playMechanicalTick();
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: 'todo' } : t)));
+    lastCompletedTaskIdRef.current = null;
+    try {
+      const reverted = await dataService.tasks.updateTask(id, { status: 'todo' });
+      setTasks((prev) => prev.map((t) => (t.id === id ? reverted : t)));
+      addToast({ title: 'Task Reopened', description: reverted.title, type: 'info' });
+    } catch {
+      loadTasks();
+    }
+  }, [tasks, loadTasks, addToast]);
+
+  const handleFocusInlineCapture = useCallback(() => {
+    if (smartInputRef.current) {
+      smartInputRef.current.focus();
+      smartInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
+
+  // Keyboard Shortcuts (N / C = Fast Capture, T = Today View, 1..5 = Mode Switching, Cmd+Z / Ctrl+Z = Undo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const active = document.activeElement;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) {
-        return;
+      const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable);
+
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
+        if (!isInput) {
+          if (lastCompletedTaskIdRef.current && Date.now() - lastCompletedTaskIdRef.current.timestamp < 5000) {
+            e.preventDefault();
+            handleUndoCompletion();
+            return;
+          }
+          if (deletedTasksStack.length > 0) {
+            e.preventDefault();
+            handleUndoDelete();
+            return;
+          }
+        }
       }
 
-      if (e.key === 'n' || e.key === 'N') {
+      if (isInput) return;
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'c' || e.key === 'C') {
         e.preventDefault();
-        openCreateModal();
+        handleFocusInlineCapture();
       } else if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
         setViewMode('today');
@@ -225,7 +342,7 @@ export const TasksPage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [openCreateModal]);
+  }, [handleFocusInlineCapture, deletedTasksStack, handleUndoDelete, handleUndoCompletion]);
 
   const handleSchedulerReviewNeeded = useCallback((block: TaskTimeBlock) => {
     setReviewingBlock(block);
@@ -390,9 +507,58 @@ export const TasksPage: React.FC = () => {
     }
   };
 
+  const handleQuickReplanBlock = async (block: TaskTimeBlock, targetDate: string, targetHour: number) => {
+    try {
+      const updated = await dataService.tasks.updateTimeBlock(block.id, {
+        date: targetDate,
+        startHour: targetHour,
+        status: 'planned'
+      });
+      setTimeBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      addToast({
+        title: 'Block Rescheduled',
+        description: `"${block.taskTitle}" moved to ${targetDate} at ${targetHour % 12 === 0 ? 12 : targetHour % 12}:00 ${targetHour >= 12 ? 'PM' : 'AM'}`,
+        type: 'success'
+      });
+    } catch (err: any) {
+      addToast({ title: 'Could not reschedule block', description: err?.message, type: 'error' });
+    }
+  };
+
+  const handleAutoReplanCandidates = async () => {
+    const candidates = timeBlocks.filter(
+      (b) => b.status === 'partial' || (b.status === 'planned' && b.date < selectedDate)
+    );
+    if (candidates.length === 0) {
+      addToast({ title: 'No replan candidates', description: 'All time blocks are on track.', type: 'info' });
+      return;
+    }
+    let rescheduledCount = 0;
+    for (const block of candidates) {
+      const suggestions = getReplanSuggestions(block, timeBlocks, new Date().getHours());
+      const best = suggestions[0];
+      if (best) {
+        try {
+          await handleQuickReplanBlock(block, best.date, best.startHour);
+          rescheduledCount++;
+        } catch {
+          // continue
+        }
+      }
+    }
+    if (rescheduledCount > 0) {
+      addToast({
+        title: 'Auto-Replan Complete',
+        description: `Rescheduled ${rescheduledCount} block(s) into open focus slots.`,
+        type: 'success'
+      });
+    }
+  };
+
   // Task CRUD Operations
   const handleToggleTask = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    hapticsEngine.playMechanicalTick();
     const prevTasks = tasks;
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
@@ -402,41 +568,28 @@ export const TasksPage: React.FC = () => {
     try {
       const updated = await dataService.tasks.toggleTaskCompletion(id);
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-      addToast({
-        title: updated.status === 'completed' ? 'Task Completed' : 'Task Reopened',
-        description: updated.title,
-        type: 'success'
-      });
+      if (updated.status === 'completed') {
+        lastCompletedTaskIdRef.current = { id, timestamp: Date.now() };
+        addToast({
+          title: 'Task Completed',
+          description: updated.title,
+          type: 'success',
+          durationMs: 5000,
+          action: {
+            label: 'Undo (⌘Z)',
+            onClick: () => handleUndoCompletion(id)
+          }
+        });
+      } else {
+        addToast({
+          title: 'Task Reopened',
+          description: updated.title,
+          type: 'info'
+        });
+      }
     } catch {
       setTasks(prevTasks);
       addToast({ title: 'Could not toggle task', type: 'error' });
-    }
-  };
-
-  const handleQuickCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = quickTitle.trim();
-    if (!trimmed) return;
-
-    setIsQuickSubmitting(true);
-    try {
-      const created = await dataService.tasks.createTask({
-        title: trimmed,
-        category: (selectedCategory !== 'all' ? selectedCategory : 'study') as TaskCategory,
-        priority: 'medium',
-        dueDate: selectedDate
-      });
-      setTasks((prev) => [created, ...prev]);
-      setQuickTitle('');
-      addToast({ title: 'Task Captured', description: created.title, type: 'success' });
-    } catch (err) {
-      addToast({
-        title: 'Could not capture task',
-        description: err instanceof Error ? err.message : 'Please check input',
-        type: 'error'
-      });
-    } finally {
-      setIsQuickSubmitting(false);
     }
   };
 
@@ -520,14 +673,25 @@ export const TasksPage: React.FC = () => {
     if (!deletingTaskId) return;
     const prevTasks = tasks;
     const id = deletingTaskId;
+    const targetTask = tasks.find((t) => t.id === id) || null;
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setDeletingTaskId(null);
+    if (targetTask) {
+      setDeletedTasksStack((prev) => [targetTask, ...prev]);
+    }
 
     try {
       await dataService.tasks.deleteTask(id);
-      addToast({ title: 'Task Deleted', type: 'info' });
+      addToast({
+        title: 'Task Deleted',
+        description: targetTask ? `"${targetTask.title}" — press ${undoShortcutLabel} to undo` : undefined,
+        type: 'info'
+      });
     } catch {
       setTasks(prevTasks);
+      if (targetTask) {
+        setDeletedTasksStack((prev) => prev.filter((t) => t.id !== targetTask.id));
+      }
       addToast({ title: 'Could not delete task', type: 'error' });
     }
   };
@@ -582,19 +746,51 @@ export const TasksPage: React.FC = () => {
   ];
 
   const viewModeOptions: { value: string; label: string }[] = [
-    { value: 'today', label: 'Hourly Planner (24h)' },
+    { value: 'today', label: 'Today & Planner (24h)' },
     { value: 'timeline', label: 'Timeline' },
     { value: 'inbox', label: 'Task Inbox' },
     { value: 'matrix', label: 'Priority Matrix' },
     { value: 'review', label: 'Daily Review' }
   ];
 
+  const handleCreateFromNLP = useCallback(async (taskPayload: Partial<Task>) => {
+    try {
+      const created = await dataService.tasks.createTask({
+        title: taskPayload.title || 'Untitled Deliberate Task',
+        description: taskPayload.description,
+        category: taskPayload.category || 'study',
+        priority: taskPayload.priority || 'medium',
+        subjectId: taskPayload.subjectId,
+        goalId: taskPayload.goalId,
+        dueDate: taskPayload.dueDate || (viewMode === 'today' ? selectedDate : undefined),
+        dueTime: taskPayload.dueTime,
+        estimatedMinutes: taskPayload.estimatedMinutes || 30,
+        tags: taskPayload.tags || [],
+        subTasks: [],
+        recurrence: taskPayload.recurrence,
+        isRecurring: taskPayload.isRecurring,
+        naturalLanguageInput: taskPayload.naturalLanguageInput
+      });
+      setTasks((prev) => [created, ...prev]);
+      addToast({
+        title: 'Task Created',
+        description: created.title,
+        type: 'success'
+      });
+    } catch (err: any) {
+      addToast({
+        title: 'Could not create task',
+        description: err?.message || 'Check input details',
+        type: 'error'
+      });
+    }
+  }, [selectedDate, viewMode, addToast]);
+
   return (
     <div>
       <SectionHeader
-        tag={<Badge variant="coral">Tasks & Time-Blocking</Badge>}
-        title="Tasks & Hourly Sanctuary"
-        subtitle="Organize intentions into a 24-hour daily horizon, focus deeply, and reflect at the turn of each hour."
+        title="Tasks & Daily Schedule"
+        subtitle={`${activeTasksCount} active tasks · ${scheduledHours}h planned · Workload: ${workloadLabel}`}
         guideId="task-sanctuary"
         onOpenGuide={openGuide}
         actions={
@@ -611,7 +807,7 @@ export const TasksPage: React.FC = () => {
               variant="accent"
               size="md"
               leftIcon={<Plus size={16} />}
-              onClick={openCreateModal}
+              onClick={handleFocusInlineCapture}
             >
               New Task
             </Button>
@@ -663,6 +859,19 @@ export const TasksPage: React.FC = () => {
         )}
       </div>
 
+      {/* Inline Fast Smart Capture for non-today views */}
+      {viewMode !== 'today' && (
+        <div className="solis-tasks-inline-capture" style={{ marginBottom: '16px' }}>
+          <SmartTaskInput
+            inputRef={smartInputRef}
+            onCommit={handleCreateFromNLP}
+            subjects={activeSubjects}
+            defaultDueDate={undefined}
+            placeholder='Quick capture or natural language... e.g. "Read OS chapter 4 tomorrow at 3pm for 45m !high"'
+          />
+        </div>
+      )}
+
       {/* Sync Error Banner */}
       {syncStatus === 'error' && (
         <div
@@ -711,20 +920,78 @@ export const TasksPage: React.FC = () => {
         </Card>
       ) : (
         <>
-          {/* VIEW MODE 1: HOURLY PLANNER (24-HOUR DAILY TIME GRID) */}
+          {/* VIEW MODE 1: TODAY DUAL-PANE HYBRID (TASK LIST + 24H HOURLY GRID) */}
           {viewMode === 'today' && (
-            <HourlyPlannerView
-              selectedDate={selectedDate}
-              timeBlocks={timeBlocks}
-              tasks={tasks}
-              subjects={subjects}
-              goals={goals}
-              onOpenCreateBlock={handleOpenCreateBlock}
-              onOpenEditBlock={handleOpenEditBlock}
-              onOpenReviewBlock={handleOpenReviewBlock}
-              onDeleteBlock={handleDeleteTimeBlock}
-              onToggleBlockComplete={handleToggleBlockComplete}
-            />
+            <div className="solis-tasks-today-hybrid">
+              <div className="solis-tasks-today-panel">
+                <SmartTaskInput
+                  inputRef={smartInputRef}
+                  onCommit={handleCreateFromNLP}
+                  subjects={subjects}
+                  defaultDueDate={selectedDate}
+                  placeholder='Add deliberate task for today... (e.g. "Review Chapter 4 at 3pm for 45m !high")'
+                />
+
+                <div className="solis-tasks-today-list-header">
+                  <span className="solis-tasks-today-list-title">Today's Intentions</span>
+                  <span className="solis-tasks-today-list-counter">
+                    {todayTasks.filter((t) => t.status === 'completed').length}/{todayTasks.length} done
+                  </span>
+                </div>
+
+                <div className="solis-tasks-today-list">
+                  {todayTasks.length === 0 ? (
+                    <div className="solis-tasks-today-empty">
+                      <p>No tasks scheduled for {formatFriendlyDate(selectedDate)}.</p>
+                      <span>Capture a deliberate task above or slot from your inbox backlog.</span>
+                    </div>
+                  ) : (
+                    todayTasks.map((task) => {
+                      const linkedSub = subjects.find((s) => s.id === task.subjectId);
+                      return (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          subject={linkedSub}
+                          onToggle={handleToggleTask}
+                          onEdit={openEditModal}
+                          onDelete={(taskId) => setDeletingTaskId(taskId)}
+                          onStartFocus={(t) =>
+                            navigate(`/app/focus?taskId=${t.id}`, {
+                              state: {
+                                title: t.title,
+                                subjectId: t.subjectId,
+                                durationMinutes: t.estimatedMinutes || 30
+                              }
+                            })
+                          }
+                          onSlotToHour={handleScheduleTaskToHour}
+                          showScheduleAction={true}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="solis-tasks-today-grid-panel">
+                <HourlyPlannerView
+                  selectedDate={selectedDate}
+                  timeBlocks={timeBlocks}
+                  tasks={tasks}
+                  subjects={subjects}
+                  goals={goals}
+                  onOpenCreateBlock={handleOpenCreateBlock}
+                  onOpenEditBlock={handleOpenEditBlock}
+                  onOpenReviewBlock={handleOpenReviewBlock}
+                  onDeleteBlock={handleDeleteTimeBlock}
+                  onToggleBlockComplete={handleToggleBlockComplete}
+                  onScheduleTaskToHour={handleScheduleTaskToHour}
+                  onAutoReplanCandidates={handleAutoReplanCandidates}
+                  onQuickReplanBlock={handleQuickReplanBlock}
+                />
+              </div>
+            </div>
           )}
 
           {/* VIEW MODE 2: CONTINUOUS TIMELINE */}
@@ -743,28 +1010,13 @@ export const TasksPage: React.FC = () => {
           {/* VIEW MODE 3: TASK INBOX & BACKLOG */}
           {viewMode === 'inbox' && (
             <div>
-              {/* Quick Capture Bar */}
-              <form onSubmit={handleQuickCreate} className="solis-task-quick-capture">
-                <Sparkles size={16} color="var(--color-coral-500)" className="solis-task-quick-sparkle" />
-                <input
-                  type="text"
-                  value={quickTitle}
-                  onChange={(e) => setQuickTitle(e.target.value)}
-                  placeholder="Capture a deliberate intention... (Press Enter to commit)"
-                  className="solis-task-quick-input"
-                  disabled={isQuickSubmitting}
-                  aria-label="Quick capture task"
+              <div style={{ marginBottom: '16px' }}>
+                <SmartTaskInput
+                  onCommit={handleCreateFromNLP}
+                  subjects={subjects}
+                  placeholder='Capture deliberate intention into backlog... (e.g. "Draft architecture notes !high #study")'
                 />
-                <Button
-                  type="submit"
-                  variant="accent"
-                  size="sm"
-                  disabled={!quickTitle.trim() || isQuickSubmitting}
-                  isLoading={isQuickSubmitting}
-                >
-                  Capture
-                </Button>
-              </form>
+              </div>
 
               {/* Filter Toolbar */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'var(--space-xl)' }}>
@@ -824,7 +1076,7 @@ export const TasksPage: React.FC = () => {
               </div>
 
               <TaskInboxView
-                tasks={tasks}
+                tasks={inboxTasks}
                 subjects={subjects}
                 goals={goals}
                 onToggleTask={handleToggleTask}
@@ -883,6 +1135,7 @@ export const TasksPage: React.FC = () => {
       <HourReviewModal
         isOpen={isReviewModalOpen}
         block={reviewingBlock}
+        existingBlocks={timeBlocks}
         onClose={() => {
           setIsReviewModalOpen(false);
           setReviewingBlock(null);

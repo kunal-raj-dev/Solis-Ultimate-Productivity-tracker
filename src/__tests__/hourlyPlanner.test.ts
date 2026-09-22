@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MockDataService } from '../services/mock/mockService';
 import { TimeBlockReviewPayload } from '../types/task';
+import { getISODateString, addDays } from '../utils/date';
 
 describe('Solis Hourly Planner & 24h Time-Block Grid System', () => {
   let service: MockDataService;
-  const testDate = '2026-09-22';
+  const testDate = getISODateString();
 
   beforeEach(() => {
     service = new MockDataService();
@@ -42,8 +43,8 @@ describe('Solis Hourly Planner & 24h Time-Block Grid System', () => {
   });
 
   it('isolates time blocks by date', async () => {
-    const dateA = '2026-09-22';
-    const dateB = '2026-09-23';
+    const dateA = getISODateString();
+    const dateB = getISODateString(addDays(new Date(), 1));
 
     const blockA = await service.tasks.createTimeBlock({
       taskTitle: 'Morning Deep Work Block A',
