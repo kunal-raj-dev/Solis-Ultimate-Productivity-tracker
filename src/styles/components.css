@@ -84,8 +84,8 @@
 }
 
 .depth-2:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-floating);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-elevated);
 }
 
 .depth-3 {
@@ -106,11 +106,72 @@
    TACTILE PRESS MICRO-INTERACTION (Pure Visual Tactility)
    -------------------------------------------------------------------------- */
 .tactile-press {
-  transition: transform var(--duration-instant) var(--ease-tactile), background-color var(--duration-swift) ease;
+  transition: transform var(--duration-instant) var(--spring-tactile), background-color var(--duration-swift) ease;
 }
 
 .tactile-press:active {
-  transform: scale(0.982);
+  transform: scale(0.978);
+}
+
+/* --------------------------------------------------------------------------
+   DE-CARDIFICATION SURFACE-LESS ROW ARCHITECTURE (Design System 3.0)
+   -------------------------------------------------------------------------- */
+.solis-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-hairline);
+  background: transparent;
+  transition: background-color var(--duration-instant) ease, border-color var(--duration-instant) ease;
+  position: relative;
+}
+
+.solis-row:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+.solis-row--active {
+  background-color: var(--bg-surface-secondary);
+}
+
+.solis-table-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 8px 14px;
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-default);
+  user-select: none;
+}
+
+/* Living Time Needle */
+.solis-living-needle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background-color: var(--color-coral-500);
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.solis-living-needle::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-coral-500);
+  box-shadow: 0 0 0 2px var(--bg-canvas);
 }
 
 /* --------------------------------------------------------------------------

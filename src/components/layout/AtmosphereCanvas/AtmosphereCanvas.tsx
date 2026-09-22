@@ -15,10 +15,6 @@ export const AtmosphereCanvas: React.FC<AtmosphereCanvasProps> = ({
     <div
       className={cn('solis-atmosphere', `solis-atmosphere--${intensity}`, className)}
       aria-hidden="true"
-    >
-      <div className="solis-atmosphere-orb solis-atmosphere-orb--primary" />
-      <div className="solis-atmosphere-orb solis-atmosphere-orb--secondary" />
-      <div className="solis-atmosphere-orb solis-atmosphere-orb--tertiary" />
-    </div>
+    />
   );
 };

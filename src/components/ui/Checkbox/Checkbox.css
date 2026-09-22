@@ -17,17 +17,18 @@
   align-items: center;
   justify-content: center;
   background-color: var(--bg-surface-primary);
-  transition: all var(--transition-fast);
+  transition: transform 120ms var(--spring-tactile), background-color 100ms ease, border-color 100ms ease;
   color: #FFFFFF;
 }
 
 .solis-checkbox-label:active .solis-checkbox-custom {
-  transform: scale(0.88);
+  transform: scale(0.9);
 }
 
 .solis-checkbox-input:checked + .solis-checkbox-custom {
   background-color: var(--color-coral-500);
   border-color: var(--color-coral-500);
+  transform: scale(1.04);
 }
 
 .solis-checkbox-input:focus-visible + .solis-checkbox-custom {

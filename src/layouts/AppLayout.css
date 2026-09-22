@@ -52,3 +52,33 @@
   display: flex;
   flex-direction: column;
 }
+
+
+/* Ask Solis FAB */
+.solis-ask-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-coral-500), var(--color-coral-600));
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(215, 107, 72, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.solis-ask-fab:hover {
+  transform: scale(1.05) translateY(-4px);
+  box-shadow: 0 8px 16px rgba(215, 107, 72, 0.5);
+}
+@media (max-width: 1023px) {
+  .solis-ask-fab {
+    bottom: calc(var(--mobile-nav-height) + var(--safe-area-bottom) + 24px);
+  }
+}

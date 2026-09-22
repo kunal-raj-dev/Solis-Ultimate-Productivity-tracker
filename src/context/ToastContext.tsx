@@ -8,6 +8,10 @@ export interface ToastMessage {
   description?: string;
   type: ToastType;
   durationMs?: number;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 interface ToastContextValue {
@@ -26,9 +30,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const addToast = useCallback(
-    ({ title, description, type = 'info', durationMs = 4000 }: Omit<ToastMessage, 'id'>) => {
+    ({ title, description, type = 'info', durationMs = 4000, action }: Omit<ToastMessage, 'id'>) => {
       const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const newToast: ToastMessage = { id, title, description, type, durationMs };
+      const newToast: ToastMessage = { id, title, description, type, durationMs, action };
 
       setToasts((prev) => [...prev, newToast]);
 

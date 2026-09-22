@@ -79,3 +79,26 @@
 .solis-toast__close:hover {
   color: var(--color-ivory-50);
 }
+
+.solis-toast__action {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-ivory-50);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-tight);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-toast__action:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+

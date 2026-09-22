@@ -29,6 +29,7 @@ export interface FocusContextValue {
   selectedSubjectId: string;
   selectedPlanItemId: string;
   selectedTaskId: string;
+  selectedBlockId: string;
   soundscape: SoundscapeType;
   soundscapeVolume: number;
   isMuted: boolean;
@@ -53,6 +54,7 @@ export interface FocusContextValue {
   setSelectedSubjectId: (id: string) => void;
   setSelectedPlanItemId: (id: string) => void;
   setSelectedTaskId: (id: string) => void;
+  setSelectedBlockId: (id: string) => void;
   setSoundscape: (soundscape: SoundscapeType) => void;
   setSoundscapeVolume: (volume: number) => void;
   toggleMute: () => void;
@@ -97,6 +99,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(persisted?.selectedSubjectId || '');
   const [selectedPlanItemId, setSelectedPlanItemId] = useState<string>(persisted?.selectedPlanItemId || '');
   const [selectedTaskId, setSelectedTaskIdState] = useState<string>(persisted?.selectedTaskId || '');
+  const [selectedBlockId, setSelectedBlockIdState] = useState<string>(persisted?.selectedBlockId || '');
 
   const [soundscape, setSoundscapeState] = useState<SoundscapeType>(persisted?.soundscape || 'none');
   const [soundscapeVolume, setSoundscapeVolumeState] = useState<number>(persisted?.soundscapeVolume ?? 0.5);
@@ -139,6 +142,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           selectedSubjectId,
           selectedPlanItemId,
           selectedTaskId,
+          selectedBlockId,
           soundscape,
           soundscapeVolume,
           isMuted,
@@ -160,6 +164,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectedSubjectId,
     selectedPlanItemId,
     selectedTaskId,
+    selectedBlockId,
     soundscape,
     soundscapeVolume,
     isMuted,
@@ -302,6 +307,12 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     if (soundscape !== 'none' && !isMuted) {
       soundscapeEngine.setSoundscape(soundscape, soundscapeVolume);
+    }
+
+    if (selectedTaskId && activeTask && activeTask.status === 'todo') {
+      dataService.tasks.updateTask(selectedTaskId, { status: 'in_progress' }).catch((err) => {
+        console.warn('Failed to set task in_progress on focus start:', err);
+      });
     }
   };
 
@@ -456,31 +467,53 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         parkedThoughts: parkedThoughts.length > 0 ? parkedThoughts : undefined
       });
 
-      // Complete linked task if requested
-      if (data.completeLinkedTask && selectedTaskId) {
+      // Update linked task progress and/or completion
+      if (selectedTaskId) {
         try {
           const currentCompletedMinutes = activeTask?.completedMinutes || 0;
-          await dataService.tasks.updateTask(selectedTaskId, {
-            status: 'completed',
-            completedMinutes: currentCompletedMinutes + completedSessionMinutes,
-            completedAt: new Date().toISOString()
-          });
-          addToast({
-            title: 'Task Completed',
-            description: `"${activeTask?.title || 'Linked task'}" marked complete.`,
-            type: 'success'
-          });
+          const nextCompletedMinutes = currentCompletedMinutes + completedSessionMinutes;
+          if (data.completeLinkedTask) {
+            await dataService.tasks.updateTask(selectedTaskId, {
+              status: 'completed',
+              completedMinutes: nextCompletedMinutes,
+              completedAt: new Date().toISOString()
+            });
+            addToast({
+              title: 'Task Completed',
+              description: `"${activeTask?.title || 'Linked task'}" marked complete.`,
+              type: 'success'
+            });
+          } else {
+            await dataService.tasks.updateTask(selectedTaskId, {
+              completedMinutes: nextCompletedMinutes,
+              status: 'in_progress'
+            });
+          }
         } catch (err) {
-          console.error('Failed to mark linked task complete:', err);
+          console.error('Failed to update linked task progress:', err);
         }
       }
 
-      // Complete linked study plan item if requested
+      // Update linked study plan item if requested
       if (data.completePlanItem && selectedPlanItemId) {
         try {
           await dataService.study.updatePlanItem(selectedPlanItemId, { completed: true });
         } catch (err) {
           console.error('Failed to complete study plan item:', err);
+        }
+      }
+
+      // Update linked time block progress and/or completion
+      if (selectedBlockId) {
+        try {
+          await dataService.tasks.updateTimeBlock(selectedBlockId, {
+            status: data.completeLinkedTask ? 'completed' : 'partial',
+            actualMinutes: completedSessionMinutes,
+            progressPercent: data.completeLinkedTask ? 100 : 50,
+            reflection: data.notes || undefined
+          });
+        } catch (err) {
+          console.error('Failed to update linked time block after focus session:', err);
         }
       }
 
@@ -504,6 +537,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       clearParkedThoughts();
       setSelectedTaskIdState('');
+      setSelectedBlockIdState('');
       setSelectedPlanItemId('');
       resetTimer();
     } catch (err) {
@@ -522,6 +556,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     selectedSubjectId,
     selectedPlanItemId,
     selectedTaskId,
+    selectedBlockId,
     soundscape,
     soundscapeVolume,
     isMuted,
@@ -545,6 +580,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSelectedSubjectId,
     setSelectedPlanItemId,
     setSelectedTaskId,
+    setSelectedBlockId: setSelectedBlockIdState,
     setSoundscape,
     setSoundscapeVolume,
     toggleMute,

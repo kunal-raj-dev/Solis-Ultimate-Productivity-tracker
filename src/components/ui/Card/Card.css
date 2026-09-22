@@ -30,13 +30,12 @@
 }
 
 .solis-card--interactive:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-default);
+  border-color: var(--border-strong);
   box-shadow: var(--shadow-card);
 }
 
 .solis-card--interactive:active {
-  transform: translateY(0);
+  transform: scale(0.995);
 }
 
 .solis-card-header {
@@ -47,9 +46,10 @@
 }
 
 .solis-card-title {
-  font-family: var(--font-display);
+  font-family: var(--font-interface);
   font-size: var(--text-heading-3);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
   color: inherit;
 }
 

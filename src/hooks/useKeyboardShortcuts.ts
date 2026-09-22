@@ -7,9 +7,11 @@ import { useEffect } from 'react';
 
 export interface ShortcutHandlers {
   onOpenCommandPalette: () => void;
+  onToggleSidebar?: () => void;
   onNewNote?: () => void;
   onNewTask?: () => void;
   onStartFocus?: () => void;
+  disabled?: boolean;
 }
 
 export function isTargetEditable(element: any): boolean {
@@ -26,6 +28,8 @@ export function isTargetEditable(element: any): boolean {
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   useEffect(() => {
+    if (handlers.disabled) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement;
       const isInputFocused = isTargetEditable(activeElement);
@@ -34,6 +38,13 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         handlers.onOpenCommandPalette();
+        return;
+      }
+
+      // 2. Cmd+\ / Ctrl+\: Toggle Sidebar Collapse
+      if ((e.metaKey || e.ctrlKey) && (e.key === '\\' || e.code === 'Backslash')) {
+        e.preventDefault();
+        handlers.onToggleSidebar?.();
         return;
       }
 
@@ -50,7 +61,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey && handlers.onNewNote) {
         e.preventDefault();
         handlers.onNewNote();
-      } else if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey && !e.altKey && handlers.onNewTask) {
+      } else if ((e.key.toLowerCase() === 't' || e.key.toLowerCase() === 'c') && !e.metaKey && !e.ctrlKey && !e.altKey && handlers.onNewTask) {
         e.preventDefault();
         handlers.onNewTask();
       } else if (e.key.toLowerCase() === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey && handlers.onStartFocus) {

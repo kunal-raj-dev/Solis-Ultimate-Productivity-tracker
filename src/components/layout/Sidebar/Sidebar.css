@@ -9,6 +9,12 @@
   top: 0;
   z-index: var(--z-sticky);
   user-select: none;
+  transition: width var(--duration-deliberate) var(--ease-spatial);
+  will-change: width;
+}
+
+.solis-sidebar--collapsed {
+  width: var(--sidebar-collapsed-width);
 }
 
 @media (max-width: 1023px) {
@@ -19,10 +25,37 @@
 
 .solis-sidebar__brand {
   height: var(--header-height);
-  padding: 0 var(--space-lg);
+  padding: 0 var(--space-md);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-xs);
+}
+
+.solis-sidebar--collapsed .solis-sidebar__brand {
+  padding: 0 4px;
+  justify-content: center;
+  gap: 4px;
+}
+
+.solis-sidebar__collapse-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-instant) ease;
+}
+
+.solis-sidebar__collapse-toggle:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
 }
 
 .solis-sidebar__nav {
@@ -195,4 +228,147 @@
 .solis-sidebar__logout-btn:hover {
   background-color: var(--status-error-bg);
   color: var(--status-error);
+}
+
+/* Collapsed Rail Modifiers */
+.solis-sidebar--collapsed .solis-sidebar__link {
+  position: relative;
+  justify-content: center;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.solis-sidebar--collapsed .solis-sidebar__link::before {
+  display: none;
+}
+
+.solis-sidebar--collapsed .solis-sidebar__link-badge {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  margin-left: 0;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
+  line-height: 14px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Styled Floating CSS Tooltip on 68px Rail */
+.solis-sidebar__rail-tooltip {
+  display: none;
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: var(--bg-surface-elevated, #FFFFFF);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-floating, 0 4px 18px rgba(0, 0, 0, 0.14));
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: var(--z-tooltip, 700);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-swift, 120ms) var(--ease-spatial, ease),
+              transform var(--duration-swift, 120ms) var(--ease-spatial, ease);
+}
+
+/* Tooltip caret pointing toward the 68px rail */
+.solis-sidebar__rail-tooltip::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 6px 5px 0;
+  border-style: solid;
+  border-color: transparent var(--border-subtle) transparent transparent;
+}
+
+.solis-sidebar__rail-tooltip::after {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 4px 5px 4px 0;
+  border-style: solid;
+  border-color: transparent var(--bg-surface-elevated, #FFFFFF) transparent transparent;
+}
+
+.solis-sidebar--collapsed .solis-sidebar__link:hover .solis-sidebar__rail-tooltip,
+.solis-sidebar--collapsed .solis-sidebar__link:focus-visible .solis-sidebar__rail-tooltip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 1;
+  transform: translateY(-50%) translateX(2px);
+}
+
+.solis-sidebar__rail-tooltip-label {
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.solis-sidebar__rail-tooltip-badge {
+  font-size: var(--text-micro);
+  background-color: var(--status-warning-bg);
+  color: var(--color-coral-500);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.solis-sidebar--collapsed .solis-sidebar__nav {
+  padding: var(--space-md) var(--space-xs);
+  overflow: visible;
+  gap: var(--space-xs);
+}
+
+.solis-sidebar--collapsed .solis-sidebar__footer {
+  padding: var(--space-sm) var(--space-2xs);
+  flex-direction: column;
+  gap: var(--space-xs);
+  justify-content: center;
+  align-items: center;
+}
+
+.solis-sidebar__collapsed-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.solis-sidebar__momentum-mini {
+  margin: 0 auto var(--space-sm);
+  width: 6px;
+  height: 48px;
+  background-color: var(--bg-surface-tertiary);
+  border-radius: var(--radius-full);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.solis-sidebar__momentum-mini-fill {
+  width: 100%;
+  background: var(--color-coral-500);
+  border-radius: var(--radius-full);
+  transition: height var(--duration-swift) ease;
 }

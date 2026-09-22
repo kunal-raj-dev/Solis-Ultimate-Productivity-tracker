@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sparkles,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -27,20 +26,13 @@ export const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <section className="solis-landing-hero">
         <Container>
-          <ScrollReveal delayMs={50}>
-            <div className="solis-landing-tag">
-              <Sparkles size={14} color="var(--color-coral-500)" />
-              <span>Solis OS • Personal Study & Knowledge Sanctuary</span>
-            </div>
-          </ScrollReveal>
-
-          <ScrollReveal delayMs={150}>
+          <ScrollReveal delayMs={100}>
             <h1 className="solis-landing-title">
-              A quiet room for <em>ambitious minds</em>.
+              An operating system for serious scholars and builders.
             </h1>
           </ScrollReveal>
 
-          <ScrollReveal delayMs={250}>
+          <ScrollReveal delayMs={200}>
             <p className="solis-landing-lead">
               Synthesize deep knowledge, master complex disciplines, and maintain effortless daily
               momentum in a personal learning sanctuary.
@@ -272,7 +264,7 @@ export const LandingPage: React.FC = () => {
                 }}
               >
                 Every token, surface, and component in Solis is designed with deliberate visual hierarchy.
-                Warm ivory canvas, deep charcoal typography, and subtle coral momentum glows compose a sanctuary where your mind can focus without sensory overload.
+                Warm ivory canvas, deep charcoal typography, and subtle coral momentum accents compose a sanctuary where your mind can focus without sensory overload.
               </p>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
@@ -286,7 +278,7 @@ export const LandingPage: React.FC = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-ivory-50)', fontSize: 'var(--text-body-sm)' }}>
                   <Layers size={16} color="var(--color-lavender-500)" />
-                  <span>Layered Data Abstraction</span>
+                  <span>Offline-First Reliability</span>
                 </div>
               </div>
             </div>
@@ -308,7 +300,7 @@ export const LandingPage: React.FC = () => {
             Experience the Daily Flow.
           </h2>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: 'var(--text-body)' }}>
-            Enter the Phase 1 interactive foundation and explore the architectural shell.
+            Start your journey in Solis and cultivate uninterrupted intellectual momentum.
           </p>
           <Link to="/app/dashboard">
             <Button variant="primary" size="lg" rightIcon={<Compass size={18} />}>

@@ -28,7 +28,8 @@
 
   /* Letter Spacing (Tracking) */
   --tracking-tighter: -0.035em;
-  --tracking-tight: -0.015em;
+  --tracking-tight: -0.025em;
+  --tracking-operational: -0.025em;
   --tracking-normal: 0em;
   --tracking-wide: 0.025em;
   --tracking-wider: 0.05em;
@@ -84,8 +85,16 @@
   font-family: var(--font-display);
   font-size: var(--text-heading-1);
   line-height: var(--leading-snug);
-  letter-spacing: var(--tracking-tight);
+  letter-spacing: var(--tracking-tighter);
   font-weight: var(--font-weight-medium);
+}
+
+.text-heading-op {
+  font-family: var(--font-interface);
+  font-size: var(--text-heading-1);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--font-weight-semibold);
 }
 
 .text-heading-2 {
@@ -100,7 +109,7 @@
   font-family: var(--font-interface);
   font-size: var(--text-heading-3);
   line-height: var(--leading-snug);
-  letter-spacing: var(--tracking-normal);
+  letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -142,6 +151,7 @@
 .text-metric {
   font-family: var(--font-interface);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
 }

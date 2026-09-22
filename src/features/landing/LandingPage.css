@@ -67,8 +67,8 @@
 .solis-landing-preview-card {
   background-color: var(--bg-surface-primary);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-floating);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
   padding: var(--space-xl);
   max-width: 980px;
   margin: 0 auto;
@@ -89,16 +89,7 @@
 }
 
 .solis-landing-preview-glow {
-  position: absolute;
-  top: -80px;
-  right: -80px;
-  width: 300px;
-  height: 300px;
-  background: var(--gradient-momentum);
-  opacity: 0.15;
-  filter: blur(50px);
-  border-radius: 50%;
-  pointer-events: none;
+  display: none;
 }
 
 /* Pillars Section */
@@ -151,8 +142,8 @@
 }
 
 .solis-pillar-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--border-default);
+  border-color: var(--border-strong);
+  background-color: var(--bg-surface-hover);
   box-shadow: var(--shadow-card);
 }
 

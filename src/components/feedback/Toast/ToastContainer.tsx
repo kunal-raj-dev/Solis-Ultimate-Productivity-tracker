@@ -36,6 +36,18 @@ export const ToastContainer: React.FC = () => {
             {toast.description && (
               <div className="solis-toast__description">{toast.description}</div>
             )}
+            {toast.action && (
+              <button
+                type="button"
+                className="solis-toast__action"
+                onClick={() => {
+                  toast.action?.onClick();
+                  removeToast(toast.id);
+                }}
+              >
+                {toast.action.label}
+              </button>
+            )}
           </div>
           <button
             onClick={() => removeToast(toast.id)}

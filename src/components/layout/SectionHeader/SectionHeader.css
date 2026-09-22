@@ -21,10 +21,10 @@
 }
 
 .solis-section-header__title {
-  font-family: var(--font-display);
+  font-family: var(--font-interface);
   font-size: var(--text-heading-1);
   color: var(--text-primary);
-  font-weight: var(--font-weight-normal);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-tight);
   line-height: 1.25;
   padding-left: 2px;

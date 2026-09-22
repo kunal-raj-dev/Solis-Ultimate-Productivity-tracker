@@ -4,11 +4,12 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--space-2xl) var(--space-lg);
-  background-color: var(--bg-surface-subtle);
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-xl);
-  max-width: 540px;
+  padding: var(--space-xl) var(--space-lg);
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-subtle);
+  max-width: 520px;
   margin: 0 auto;
 }
 
