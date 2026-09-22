@@ -74,6 +74,18 @@
   font-weight: 500;
   line-height: 1.4;
   user-select: none;
+  cursor: pointer;
+  transition: all var(--duration-instant) ease;
+}
+
+.solis-smart-chip:hover {
+  filter: brightness(0.96);
+  border-color: var(--border-default);
+}
+
+.solis-smart-chip:focus-visible {
+  outline: 2px solid var(--color-coral-500);
+  outline-offset: 1px;
 }
 
 .solis-smart-chip--priority {

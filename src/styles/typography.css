@@ -81,12 +81,25 @@
   font-weight: var(--font-weight-normal);
 }
 
-.text-heading-1 {
+.text-editorial-display {
+  font-family: var(--font-display);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+.text-heading-editorial {
   font-family: var(--font-display);
   font-size: var(--text-heading-1);
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tighter);
   font-weight: var(--font-weight-medium);
+}
+
+.text-heading-1 {
+  font-family: var(--font-interface);
+  font-size: var(--text-heading-1);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--font-weight-semibold);
 }
 
 .text-heading-op {
@@ -149,9 +162,27 @@
 }
 
 .text-metric {
-  font-family: var(--font-interface);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
+}
+
+.font-mono-metric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Anti-AI-slop: Suppress arbitrary italic accent styling in operational UI */
+.text-heading-1 em,
+.text-heading-2 em,
+.text-heading-3 em,
+.text-heading-op em,
+.text-metric em,
+.font-interface em,
+.solis-btn em {
+  font-style: normal;
+  font-weight: inherit;
 }

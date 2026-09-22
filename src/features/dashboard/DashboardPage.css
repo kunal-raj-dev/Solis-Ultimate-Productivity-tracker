@@ -81,12 +81,11 @@
   align-items: center;
   gap: var(--space-sm);
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  padding: 8px 18px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
   max-width: 580px;
   margin-top: var(--space-sm);
-  box-shadow: var(--shadow-subtle);
 }
 
 .solis-daily-intention-input {
@@ -124,8 +123,8 @@
 .solis-dashboard-hero-actions .solis-btn {
   width: 100%;
   justify-content: center;
-  height: 44px;
-  border-radius: var(--radius-full);
+  height: 40px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
 }
@@ -137,15 +136,14 @@
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  min-height: 48px;
+  min-height: 44px;
   padding: 6px 14px 6px 12px;
   background: var(--bg-surface-secondary);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: var(--shadow-subtle);
   text-align: left;
   user-select: none;
   box-sizing: border-box;
@@ -637,3 +635,415 @@
     gap: 4px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   04 // TODAY COCKPIT 5-TIER SERENITY STYLES
+   -------------------------------------------------------------------------- */
+.solis-cockpit-tier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-cockpit-tier--1 {
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.solis-intention-icon {
+  color: var(--color-coral-500);
+  flex-shrink: 0;
+}
+
+.solis-intention-anchored {
+  font-size: var(--text-micro);
+  color: var(--status-success);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Tier 3: 24h Timeline */
+.solis-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.solis-timeline-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.solis-timeline-clock-icon {
+  color: var(--color-coral-500);
+}
+
+.solis-timeline-title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-timeline-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.solis-timeline-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.solis-timeline-mode-toggle {
+  padding: 4px 10px;
+  font-size: var(--text-caption);
+  font-family: var(--font-interface);
+  font-weight: 500;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-timeline-mode-toggle:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.solis-timeline-mode-toggle--active {
+  background: var(--bg-surface-tertiary);
+  border-color: var(--color-coral-500);
+  color: var(--color-coral-500);
+}
+
+.solis-cockpit-timeline-strip {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-timeline-track {
+  position: relative;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.solis-timeline-hours-bar {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.solis-cockpit-blocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-cockpit-block-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-secondary);
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-cockpit-block-row:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-default);
+}
+
+.solis-cockpit-block-row--completed {
+  opacity: 0.6;
+}
+
+.solis-cockpit-block-time {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+.solis-cockpit-block-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.solis-cockpit-block-title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-cockpit-block-subject {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  background: var(--bg-surface-primary);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hairline);
+  flex-shrink: 0;
+}
+
+.solis-cockpit-block-actions {
+  flex-shrink: 0;
+}
+
+/* Tier 4: Capacity Signal */
+.solis-capacity-container {
+  max-width: 720px;
+}
+
+/* Tier 5: Today Priority Queue */
+.solis-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.solis-queue-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.solis-queue-icon {
+  color: var(--color-coral-500);
+}
+
+.solis-queue-title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-queue-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.solis-queue-input-wrap {
+  margin-bottom: var(--space-xs);
+}
+
+.solis-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Single-Sentence Actionable Empty Stub */
+.solis-cockpit-empty-stub {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+}
+
+/* Restrained Momentum Strip & Telemetry */
+.solis-cockpit-momentum {
+  margin-top: var(--space-sm);
+}
+
+.solis-momentum-strip {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
+}
+
+.solis-momentum-strip__main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+}
+
+.solis-momentum-strip__lead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-momentum-strip__tag {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.solis-momentum-info-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+}
+
+.solis-momentum-info-btn:hover {
+  color: var(--text-primary);
+}
+
+.solis-momentum-strip__score {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.solis-momentum-score-num {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.solis-momentum-score-unit {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-coral-500);
+}
+
+.solis-momentum-telemetry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.solis-momentum-telemetry__col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-momentum-telemetry__label {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.solis-momentum-telemetry__val {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-momentum-telemetry__sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border-hairline);
+}
+
+/* Smooth Evening Closure Banner */
+.solis-cockpit-evening {
+  margin-top: var(--space-md);
+}
+
+.solis-evening-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-surface-secondary);
+  border: 1px solid rgba(142, 100, 240, 0.35);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.solis-evening-banner__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(142, 100, 240, 0.15);
+  color: var(--color-lavender-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.solis-evening-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 240px;
+}
+
+.solis-evening-banner__title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-evening-banner__sub {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+

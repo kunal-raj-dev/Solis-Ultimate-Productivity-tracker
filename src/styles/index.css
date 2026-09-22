@@ -8,3 +8,56 @@
 @import './typography.css';
 @import './animations.css';
 @import './components.css';
+
+/* --------------------------------------------------------------------------
+   CANVAS FOUNDATION & HAIRLINE BORDER DISCIPLINES
+   -------------------------------------------------------------------------- */
+html,
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-interface);
+}
+
+/* Hairline dividers & utility rules */
+.border-hairline {
+  border: 1px solid var(--border-hairline);
+}
+
+.border-hairline-b {
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.border-hairline-t {
+  border-top: 1px solid var(--border-hairline);
+}
+
+.border-hairline-l {
+  border-left: 1px solid var(--border-hairline);
+}
+
+.border-hairline-r {
+  border-right: 1px solid var(--border-hairline);
+}
+
+.hairline-divider {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background-color: var(--border-hairline);
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Operational Monospace Alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Minimum Touch Target Floor */
+.min-touch-target {
+  min-height: var(--min-touch-target, 44px);
+  min-width: var(--min-touch-target, 44px);
+}

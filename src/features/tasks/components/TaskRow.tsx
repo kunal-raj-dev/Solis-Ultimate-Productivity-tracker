@@ -76,6 +76,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({
     { hour: 20, label: '8 PM' }
   ];
 
+  const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+  const undoShortcutLabel = isMac ? '⌘Z' : 'Ctrl+Z';
+
   return (
     <div
       className={`solis-task-row ${isComplete ? 'solis-task-row--completed' : ''} ${
@@ -87,6 +90,14 @@ export const TaskRow: React.FC<TaskRowProps> = ({
         setIsSlotMenuOpen(false);
       }}
       onClick={() => onEdit(task)}
+      role="row"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target === e.currentTarget) {
+          e.preventDefault();
+          onEdit(task);
+        }
+      }}
     >
       {/* 1. Precise Tactile Checkbox */}
       <button
@@ -236,7 +247,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({
           type="button"
           className="solis-task-action-icon-btn solis-task-action-icon-btn--delete"
           onClick={() => onDelete(task.id)}
-          title="Delete task (Cmd+Z to undo)"
+          title={`Delete task (${undoShortcutLabel} to undo)`}
           aria-label={`Delete task ${task.title}`}
         >
           <Trash2 size={13} />

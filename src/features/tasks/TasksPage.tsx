@@ -91,11 +91,11 @@ export const TasksPage: React.FC = () => {
   // Task Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [deletedTasksStack, setDeletedTasksStack] = useState<Task[]>([]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const smartInputRef = React.useRef<HTMLInputElement>(null);
   const lastCompletedTaskIdRef = React.useRef<{ id: string; timestamp: number } | null>(null);
+  const lastDeletedTaskRef = React.useRef<{ task: Task; timestamp: number } | null>(null);
 
   // Workload Realism & Metrics
   const activeTasksCount = useMemo(() => tasks.filter((t) => t.status !== 'completed').length, [tasks]);
@@ -293,6 +293,8 @@ export const TasksPage: React.FC = () => {
     if (deletedTasksStack.length === 0) return;
     const toRestore = deletedTasksStack[0];
     setDeletedTasksStack((prev) => prev.slice(1));
+    lastDeletedTaskRef.current = null;
+    hapticsEngine.playMechanicalTick();
     try {
       const recreated = await dataService.tasks.createTask({
         title: toRestore.title,
@@ -305,7 +307,10 @@ export const TasksPage: React.FC = () => {
         dueTime: toRestore.dueTime,
         estimatedMinutes: toRestore.estimatedMinutes,
         tags: toRestore.tags,
-        subTasks: toRestore.subTasks
+        subTasks: toRestore.subTasks,
+        recurrence: toRestore.recurrence,
+        isRecurring: toRestore.isRecurring,
+        naturalLanguageInput: toRestore.naturalLanguageInput
       });
       setTasks((prev) => [recreated, ...prev]);
       addToast({ title: 'Task Restored', description: recreated.title, type: 'success' });
@@ -346,9 +351,17 @@ export const TasksPage: React.FC = () => {
 
       if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z') && !e.shiftKey) {
         if (!isInput) {
-          if (lastCompletedTaskIdRef.current && Date.now() - lastCompletedTaskIdRef.current.timestamp < 5000) {
+          const compTime = lastCompletedTaskIdRef.current ? lastCompletedTaskIdRef.current.timestamp : 0;
+          const delTime = lastDeletedTaskRef.current ? lastDeletedTaskRef.current.timestamp : 0;
+
+          if (compTime > 0 && Date.now() - compTime < 5000 && compTime >= delTime) {
             e.preventDefault();
             handleUndoCompletion();
+            return;
+          }
+          if (delTime > 0 && Date.now() - delTime < 5000 && deletedTasksStack.length > 0) {
+            e.preventDefault();
+            handleUndoDelete();
             return;
           }
           if (deletedTasksStack.length > 0) {
@@ -710,32 +723,37 @@ export const TasksPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTask = async () => {
-    if (!deletingTaskId) return;
+  const handleDeleteTask = useCallback(async (taskId: string) => {
+    const targetTask = tasks.find((t) => t.id === taskId);
+    if (!targetTask) return;
     const prevTasks = tasks;
-    const id = deletingTaskId;
-    const targetTask = tasks.find((t) => t.id === id) || null;
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    setDeletingTaskId(null);
-    if (targetTask) {
-      setDeletedTasksStack((prev) => [targetTask, ...prev]);
-    }
+    hapticsEngine.playMechanicalTick();
+
+    // Optimistic removal from state
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setDeletedTasksStack((prev) => [targetTask, ...prev]);
+    lastDeletedTaskRef.current = { task: targetTask, timestamp: Date.now() };
+
+    addToast({
+      title: 'Task Deleted',
+      description: `"${targetTask.title}" — press ${undoShortcutLabel} to undo`,
+      type: 'info',
+      durationMs: 5000,
+      action: {
+        label: `Undo (${undoShortcutLabel})`,
+        onClick: () => handleUndoDelete()
+      }
+    });
 
     try {
-      await dataService.tasks.deleteTask(id);
-      addToast({
-        title: 'Task Deleted',
-        description: targetTask ? `"${targetTask.title}" — press ${undoShortcutLabel} to undo` : undefined,
-        type: 'info'
-      });
+      await dataService.tasks.deleteTask(taskId);
     } catch {
       setTasks(prevTasks);
-      if (targetTask) {
-        setDeletedTasksStack((prev) => prev.filter((t) => t.id !== targetTask.id));
-      }
+      setDeletedTasksStack((prev) => prev.filter((t) => t.id !== targetTask.id));
+      lastDeletedTaskRef.current = null;
       addToast({ title: 'Could not delete task', type: 'error' });
     }
-  };
+  }, [tasks, undoShortcutLabel, handleUndoDelete, addToast]);
 
   const handleAddSubtask = async (taskId: string, title: string) => {
     try {
@@ -975,9 +993,21 @@ export const TasksPage: React.FC = () => {
 
                 <div className="solis-tasks-today-list-header">
                   <span className="solis-tasks-today-list-title">Today's Intentions</span>
-                  <span className="solis-tasks-today-list-counter">
-                    {todayTasks.filter((t) => t.status === 'completed').length}/{todayTasks.length} done
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="solis-tasks-today-list-counter">
+                      {todayTasks.filter((t) => t.status === 'completed').length}/{todayTasks.length} done
+                    </span>
+                    <button
+                      type="button"
+                      className="solis-tasks-inline-add-btn tactile-press"
+                      onClick={handleFocusInlineCapture}
+                      title="Add task (Press N or C)"
+                      aria-label="Add deliberate task"
+                    >
+                      <Plus size={12} />
+                      <span>Add task</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="solis-tasks-today-list">
@@ -996,10 +1026,11 @@ export const TasksPage: React.FC = () => {
                           subject={linkedSub}
                           onToggle={handleToggleTask}
                           onEdit={openEditModal}
-                          onDelete={(taskId) => setDeletingTaskId(taskId)}
+                          onDelete={handleDeleteTask}
                           onStartFocus={(t) =>
-                            navigate(`/app/focus?taskId=${t.id}`, {
+                            navigate(`/app/focus?taskId=${t.id}${t.subjectId ? `&subjectId=${t.subjectId}` : ''}`, {
                               state: {
+                                taskId: t.id,
                                 title: t.title,
                                 subjectId: t.subjectId,
                                 durationMinutes: t.estimatedMinutes || 30
@@ -1122,7 +1153,7 @@ export const TasksPage: React.FC = () => {
                 goals={goals}
                 onToggleTask={handleToggleTask}
                 onEditTask={openEditModal}
-                onDeleteTask={(taskId) => setDeletingTaskId(taskId)}
+                onDeleteTask={handleDeleteTask}
                 onScheduleToHour={handleScheduleTaskToHour}
                 onAddSubtask={handleAddSubtask}
                 onToggleSubtask={handleToggleSubtask}
@@ -1360,28 +1391,6 @@ export const TasksPage: React.FC = () => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Modal 4: Delete Confirmation Modal */}
-      <Modal
-        isOpen={deletingTaskId !== null}
-        onClose={() => setDeletingTaskId(null)}
-        title="Delete Task"
-      >
-        <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-          Are you sure you want to remove this intentional task from your sanctuary? This action cannot be undone.
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-          <Button variant="ghost" onClick={() => setDeletingTaskId(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDeleteTask}
-          >
-            Confirm Delete
-          </Button>
-        </div>
       </Modal>
     </div>
   );

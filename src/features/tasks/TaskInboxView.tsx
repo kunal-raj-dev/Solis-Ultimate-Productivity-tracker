@@ -84,14 +84,14 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div className="solis-task-inbox-list">
         {tasks.length === 0 ? (
           <div
             className="solis-inbox-empty"
             style={{
               padding: 'var(--space-2xl) var(--space-md)',
               textAlign: 'center',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-hairline)',
               borderRadius: 'var(--radius-lg)',
               background: 'var(--bg-surface-secondary)'
             }}
@@ -116,8 +116,9 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onStartFocus={(t) =>
-                  navigate(`/app/focus?taskId=${t.id}`, {
+                  navigate(`/app/focus?taskId=${t.id}${t.subjectId ? `&subjectId=${t.subjectId}` : ''}`, {
                     state: {
+                      taskId: t.id,
                       title: t.title,
                       subjectId: t.subjectId,
                       durationMinutes: t.estimatedMinutes || 30

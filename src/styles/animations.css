@@ -64,32 +64,26 @@
 }
 
 @keyframes ambientOrbRotate {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate3d(24px, -16px, 0) rotate(180deg);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) rotate(360deg);
+  0%, 100% {
+    transform: none;
   }
 }
 
-/* Animation Helper Classes */
+/* Animation Helper Classes (Disciplined 100-200ms Transitions) */
 .animate-fade-in {
-  animation: fadeIn var(--duration-deliberate) var(--ease-spatial) forwards;
+  animation: fadeIn var(--duration-swift) var(--ease-spatial) forwards;
 }
 
 .animate-slide-up {
-  animation: fadeSlideUp var(--duration-deliberate) var(--ease-spatial) forwards;
+  animation: fadeSlideUp var(--duration-moderate) var(--ease-spatial) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn var(--duration-swift) var(--ease-spatial) forwards;
+  animation: scaleIn var(--duration-instant) var(--ease-spatial) forwards;
 }
 
 .animate-pulse-subtle {
-  animation: pulseSubtle 3.5s ease-in-out infinite;
+  animation: none; /* Perpetual loop deactivated */
 }
 
 /* Skeleton Loading Shimmer */
@@ -105,12 +99,14 @@
   border-radius: var(--radius-sm);
 }
 
-/* Stagger delay helpers */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
+/* Stagger delay helpers neutralized to eliminate sluggish page reveals */
+.delay-100,
+.delay-200,
+.delay-300,
+.delay-400,
+.delay-500 {
+  animation-delay: 0ms;
+}
 
 /* --------------------------------------------------------------------------
    VIEW TRANSITION API (Modern Browser SPA Continuity)
@@ -120,11 +116,11 @@
 }
 
 ::view-transition-old(root) {
-  animation: 180ms var(--ease-spatial) both fadeOut;
+  animation: var(--duration-swift) var(--ease-spatial) both fadeOut;
 }
 
 ::view-transition-new(root) {
-  animation: 260ms var(--ease-spatial) both fadeIn;
+  animation: var(--duration-moderate) var(--ease-spatial) both fadeIn;
 }
 
 @keyframes fadeOut {
@@ -133,13 +129,12 @@
 }
 
 @keyframes checkmarkPop {
-  0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.15); }
+  0% { transform: scale(0.92); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 
 .animate-check-pop {
-  animation: checkmarkPop 240ms var(--ease-spring) forwards;
+  animation: checkmarkPop var(--duration-swift) var(--ease-spatial) forwards;
 }
 
 .press-tactile {
@@ -152,15 +147,17 @@
 }
 
 /* --------------------------------------------------------------------------
-   PREFERS-REDUCED-MOTION ACCESSIBILITY OVERRIDES
+   PREFERS-REDUCED-MOTION ACCESSIBILITY OVERRIDES (Complete Zero-Delay Overrides)
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
     scroll-behavior: auto !important;
   }
 
@@ -172,7 +169,8 @@
   .solis-atmosphere-orb,
   .animate-pulse-subtle,
   .skeleton-shimmer,
-  .animate-check-pop {
+  .animate-check-pop,
+  [class*="animate-"] {
     animation: none !important;
   }
 }

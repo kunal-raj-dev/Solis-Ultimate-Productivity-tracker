@@ -93,33 +93,35 @@
      3. BORDER RADIUS
      ------------------------------------------------------------------------ */
   --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 16px;
   --radius-full: 9999px;
-  --radius-btn: 8px;
+  --radius-btn: 6px;
+  --radius-card: 10px;
   --radius-row: 6px;
 
   /* ------------------------------------------------------------------------
-     4. MOTION & TACTILE TRANSITIONS (Design System 3.0 Anti-Slop Springs)
+     4. MOTION & TACTILE TRANSITIONS (Disciplined Spatial Transitions)
      ------------------------------------------------------------------------ */
   --duration-instant: 80ms;
-  --duration-swift: 160ms;
-  --duration-deliberate: 280ms;
-  --duration-cinematic: 500ms;
+  --duration-swift: 150ms;
+  --duration-moderate: 200ms;
+  --duration-deliberate: 180ms;
+  --duration-cinematic: 200ms;
 
   --ease-tactile: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spatial: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spring-tactile: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-tactile: cubic-bezier(0.2, 0.8, 0.2, 1);
   --spring-spatial: cubic-bezier(0.16, 1, 0.3, 1);
 
   --transition-fast: var(--duration-swift) var(--ease-tactile);
-  --transition-base: var(--duration-deliberate) var(--ease-spatial);
-  --transition-smooth: var(--duration-cinematic) var(--ease-spatial);
-  --transition-spring: var(--duration-swift) var(--spring-tactile);
+  --transition-base: var(--duration-moderate) var(--ease-spatial);
+  --transition-smooth: var(--duration-moderate) var(--ease-spatial);
+  --transition-spring: var(--duration-swift) var(--ease-spatial);
 
   /* ------------------------------------------------------------------------
      5. LAYOUT & Z-INDEX
@@ -166,16 +168,16 @@
   --depth-0-border: transparent;
   --depth-1-bg: #FFFFFF;
   --depth-1-border: rgba(26, 24, 22, 0.06);
-  --depth-1-shadow: 0 1px 3px rgba(26, 24, 22, 0.02), 0 4px 12px rgba(26, 24, 22, 0.03);
+  --depth-1-shadow: 0 1px 2px rgba(26, 24, 22, 0.03);
   --depth-2-bg: #FFFFFF;
-  --depth-2-border: rgba(26, 24, 22, 0.09);
-  --depth-2-shadow: 0 4px 8px rgba(26, 24, 22, 0.03), 0 16px 36px rgba(26, 24, 22, 0.05);
-  --depth-3-bg: rgba(255, 255, 255, 0.82);
-  --depth-3-border: rgba(255, 255, 255, 0.6);
-  --depth-3-shadow: 0 8px 32px rgba(26, 24, 22, 0.06);
+  --depth-2-border: rgba(26, 24, 22, 0.08);
+  --depth-2-shadow: 0 2px 6px rgba(26, 24, 22, 0.04);
+  --depth-3-bg: #FFFFFF;
+  --depth-3-border: rgba(26, 24, 22, 0.10);
+  --depth-3-shadow: 0 4px 12px rgba(26, 24, 22, 0.05);
   --depth-4-bg: #FFFFFF;
   --depth-4-border: rgba(26, 24, 22, 0.12);
-  --depth-4-shadow: 0 12px 36px rgba(26, 24, 22, 0.08), 0 28px 64px rgba(26, 24, 22, 0.1);
+  --depth-4-shadow: 0 8px 20px rgba(26, 24, 22, 0.06);
 
   /* Inverted / Dark Card Surfaces (For focus pods) */
   --bg-dark-surface: #141211;
@@ -205,7 +207,7 @@
   --nav-border: rgba(26, 24, 22, 0.08);
   --nav-hover: rgba(26, 24, 22, 0.04);
   --nav-focus: #E65A41;
-  --nav-shadow: 0 4px 20px rgba(26, 24, 22, 0.04);
+  --nav-shadow: 0 2px 8px rgba(26, 24, 22, 0.03);
 
   /* Border Semantics */
   --border-hairline: rgba(26, 24, 22, 0.06);
@@ -239,19 +241,19 @@
   --subject-sage-subtle: rgba(74, 124, 89, 0.08);
 
   /* Atmospheric Gradients (Day Mode) */
-  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(244, 240, 234, 0.8) 0%, rgba(250, 248, 245, 0) 70%);
-  --gradient-focus: linear-gradient(135deg, #1A1816 0%, #2A231F 55%, #3D221C 100%);
-  --gradient-momentum: linear-gradient(135deg, #E65A41 0%, #E58E26 60%, #D64562 100%);
-  --gradient-achievement: linear-gradient(135deg, #E58E26 0%, #F5B041 50%, #E65A41 100%);
-  --gradient-reflection: linear-gradient(135deg, #7E69AB 0%, #9B7EBD 50%, #D64562 100%);
-  --gradient-subtle-glow: radial-gradient(circle at 50% 10%, rgba(230, 90, 65, 0.05) 0%, rgba(250, 248, 245, 0) 65%);
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(244, 240, 234, 0.6) 0%, rgba(250, 248, 245, 0) 70%);
+  --gradient-focus: linear-gradient(135deg, #1A1816 0%, #2A231F 100%);
+  --gradient-momentum: linear-gradient(135deg, #E65A41 0%, #CF442C 100%);
+  --gradient-achievement: linear-gradient(135deg, #E58E26 0%, #E65A41 100%);
+  --gradient-reflection: linear-gradient(135deg, #7E69AB 0%, #644F91 100%);
+  --gradient-subtle-glow: none;
 
   /* Ambient Shadows — Contact Physics */
-  --shadow-subtle: 0 1px 2px rgba(26, 24, 22, 0.04);
-  --shadow-card: 0 1px 3px rgba(26, 24, 22, 0.04), 0 4px 12px rgba(26, 24, 22, 0.03);
-  --shadow-elevated: 0 4px 14px rgba(26, 24, 22, 0.06);
-  --shadow-floating: 0 8px 24px rgba(26, 24, 22, 0.08);
-  --shadow-inner: inset 0 1px 2px rgba(26, 24, 22, 0.04);
+  --shadow-subtle: 0 1px 2px rgba(26, 24, 22, 0.03);
+  --shadow-card: 0 1px 3px rgba(26, 24, 22, 0.04);
+  --shadow-elevated: 0 3px 8px rgba(26, 24, 22, 0.05);
+  --shadow-floating: 0 6px 16px rgba(26, 24, 22, 0.06);
+  --shadow-inner: inset 0 1px 2px rgba(26, 24, 22, 0.03);
 }
 
 /* ==========================================================================
@@ -278,17 +280,17 @@
   --depth-0-bg: #0E0C0B;
   --depth-0-border: transparent;
   --depth-1-bg: #171413;
-  --depth-1-border: rgba(247, 244, 238, 0.07);
-  --depth-1-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --depth-1-border: rgba(255, 255, 255, 0.06);
+  --depth-1-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   --depth-2-bg: #201C1A;
-  --depth-2-border: rgba(247, 244, 238, 0.10);
-  --depth-2-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 20px 40px rgba(0, 0, 0, 0.5);
-  --depth-3-bg: rgba(23, 20, 19, 0.88);
-  --depth-3-border: rgba(247, 244, 238, 0.14);
-  --depth-3-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  --depth-2-border: rgba(255, 255, 255, 0.08);
+  --depth-2-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --depth-3-bg: #25201D;
+  --depth-3-border: rgba(255, 255, 255, 0.10);
+  --depth-3-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
   --depth-4-bg: #2A2522;
-  --depth-4-border: rgba(247, 244, 238, 0.18);
-  --depth-4-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 32px 80px rgba(0, 0, 0, 0.8);
+  --depth-4-border: rgba(255, 255, 255, 0.14);
+  --depth-4-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 
   /* Inverted / Dark Card Surfaces */
   --bg-dark-surface: #0A0807;
@@ -318,7 +320,7 @@
   --nav-border: rgba(247, 244, 238, 0.08);
   --nav-hover: rgba(247, 244, 238, 0.05);
   --nav-focus: #FF6B52;
-  --nav-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --nav-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 
   /* Border Semantics (Night Mode) */
   --border-hairline: rgba(255, 255, 255, 0.06);
@@ -352,15 +354,15 @@
   --subject-sage-subtle: rgba(98, 163, 117, 0.14);
 
   /* Atmospheric Gradients (Night Mode) */
-  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(32, 28, 26, 0.7) 0%, rgba(14, 12, 11, 0) 70%);
-  --gradient-subtle-glow: radial-gradient(circle at 50% 10%, rgba(255, 107, 82, 0.08) 0%, rgba(14, 12, 11, 0) 65%);
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(32, 28, 26, 0.5) 0%, rgba(14, 12, 11, 0) 70%);
+  --gradient-subtle-glow: none;
 
   /* Ambient Shadows (Night Mode) */
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.45);
-  --shadow-elevated: 0 6px 20px rgba(0, 0, 0, 0.55);
-  --shadow-floating: 0 12px 36px rgba(0, 0, 0, 0.65);
-  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-floating: 0 8px 20px rgba(0, 0, 0, 0.5);
+  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* ==========================================================================

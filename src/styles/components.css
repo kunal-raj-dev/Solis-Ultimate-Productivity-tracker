@@ -65,8 +65,8 @@
 
 .depth-1 {
   background-color: var(--depth-1-bg);
-  border: 1px solid var(--depth-1-border);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
   box-shadow: var(--depth-1-shadow);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
@@ -77,10 +77,10 @@
 
 .depth-2 {
   background-color: var(--depth-2-bg);
-  border: 1px solid var(--depth-2-border);
+  border: 1px solid var(--border-hairline);
   border-radius: var(--radius-lg);
   box-shadow: var(--depth-2-shadow);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .depth-2:hover {
@@ -90,27 +90,40 @@
 
 .depth-3 {
   background-color: var(--depth-3-bg);
-  border: 1px solid var(--depth-3-border);
-  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   box-shadow: var(--depth-3-shadow);
 }
 
 .depth-4 {
   background-color: var(--depth-4-bg);
-  border: 1px solid var(--depth-4-border);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
   box-shadow: var(--depth-4-shadow);
+}
+
+/* De-cardification: Strip nested card borders and double shadows */
+.depth-1 .depth-1,
+.depth-1 .depth-2,
+.depth-2 .depth-1,
+.depth-2 .depth-2,
+.spatial-surface .spatial-surface,
+.solis-card .depth-1,
+.depth-1 .solis-card {
+  border-color: transparent;
+  box-shadow: none;
+  background-color: transparent;
 }
 
 /* --------------------------------------------------------------------------
    TACTILE PRESS MICRO-INTERACTION (Pure Visual Tactility)
    -------------------------------------------------------------------------- */
 .tactile-press {
-  transition: transform var(--duration-instant) var(--spring-tactile), background-color var(--duration-swift) ease;
+  transition: transform var(--duration-instant) var(--ease-tactile), background-color var(--duration-swift) ease;
 }
 
 .tactile-press:active {
-  transform: scale(0.978);
+  transform: scale(0.985);
 }
 
 /* --------------------------------------------------------------------------
@@ -175,30 +188,46 @@
 }
 
 /* --------------------------------------------------------------------------
-   SUBJECT ACCENT PILLS
+   SUBJECT ACCENT PILLS (Disciplined Geometry & Restrained Contrast)
    -------------------------------------------------------------------------- */
 .subject-pill-coral {
   color: var(--subject-coral-accent);
   background-color: var(--subject-coral-subtle);
-  border: 1px solid rgba(230, 90, 65, 0.2);
+  border: 1px solid rgba(230, 90, 65, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: var(--text-micro);
+  font-weight: 500;
 }
 
 .subject-pill-amber {
   color: var(--subject-amber-accent);
   background-color: var(--subject-amber-subtle);
-  border: 1px solid rgba(229, 142, 38, 0.2);
+  border: 1px solid rgba(229, 142, 38, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: var(--text-micro);
+  font-weight: 500;
 }
 
 .subject-pill-lavender {
   color: var(--subject-lavender-accent);
   background-color: var(--subject-lavender-subtle);
-  border: 1px solid rgba(126, 105, 171, 0.2);
+  border: 1px solid rgba(126, 105, 171, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: var(--text-micro);
+  font-weight: 500;
 }
 
 .subject-pill-sage {
   color: var(--subject-sage-accent);
   background-color: var(--subject-sage-subtle);
-  border: 1px solid rgba(74, 124, 89, 0.2);
+  border: 1px solid rgba(74, 124, 89, 0.15);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  font-size: var(--text-micro);
+  font-weight: 500;
 }
 
 /* Editorial quote / narrative block */
@@ -212,14 +241,14 @@
 }
 
 /* --------------------------------------------------------------------------
-   DENSITY SYSTEM (Compact vs Comfortable Modes)
+   DENSITY SYSTEM (Compact vs Comfortable Modes) & Touch Target Floor (44px)
    -------------------------------------------------------------------------- */
 :root,
 [data-density="comfortable"] {
   --space-card-padding: var(--space-lg);
   --space-row-gap: var(--space-md);
   --space-section-gap: var(--space-xl);
-  --control-height: 42px;
+  --control-height: var(--min-touch-target, 44px);
   --table-row-height: 48px;
 }
 
@@ -227,8 +256,36 @@
   --space-card-padding: var(--space-md);
   --space-row-gap: var(--space-xs);
   --space-section-gap: var(--space-lg);
-  --control-height: 36px;
+  --control-height: 38px;
   --table-row-height: 40px;
+}
+
+/* Touch Target Floor: Coarse pointer / touch device enforcement */
+@media (pointer: coarse) {
+  :root,
+  [data-density="compact"],
+  [data-density="comfortable"] {
+    --control-height: var(--min-touch-target, 44px);
+  }
+
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  select,
+  .solis-btn,
+  .solis-icon-btn,
+  .touch-target {
+    min-height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 24px;
+    min-width: 24px;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -241,15 +298,15 @@
 
 .editorial-rule {
   height: 1px;
-  background-color: var(--border-subtle);
+  background-color: var(--border-hairline);
   margin: var(--space-xl) 0;
   border: none;
 }
 
 .spatial-surface {
   background-color: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
   transition: border-color var(--duration-swift) var(--ease-spatial),
               box-shadow var(--duration-swift) var(--ease-spatial);
 }
@@ -262,5 +319,13 @@
 .spatial-surface--subtle {
   background-color: var(--bg-surface-secondary);
   border: 1px solid transparent;
+}
+
+/* Anti-AI-slop: Global suppression of radioactive neon glows and blur blobs */
+.no-glow,
+[data-glow="none"] {
+  text-shadow: none !important;
+  box-shadow: var(--shadow-card) !important;
+  filter: none !important;
 }
 

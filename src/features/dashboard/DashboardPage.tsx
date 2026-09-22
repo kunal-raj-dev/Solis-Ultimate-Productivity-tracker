@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Flame,
@@ -22,7 +22,8 @@ import { Progress } from '../../components/ui/Progress/Progress';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { Modal } from '../../components/feedback/Modal/Modal';
-import { SceneContainer, SceneAtmosphere } from '../../components/scene';
+import { cn } from '../../utils/classNames';
+import { SceneContainer } from '../../components/scene';
 import { TimeBlockGrid } from '../../components/features/Planning/TimeBlockGrid';
 import { RecurringRoutinesModal } from '../../components/features/Planning/RecurringRoutinesModal';
 import { EveningClosureModal } from '../../components/features/Reflection/EveningClosureModal';
@@ -52,8 +53,6 @@ import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntellige
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
 import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
 import { NextBestActionCard } from '../../components/features/Activation/NextBestActionCard';
-import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
-import { useGuide } from '../../context/GuideContext';
 import { getActivationState, calculateNextBestAction } from '../../utils/activation';
 import { queryCache } from '../../services/cache';
 import './DashboardPage.css';
@@ -82,16 +81,23 @@ export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DailySummary | null>(() => queryCache.get<DailySummary>('daily_summary'));
   const [viewMode, setViewMode] = useState<'lists' | 'timeline'>('lists');
 
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  const lastCompletedTaskIdRef = useRef<{ id: string; timestamp: number } | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Workload Realism Calculation
   const workload = useMemo(() => {
     return calculateWorkload({
-      date: getISODateString(new Date()),
+      date: getISODateString(currentTime),
       tasks,
       timeBlocks: taskTimeBlocks
     });
-  }, [tasks, taskTimeBlocks]);
+  }, [currentTime, tasks, taskTimeBlocks]);
 
-  const { openGuide } = useGuide();
 
   // Modals
   const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
@@ -130,7 +136,7 @@ export const DashboardPage: React.FC = () => {
   const timeStats = useMemo(() => calculateTimeAllocation(timeBlocks), [timeBlocks]);
 
   // Daily Intention state
-  const todayKey = `solis_daily_intention_${getISODateString()}`;
+  const todayKey = `solis_daily_intention_${getISODateString(currentTime)}`;
   const [dailyIntention, setDailyIntention] = useState(() => {
     return localStorage.getItem(todayKey) || '';
   });
@@ -263,6 +269,21 @@ export const DashboardPage: React.FC = () => {
     });
   };
 
+  const handleUndoCompletion = async (id: string) => {
+    try {
+      const updated = await dataService.tasks.toggleTaskCompletion(id);
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      addToast({
+        title: 'Task Restored',
+        description: updated.title,
+        type: 'info'
+      });
+      lastCompletedTaskIdRef.current = null;
+    } catch {
+      addToast({ title: 'Undo failed', type: 'error' });
+    }
+  };
+
   const handleToggleTask = async (id: string) => {
     const prevTasks = tasks;
     const target = tasks.find((t) => t.id === id);
@@ -273,11 +294,25 @@ export const DashboardPage: React.FC = () => {
     try {
       const updated = await dataService.tasks.toggleTaskCompletion(id);
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-      addToast({
-        title: updated.status === 'completed' ? 'Task Completed' : 'Task Reopened',
-        description: updated.title,
-        type: 'success'
-      });
+      if (updated.status === 'completed') {
+        lastCompletedTaskIdRef.current = { id, timestamp: Date.now() };
+        addToast({
+          title: 'Task Completed',
+          description: updated.title,
+          type: 'success',
+          durationMs: 5000,
+          action: {
+            label: 'Undo (⌘Z)',
+            onClick: () => handleUndoCompletion(id)
+          }
+        });
+      } else {
+        addToast({
+          title: 'Task Reopened',
+          description: updated.title,
+          type: 'info'
+        });
+      }
     } catch {
       setTasks(prevTasks);
       addToast({
@@ -286,6 +321,22 @@ export const DashboardPage: React.FC = () => {
       });
     }
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (lastCompletedTaskIdRef.current) {
+          const { id, timestamp } = lastCompletedTaskIdRef.current;
+          if (Date.now() - timestamp < 5000) {
+            e.preventDefault();
+            handleUndoCompletion(id);
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleToggleHabit = async (id: string) => {
     const prevHabits = habits;
@@ -496,9 +547,9 @@ export const DashboardPage: React.FC = () => {
           <div>
             <div className="solis-today-temporal-header">
               <span className="solis-today-temporal-date">
-                {formatFullDate(new Date())}
+                {formatFullDate(currentTime)}
               </span>
-              <span className="solis-today-temporal-separator">•</span>
+              <span className="solis-today-temporal-separator" aria-hidden="true">•</span>
               <span className="solis-today-temporal-period">
                 {greetingInfo.period}
               </span>
@@ -508,63 +559,37 @@ export const DashboardPage: React.FC = () => {
 
             {/* Daily Intention Line */}
             <div className="solis-daily-intention-bar">
-              <Sparkles size={16} color="var(--color-coral-500)" />
+              <Sparkles size={16} className="solis-intention-icon" aria-hidden="true" />
               <input
                 type="text"
                 value={dailyIntention}
                 onChange={(e) => handleSaveIntention(e.target.value)}
                 placeholder="What is your singular intention today?"
                 className="solis-daily-intention-input"
+                aria-label="What is your singular intention today?"
               />
               {intentionSaved && (
-                <span style={{ fontSize: 'var(--text-micro)', color: 'var(--status-success)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                <span className="solis-intention-anchored" aria-live="polite">
                   ✓ Anchored
                 </span>
               )}
-            </div>
-
-            {/* Realism & Capacity Tracker */}
-            <div style={{ marginTop: '16px', maxWidth: '640px' }}>
-              <WorkloadCapacityBar
-                workload={workload}
-                onAutoReplanCandidates={() => navigate('/app/tasks')}
-              />
             </div>
           </div>
 
           <div className="solis-dashboard-hero-actions">
             <Button
               variant="accent"
-              size="lg"
+              size="md"
               className="tactile-press"
-              leftIcon={<Flame size={18} />}
+              leftIcon={<Flame size={16} />}
               onClick={() => navigate('/app/focus')}
             >
               Enter Focus Room
             </Button>
-            <button
-              type="button"
-              onClick={() => setIsClosureModalOpen(true)}
-              className={`solis-evening-closure-btn tactile-press ${new Date().getHours() >= 18 ? 'solis-evening-closure-btn--active' : ''}`}
-              title="Open Evening Closure & Reflection Ritual"
-              aria-label="Open Evening Closure Ritual"
-              style={new Date().getHours() >= 18 ? { borderColor: 'var(--color-lavender-500)', boxShadow: '0 0 0 1px var(--color-lavender-500)' } : undefined}
-            >
-              <div className="solis-evening-closure-icon" style={new Date().getHours() >= 18 ? { backgroundColor: 'var(--color-lavender-500)', color: '#fff' } : undefined}>
-                <Moon size={15} />
-              </div>
-              <div className="solis-evening-closure-text">
-                <span className="solis-evening-closure-title">
-                  Evening Closure {new Date().getHours() >= 18 ? '• Ready' : ''}
-                </span>
-                <span className="solis-evening-closure-sub">Reflect & lock tomorrow</span>
-              </div>
-              <ChevronRight size={14} className="solis-evening-closure-arrow" />
-            </button>
           </div>
         </div>
 
-        {/* TIER 2 // ADAPTIVE NEXT BEST ACTION GUIDANCE & ACTIVE ORBIT */}
+        {/* TIER 2 // ACTIVE / NEXT ACTION BANNER */}
         {!isNextActionDismissed && nextBestAction.id !== 'action_continue_flow' && (
           <div style={{ marginTop: 'var(--space-md)' }}>
             <NextBestActionCard
@@ -579,7 +604,7 @@ export const DashboardPage: React.FC = () => {
           <div className="solis-active-orbit-card">
             <div className="solis-active-orbit-header">
               <div className="solis-active-orbit-tag">
-                <Compass size={15} color="var(--color-coral-500)" />
+                <Compass size={15} color="var(--color-coral-500)" aria-hidden="true" />
                 <span>
                   {topRecommendation
                     ? 'Recommended Focus Horizon'
@@ -676,104 +701,231 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* TIER 3 // 24-HOUR SCHEDULE & TIMELINE WITH LIVING MINUTE NEEDLE */}
+        <div style={{ marginTop: 'var(--space-xl)' }} className="solis-cockpit-tier solis-cockpit-tier--3">
+          <div className="solis-timeline-header">
+            <div className="solis-timeline-title-wrap">
+              <Clock size={16} className="solis-timeline-clock-icon" aria-hidden="true" />
+              <h2 className="solis-timeline-title">24-Hour Schedule & Timeline</h2>
+              <span className="solis-timeline-badge">
+                {timeBlocks.length} {timeBlocks.length === 1 ? 'block' : 'blocks'} • {timeStats.totalPlannedMinutes}m
+              </span>
+            </div>
+            <div className="solis-timeline-actions">
+              <button
+                type="button"
+                className={cn('solis-timeline-mode-toggle', viewMode === 'timeline' && 'solis-timeline-mode-toggle--active')}
+                onClick={() => setViewMode(viewMode === 'timeline' ? 'lists' : 'timeline')}
+              >
+                {viewMode === 'timeline' ? 'Compact View' : 'Expanded Grid'}
+              </button>
+            </div>
+          </div>
+
+          <div className="solis-cockpit-timeline-strip">
+            <div className="solis-timeline-track">
+              <div className="solis-timeline-hours-bar">
+                {['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map((hr) => (
+                  <span key={hr}>{hr}</span>
+                ))}
+              </div>
+              {currentTime.getHours() >= 8 && currentTime.getHours() <= 20 && (
+                <div
+                  className="solis-living-needle"
+                  style={{
+                    left: `${Math.min(100, Math.max(0, ((currentTime.getHours() - 8) * 60 + currentTime.getMinutes()) / (12 * 60) * 100))}%`,
+                    width: 'auto'
+                  }}
+                  title={`Now: ${String(currentTime.getHours()).padStart(2, '0')}:${String(currentTime.getMinutes()).padStart(2, '0')}`}
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+
+            {timeBlocks.length === 0 ? (
+              <div className="solis-cockpit-empty-stub">
+                <span>No time blocks scheduled for today. Shape your first focus block.</span>
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => navigate('/app/tasks')}
+                >
+                  Open Hourly Planner
+                </Button>
+              </div>
+            ) : (
+              <div className="solis-cockpit-blocks-list">
+                {timeBlocks.slice(0, 4).map((block) => (
+                  <div key={block.id} className={cn('solis-cockpit-block-row', block.completed && 'solis-cockpit-block-row--completed')}>
+                    <span className="solis-cockpit-block-time text-metric">{block.startTime} – {block.endTime}</span>
+                    <div className="solis-cockpit-block-main">
+                      <span className="solis-cockpit-block-title">{block.title}</span>
+                      {block.subjectName && (
+                        <span className="solis-cockpit-block-subject">{block.subjectName}</span>
+                      )}
+                    </div>
+                    <div className="solis-cockpit-block-actions">
+                      <Button
+                        variant="subtle"
+                        size="sm"
+                        className="tactile-press"
+                        leftIcon={<Play size={11} />}
+                        onClick={() => handleLaunchTimeBlockFocus(block)}
+                      >
+                        Focus
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* TIER 4 // WORKLOAD REALISM & CAPACITY SIGNAL */}
+        <div style={{ marginTop: 'var(--space-xl)' }} className="solis-cockpit-tier solis-cockpit-tier--4">
+          <div className="solis-capacity-container">
+            <WorkloadCapacityBar
+              workload={workload}
+              onAutoReplanCandidates={() => navigate('/app/tasks')}
+            />
+          </div>
+        </div>
+
+        {/* TIER 5 // TODAY PRIORITY QUEUE */}
+        <div style={{ marginTop: 'var(--space-xl)' }} className="solis-cockpit-tier solis-cockpit-tier--5">
+          <div className="solis-queue-header">
+            <div className="solis-queue-title-wrap">
+              <CheckCircle2 size={18} className="solis-queue-icon" aria-hidden="true" />
+              <h2 className="solis-queue-title">Today Priority Queue</h2>
+              <span className="solis-queue-badge">
+                {activeTasks.length} {activeTasks.length === 1 ? 'deliberate action' : 'deliberate actions'}
+              </span>
+            </div>
+            <Link to="/app/tasks">
+              <Button variant="ghost" size="sm" rightIcon={<ArrowRight size={14} />}>
+                All Tasks ({tasks.length})
+              </Button>
+            </Link>
+          </div>
+
+          <div className="solis-queue-input-wrap">
+            <SmartTaskInput
+              onCommit={handleCreateFromNLP}
+              subjects={subjects}
+              defaultDueDate={getISODateString(currentTime)}
+              placeholder='Add intention for today... (e.g. "Review DSA at 4pm for 45m !high")'
+            />
+          </div>
+
+          {activeTasks.length === 0 ? (
+            <div className="solis-cockpit-empty-stub">
+              <span>All deliberate intentions completed. Ready to reflect or rest.</span>
+              <Button variant="subtle" size="sm" onClick={() => navigate('/app/tasks')}>
+                View Completed
+              </Button>
+            </div>
+          ) : (
+            <div className="solis-queue-list">
+              {activeTasks.slice(0, 5).map((task) => {
+                const linkedSub = subjects.find((s) => s.id === task.subjectId);
+                return (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    subject={linkedSub}
+                    onToggle={handleToggleTask}
+                    onEdit={() => navigate('/app/tasks')}
+                    onDelete={handleDeleteTask}
+                    onStartFocus={handleStartFocusOnTask}
+                    showScheduleAction={false}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
       </SceneContainer>
 
-      {/* COGNITIVE VELOCITY & MOMENTUM PULSE */}
+      {/* RESTRAINED MOMENTUM TELEMETRY & INTELLECTUAL VELOCITY */}
       <SceneContainer variant="canvas">
         {cognitiveReport.status !== 'optimal' && (
           <div style={{ marginBottom: 'var(--space-md)' }}>
             <CognitiveLoadAlert report={cognitiveReport} />
           </div>
         )}
-        <div className="solis-momentum-hero">
-          <SceneAtmosphere glowPrimary="coral" glowSecondary="amber" intensity="minimal" />
-          <div className="solis-momentum-hero__layout">
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Sparkles size={16} color="var(--color-coral-400)" />
-                <span style={{ fontSize: 'var(--text-caption)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>
-                  State of Momentum
-                </span>
-                <ContextualHelp
-                  title="What is Momentum?"
-                  content="Momentum is a composite daily measure (0–100%) tracking intentional task completion, study target hours, and deep focus consistency."
-                  example="Completing 3 planned tasks and a 45m focus session accumulates high momentum."
-                  guideId="what-is-solis"
-                  onOpenGuide={openGuide}
-                />
-                <button
-                  onClick={() => setIsScoreModalOpen(true)}
-                  style={{ color: 'var(--text-muted)', padding: '2px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
-                  title="View deterministic formula breakdown"
-                >
-                  <Info size={14} />
-                </button>
-              </div>
-
-              <div className="solis-momentum-score-sculpture">
-                {Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0)) ? (
-                  <>
-                    {summary?.momentumScore ?? 0}
-                    <span>%</span>
-                  </>
-                ) : (
-                  <span>—</span>
-                )}
-              </div>
-
-              <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-body-md)', marginTop: '8px', lineHeight: 1.5 }}>
-                {Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0))
-                  ? summary?.momentumScore && summary.momentumScore >= 80
-                    ? "You're moving the important things forward with calm distinction."
-                    : 'Consistent study blocks and small rituals accumulate lasting flow.'
-                  : 'Your daily rhythm is forming. Complete your first study block to track momentum.'}
-              </div>
+        <div className="solis-momentum-strip">
+          <div className="solis-momentum-strip__main">
+            <div className="solis-momentum-strip__lead">
+              <Sparkles size={15} color="var(--color-coral-500)" aria-hidden="true" />
+              <span className="solis-momentum-strip__tag">State of Momentum</span>
+              <button
+                type="button"
+                onClick={() => setIsScoreModalOpen(true)}
+                className="solis-momentum-info-btn"
+                title="View deterministic formula breakdown"
+                aria-label="View momentum formula breakdown"
+              >
+                <Info size={13} />
+              </button>
             </div>
+            <div className="solis-momentum-strip__score">
+              <span className="solis-momentum-score-num text-metric">
+                {Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0))
+                  ? summary?.momentumScore ?? 0
+                  : 0}
+              </span>
+              <span className="solis-momentum-score-unit">%</span>
+            </div>
+          </div>
 
-            <div className="solis-momentum-quad-grid">
-              <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  Tasks Velocity
-                </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
-                  {scoreDetails.taskScore}%
-                </div>
-                <Progress value={scoreDetails.taskScore} max={100} size="sm" variant="coral" />
-              </div>
-
-              <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  Study Volume
-                </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
-                  {summary?.totalStudyMinutes || 0}m / 180m
-                </div>
-                <Progress value={summary?.totalStudyMinutes || 0} max={180} size="sm" variant="amber" />
-              </div>
-
-              <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  Deep Focus
-                </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
-                  {scoreDetails.focusScore}%
-                </div>
-                <Progress value={scoreDetails.focusScore} max={100} size="sm" variant="lavender" />
-              </div>
-
-              <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                  Ritual Consistency
-                </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
-                  {summary?.habitsCompletedRatio || '0/0'}
-                </div>
-                <Progress value={scoreDetails.habitScore} max={100} size="sm" variant="sage" />
-              </div>
+          <div className="solis-momentum-telemetry">
+            <div className="solis-momentum-telemetry__col">
+              <span className="solis-momentum-telemetry__label">Tasks Velocity</span>
+              <span className="solis-momentum-telemetry__val text-metric">{scoreDetails.taskScore}%</span>
+            </div>
+            <div className="solis-momentum-telemetry__sep" aria-hidden="true" />
+            <div className="solis-momentum-telemetry__col">
+              <span className="solis-momentum-telemetry__label">Study Volume</span>
+              <span className="solis-momentum-telemetry__val text-metric">{summary?.totalStudyMinutes || 0}m / 180m</span>
+            </div>
+            <div className="solis-momentum-telemetry__sep" aria-hidden="true" />
+            <div className="solis-momentum-telemetry__col">
+              <span className="solis-momentum-telemetry__label">Deep Focus</span>
+              <span className="solis-momentum-telemetry__val text-metric">{scoreDetails.focusScore}%</span>
+            </div>
+            <div className="solis-momentum-telemetry__sep" aria-hidden="true" />
+            <div className="solis-momentum-telemetry__col">
+              <span className="solis-momentum-telemetry__label">Ritual Consistency</span>
+              <span className="solis-momentum-telemetry__val text-metric">{summary?.habitsCompletedRatio || '0/0'}</span>
             </div>
           </div>
         </div>
       </SceneContainer>
+
+      {/* EVENING CLOSURE RITUAL — Smoothly activated after 18:00 without daytime disruption */}
+      {currentTime.getHours() >= 18 && (
+        <section className="solis-cockpit-evening" aria-label="Evening Reflection & Closure">
+          <div className="solis-evening-banner">
+            <div className="solis-evening-banner__icon">
+              <Moon size={18} />
+            </div>
+            <div className="solis-evening-banner__text">
+              <span className="solis-evening-banner__title">Evening Rest & Reflection</span>
+              <span className="solis-evening-banner__sub">Take 3 minutes to synthesize today's achievements and prepare tomorrow's intentions.</span>
+            </div>
+            <Button
+              variant="accent"
+              size="md"
+              className="tactile-press"
+              onClick={() => setIsClosureModalOpen(true)}
+            >
+              Begin Evening Closure
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* 03 // DAILY PLANNING & TIME BLOCKING CONTROLS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
@@ -879,14 +1031,11 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {studyPlan.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)' }}>
-                  Nothing planned for today yet. Shape your first study block.
-                </p>
+              <div className="solis-cockpit-empty-stub">
+                <span>Nothing planned for today yet. Shape your first study block.</span>
                 <Button
                   variant="subtle"
                   size="sm"
-                  style={{ marginTop: '10px' }}
                   onClick={() => navigate('/app/study')}
                 >
                   Schedule Topic
@@ -929,57 +1078,6 @@ export const DashboardPage: React.FC = () => {
                     </Button>
                   </div>
                 ))}
-              </div>
-            )}
-          </section>
-
-          {/* Priority Intentions */}
-          <section className="solis-flow-section">
-            <div className="solis-flow-section__header">
-              <div className="solis-flow-section__title">
-                <CheckCircle2 size={20} color="var(--color-coral-500)" />
-                <span>Today's Intentions</span>
-                <Badge variant="coral">{activeTasks.length} pending</Badge>
-              </div>
-              <Link to="/app/tasks">
-                <Button variant="ghost" size="sm" rightIcon={<ArrowRight size={14} />}>
-                  Tasks & Grid
-                </Button>
-              </Link>
-            </div>
-
-            <div style={{ marginBottom: '14px' }}>
-              <SmartTaskInput
-                onCommit={handleCreateFromNLP}
-                subjects={subjects}
-                defaultDueDate={getISODateString(new Date())}
-                placeholder='Add intention for today... (e.g. "Review DSA at 4pm for 45m !high")'
-              />
-            </div>
-
-            {activeTasks.length === 0 ? (
-              <div style={{ padding: '24px 16px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)', margin: 0 }}>
-                  All clear. No pending tasks for today.
-                </p>
-              </div>
-            ) : (
-              <div className="solis-flow-list" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {activeTasks.slice(0, 5).map((task) => {
-                  const linkedSub = subjects.find((s) => s.id === task.subjectId);
-                  return (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      subject={linkedSub}
-                      onToggle={handleToggleTask}
-                      onEdit={() => navigate('/app/tasks')}
-                      onDelete={handleDeleteTask}
-                      onStartFocus={handleStartFocusOnTask}
-                      showScheduleAction={false}
-                    />
-                  );
-                })}
               </div>
             )}
           </section>
@@ -1044,10 +1142,15 @@ export const DashboardPage: React.FC = () => {
             <KnowledgeResurfacingCard notes={notes} />
 
             {notes.length === 0 ? (
-              <div style={{ padding: '16px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
-                  External memory is empty. Synthesize your first note.
-                </p>
+              <div className="solis-cockpit-empty-stub">
+                <span>External memory is clear. Synthesize your first note.</span>
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => navigate('/app/notes')}
+                >
+                  New Note
+                </Button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1084,14 +1187,11 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {habits.length === 0 ? (
-              <div style={{ padding: '16px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
-                  No daily rituals established. Build your first habit.
-                </p>
+              <div className="solis-cockpit-empty-stub">
+                <span>No daily rituals active today. Build your first habit.</span>
                 <Button
                   variant="subtle"
                   size="sm"
-                  style={{ marginTop: '8px' }}
                   onClick={() => navigate('/app/habits')}
                 >
                   Create Habit

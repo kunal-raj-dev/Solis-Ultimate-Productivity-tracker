@@ -114,66 +114,37 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: var(--bg-surface-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--duration-swift) var(--ease-spatial);
 }
 
-.solis-more-sheet__card-icon--coral {
-  background: var(--color-coral-100);
-  color: var(--color-coral-600);
+.solis-more-sheet__card:hover .solis-more-sheet__card-icon,
+.solis-more-sheet__card--active .solis-more-sheet__card-icon {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-default);
 }
 
-.solis-more-sheet__card-icon--amber {
-  background: var(--color-amber-100);
-  color: var(--color-amber-600);
-}
-
-.solis-more-sheet__card-icon--lavender {
-  background: var(--color-lavender-100);
-  color: var(--color-lavender-600);
-}
-
-.solis-more-sheet__card-icon--sage {
-  background: var(--color-sage-100);
-  color: var(--color-sage-600);
-}
-
-.solis-more-sheet__card-icon--rose {
-  background: var(--color-rose-100);
-  color: var(--color-rose-600);
-}
-
+.solis-more-sheet__card-icon--coral,
+.solis-more-sheet__card-icon--amber,
+.solis-more-sheet__card-icon--lavender,
+.solis-more-sheet__card-icon--sage,
+.solis-more-sheet__card-icon--rose,
 .solis-more-sheet__card-icon--neutral {
-  background: var(--color-charcoal-100);
-  color: var(--color-charcoal-700);
+  background: var(--bg-surface-tertiary);
+  color: var(--text-secondary);
 }
 
-[data-theme="dark"] .solis-more-sheet__card-icon--coral {
-  background: rgba(224, 90, 71, 0.15);
-  color: var(--color-coral-400);
-}
-
-[data-theme="dark"] .solis-more-sheet__card-icon--amber {
-  background: rgba(217, 130, 43, 0.15);
-  color: var(--color-amber-400);
-}
-
-[data-theme="dark"] .solis-more-sheet__card-icon--lavender {
-  background: rgba(139, 126, 200, 0.15);
-  color: var(--color-lavender-400);
-}
-
-[data-theme="dark"] .solis-more-sheet__card-icon--sage {
-  background: rgba(94, 158, 122, 0.15);
-  color: var(--color-sage-400);
-}
-
-[data-theme="dark"] .solis-more-sheet__card-icon--rose {
-  background: rgba(217, 93, 126, 0.15);
-  color: var(--color-rose-400);
-}
-
+[data-theme="dark"] .solis-more-sheet__card-icon--coral,
+[data-theme="dark"] .solis-more-sheet__card-icon--amber,
+[data-theme="dark"] .solis-more-sheet__card-icon--lavender,
+[data-theme="dark"] .solis-more-sheet__card-icon--sage,
+[data-theme="dark"] .solis-more-sheet__card-icon--rose,
 [data-theme="dark"] .solis-more-sheet__card-icon--neutral {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-ivory-300);
+  background: var(--bg-surface-secondary);
+  color: var(--text-secondary);
 }
 
 .solis-more-sheet__card-text {
