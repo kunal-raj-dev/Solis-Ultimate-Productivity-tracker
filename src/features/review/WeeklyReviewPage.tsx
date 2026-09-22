@@ -22,6 +22,7 @@ import { Input } from '../../components/ui/Input/Input';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { Select } from '../../components/ui/Select/Select';
 import { dataService } from '../../services/dataService';
+import { aiService } from '../../services/ai/ai.service';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { useGuide } from '../../context/GuideContext';
@@ -59,6 +60,8 @@ export const WeeklyReviewPage: React.FC = () => {
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [aiSynthesis, setAiSynthesis] = useState<{ summary: string, observations: string[], suggestions: string[] } | null>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -120,6 +123,27 @@ export const WeeklyReviewPage: React.FC = () => {
   const pendingTasks = tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress');
 
   const topRecommendation = intelReport.recommendations[0]?.title || 'Maintain balanced rhythm';
+
+  const handleGenerateAiSynthesis = async () => {
+    setIsGeneratingAi(true);
+    try {
+      const data = {
+        totalStudyHours,
+        focusSessions: focusSessions.length,
+        completedTasks: completedTasks.length,
+        breakthroughs,
+        frictionPoints,
+        planningRealismRatio: intelReport.execution.planningRealismRatio,
+        consistencyPercentage: intelReport.rhythm.consistencyPercentage
+      };
+      const res = await aiService.synthesizeWeek(data);
+      setAiSynthesis(res);
+    } catch (err: any) {
+      addToast({ title: 'AI Error', description: err.message, type: 'error' });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
 
   const handleSaveToNotes = async () => {
     setIsSavingNote(true);
@@ -486,13 +510,49 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             </CardHeader>
             <CardContent>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <Input
-                  label="Target Study Hours Next Week"
-                  type="number"
-                  value={nextWeekTargetHours}
-                  onChange={(e) => setNextWeekTargetHours(e.target.value)}
-                  required
-                />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Input
+                    label="Target Study Hours Next Week"
+                    type="number"
+                    value={nextWeekTargetHours}
+                    onChange={(e) => setNextWeekTargetHours(e.target.value)}
+                    required
+                  />
+                  <Button 
+                    variant="accent" 
+                    size="sm" 
+                    leftIcon={<Sparkles size={14} />} 
+                    onClick={handleGenerateAiSynthesis}
+                    isLoading={isGeneratingAi}
+                  >
+                    AI Synthesis
+                  </Button>
+                </div>
+                
+                {aiSynthesis && (
+                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-surface-secondary)', border: '1px solid var(--color-coral-500)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <Sparkles size={16} color="var(--color-coral-500)" />
+                      <span style={{ fontWeight: 600, fontSize: 'var(--text-body-md)' }}>Solis Synthesis</span>
+                    </div>
+                    <p style={{ fontSize: 'var(--text-body-sm)', lineHeight: 1.5, marginBottom: '12px' }}>{aiSynthesis.summary}</p>
+                    
+                    <div style={{ marginBottom: '12px' }}>
+                      <strong style={{ fontSize: 'var(--text-caption)' }}>Observations:</strong>
+                      <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', fontSize: 'var(--text-body-sm)' }}>
+                        {aiSynthesis.observations.map((obs, i) => <li key={i}>{obs}</li>)}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <strong style={{ fontSize: 'var(--text-caption)' }}>Suggestions for Next Week:</strong>
+                      <ul style={{ margin: '4px 0 0 0', paddingLeft: '20px', fontSize: 'var(--text-body-sm)' }}>
+                        {aiSynthesis.suggestions.map((sug, i) => <li key={i}>{sug}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
                 <Textarea
                   label="Primary Academic / Engineering Commitment"
                   placeholder="e.g. Finalize Raft state machine replication engine and deploy 3-node cluster..."

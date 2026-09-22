@@ -11,24 +11,49 @@ import {
   Square
 } from 'lucide-react';
 import { parseMarkdownBlocks } from '../../../utils/notes/markdownParser';
+import { parseWikilinkToken, buildWikilinkUrl } from '../../../utils/notes/wikilinks';
 import './MarkdownReadingView.css';
 
 export interface MarkdownReadingViewProps {
   content: string;
   className?: string;
   onToggleTask?: (taskIndex: number, completed: boolean) => void;
+  onWikilinkClick?: (target: string) => void;
 }
 
 /**
- * Safely renders inline markdown elements: links, bold, italic, code, math, and tags.
+ * Safely renders inline markdown elements: wikilinks, links, bold, italic, code, math, and tags.
  */
-function renderInlineContent(text: string): React.ReactNode[] {
-  // Regex splitting by: [link](url), **bold**, *italic*, `code`, $math$, #tag
-  const tokenRegex = /(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\$[^$]+\$|#[a-zA-Z0-9_-]+)/g;
+export function renderInlineContent(text: string, onWikilinkClick?: (target: string) => void): React.ReactNode[] {
+  // Regex splitting by: [[wikilink]], [link](url), **bold**, *italic*, `code`, $math$, #tag
+  const tokenRegex = /(\[\[[^\]]+\]\]|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\$[^$]+\$|#[a-zA-Z0-9_-]+)/g;
   const parts = text.split(tokenRegex);
 
   return parts.map((part, idx) => {
     if (!part) return null;
+
+    if (part.startsWith('[[') && part.endsWith(']]')) {
+      const parsed = parseWikilinkToken(part);
+      if (parsed.isValid) {
+        const fullTarget = parsed.heading ? `${parsed.target}#${parsed.heading}` : parsed.target;
+        return (
+          <a
+            key={idx}
+            href={buildWikilinkUrl(fullTarget)}
+            onClick={(e) => {
+              if (onWikilinkClick) {
+                e.preventDefault();
+                onWikilinkClick(parsed.target);
+              }
+            }}
+            className="solis-markdown-link solis-markdown-wikilink"
+            style={{ color: 'var(--color-coral-500)', textDecoration: 'none', fontWeight: 500, backgroundColor: 'rgba(215, 107, 72, 0.1)', padding: '0 4px', borderRadius: '4px' }}
+          >
+            {parsed.alias}
+          </a>
+        );
+      }
+    }
 
     if (part.startsWith('[') && part.endsWith(')')) {
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
@@ -70,7 +95,8 @@ function renderInlineContent(text: string): React.ReactNode[] {
 export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
   content,
   className = '',
-  onToggleTask
+  onToggleTask,
+  onWikilinkClick
 }) => {
   const blocks = parseMarkdownBlocks(content);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -98,9 +124,9 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
       {blocks.map((block, idx) => {
         switch (block.type) {
           case 'heading': {
-            if (block.level === 1) return <h1 key={idx} className="solis-markdown-h1">{block.content}</h1>;
-            if (block.level === 2) return <h2 key={idx} className="solis-markdown-h2">{block.content}</h2>;
-            return <h3 key={idx} className="solis-markdown-h3">{block.content}</h3>;
+            if (block.level === 1) return <h1 key={idx} className="solis-markdown-h1">{renderInlineContent(block.content, onWikilinkClick)}</h1>;
+            if (block.level === 2) return <h2 key={idx} className="solis-markdown-h2">{renderInlineContent(block.content, onWikilinkClick)}</h2>;
+            return <h3 key={idx} className="solis-markdown-h3">{renderInlineContent(block.content, onWikilinkClick)}</h3>;
           }
 
           case 'callout': {
@@ -119,12 +145,12 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
                   <div className="solis-markdown-callout__tag">{calloutType}</div>
                   {block.calloutTitle && (
                     <div className="solis-markdown-callout__title">
-                      {renderInlineContent(block.calloutTitle)}
+                      {renderInlineContent(block.calloutTitle, onWikilinkClick)}
                     </div>
                   )}
                   {block.content && (
                     <div className="solis-markdown-callout__body">
-                      {renderInlineContent(block.content)}
+                      {renderInlineContent(block.content, onWikilinkClick)}
                     </div>
                   )}
                 </div>
@@ -178,7 +204,7 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
           case 'blockquote': {
             return (
               <blockquote key={idx} className="solis-markdown-blockquote">
-                {renderInlineContent(block.content)}
+                {renderInlineContent(block.content, onWikilinkClick)}
               </blockquote>
             );
           }
@@ -200,7 +226,7 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
                   )}
                 </button>
                 <span style={{ textDecoration: block.completed ? 'line-through' : 'none', color: block.completed ? 'var(--text-muted)' : 'var(--text-primary)' }}>
-                  {renderInlineContent(block.content)}
+                  {renderInlineContent(block.content, onWikilinkClick)}
                 </span>
               </div>
             );
@@ -210,7 +236,7 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
             return (
               <div key={idx} className="solis-markdown-numbered-item">
                 <span className="solis-markdown-list-num">{block.orderNumber ?? 1}.</span>
-                <span style={{ flex: 1, lineHeight: '1.6' }}>{renderInlineContent(block.content)}</span>
+                <span style={{ flex: 1, lineHeight: '1.6' }}>{renderInlineContent(block.content, onWikilinkClick)}</span>
               </div>
             );
           }
@@ -219,7 +245,7 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
             return (
               <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '4px 0' }}>
                 <span style={{ color: 'var(--color-coral-500)', fontSize: '14px', lineHeight: '1.6' }}>•</span>
-                <span style={{ flex: 1, lineHeight: '1.6' }}>{renderInlineContent(block.content)}</span>
+                <span style={{ flex: 1, lineHeight: '1.6' }}>{renderInlineContent(block.content, onWikilinkClick)}</span>
               </div>
             );
           }
@@ -232,7 +258,7 @@ export const MarkdownReadingView: React.FC<MarkdownReadingViewProps> = ({
           default: {
             return (
               <p key={idx} className="solis-markdown-p">
-                {renderInlineContent(block.content)}
+                {renderInlineContent(block.content, onWikilinkClick)}
               </p>
             );
           }

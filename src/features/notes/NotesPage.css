@@ -124,8 +124,8 @@
 
 .solis-note-card:hover {
   border-color: var(--border-default);
+  background-color: var(--bg-surface-hover);
   box-shadow: var(--shadow-subtle);
-  transform: translateY(-1px);
 }
 
 .solis-note-card--active {
