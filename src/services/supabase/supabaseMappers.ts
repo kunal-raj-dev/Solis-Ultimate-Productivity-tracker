@@ -1,5 +1,5 @@
 import { UserProfile } from '../../types/auth';
-import { Task, SubTask } from '../../types/task';
+import { Task, SubTask, TaskTimeBlock } from '../../types/task';
 import { StudySubject, StudySession, StudyPlanItem, StudyTopic } from '../../types/study';
 import { Note } from '../../types/note';
 import { FocusSession } from '../../types/focus';
@@ -9,9 +9,10 @@ import { Flashcard, ReviewQueueItem } from '../../types/learning';
 import { RecurringStudyRoutine } from '../../types/planning';
 import { StudyResource } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
-import { StudyRoom, RoomParticipant, RoomMessage } from '../../types/room';
+import { StudyRoom, RoomParticipant, RoomMessage, RoomTimelineEvent, RoomReflection } from '../../types/room';
 import { calculateStreaks } from '../../utils/streaks';
 import { getISODateString } from '../../utils/date';
+
 
 export function mapProfile(row: any): UserProfile {
   return {
@@ -342,9 +343,18 @@ export function mapStudyRoom(row: any, hostName?: string, participantsCount?: nu
     id: row.id,
     hostId: row.host_id,
     hostName: hostName || row.profiles?.name || undefined,
+    roomCode: row.room_code || undefined,
     title: row.title,
+    subjectId: row.subject_id || undefined,
+    subjectName: row.subjects?.name || undefined,
+    topic: row.topic || undefined,
+    sessionType: row.session_type || 'deep_focus',
+    sharedObjective: row.shared_objective || undefined,
     timerState: row.timer_state || 'idle',
     targetDurationSeconds: row.target_duration_seconds ?? 1500,
+    breakDurationSeconds: row.break_duration_seconds ?? 300,
+    isBreak: row.is_break ?? false,
+    isPrivate: row.is_private ?? false,
     startedAt: row.started_at || null,
     pausedElapsedSeconds: row.paused_elapsed_seconds ?? 0,
     createdAt: row.created_at,
@@ -360,7 +370,9 @@ export function mapRoomParticipant(row: any, userName?: string, userEmail?: stri
     userName: userName || row.profiles?.name || undefined,
     userEmail: userEmail || row.profiles?.email || undefined,
     status: row.status || 'focusing',
-    joinedAt: row.joined_at
+    joinedAt: row.joined_at,
+    personalObjective: row.personal_objective || undefined,
+    isReady: row.is_ready ?? false
   };
 }
 
@@ -374,3 +386,59 @@ export function mapRoomMessage(row: any, userName?: string): RoomMessage {
     createdAt: row.created_at
   };
 }
+
+export function mapRoomTimelineEvent(row: any, userName?: string): RoomTimelineEvent {
+  return {
+    id: row.id,
+    roomId: row.room_id,
+    userId: row.user_id,
+    userName: userName || row.user_name || row.profiles?.name || 'Solis Scholar',
+    eventType: row.event_type,
+    message: row.message || undefined,
+    createdAt: row.created_at
+  };
+}
+
+export function mapRoomReflection(row: any, userName?: string, roomTitle?: string): RoomReflection {
+  return {
+    id: row.id,
+    roomId: row.room_id,
+    userId: row.user_id,
+    userName: userName || row.user_name || row.profiles?.name || 'Solis Scholar',
+    roomTitle: roomTitle || row.room_title || row.study_rooms?.title || 'Study Sanctuary',
+    subjectId: row.subject_id || undefined,
+    subjectName: row.subject_name || undefined,
+    durationSeconds: row.duration_seconds ?? 0,
+    objectiveAchieved: row.objective_achieved ?? true,
+    reflectionText: row.reflection_text || '',
+    nextStep: row.next_step || undefined,
+    retentionRating: row.retention_rating ?? 5,
+    createdAt: row.created_at
+  };
+}
+
+export function mapTaskTimeBlock(row: any): TaskTimeBlock {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    taskId: row.task_id || undefined,
+    taskTitle: row.task_title || row.title || 'Untitled Block',
+    description: row.description || undefined,
+    date: row.date,
+    startHour: row.start_hour ?? 9,
+    startMinute: row.start_minute ?? 0,
+    durationMinutes: row.duration_minutes ?? 60,
+    subjectId: row.subject_id || undefined,
+    goalId: row.goal_id || undefined,
+    priority: row.priority || 'medium',
+    status: row.status || 'planned',
+    actualMinutes: row.actual_minutes ?? 0,
+    progressPercent: row.progress_percent ?? 0,
+    reflection: row.reflection || undefined,
+    blocker: row.blocker || undefined,
+    nextAction: row.next_action || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+

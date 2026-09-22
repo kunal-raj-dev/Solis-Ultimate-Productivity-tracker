@@ -1,6 +1,7 @@
 import { ITaskService } from '../../api.interface';
-import { Task, TaskFilterOptions, SubTask } from '../../../types/task';
-import { mapTask, mapSubtask } from '../supabaseMappers';
+import { Task, TaskFilterOptions, SubTask, TaskTimeBlock, TimeBlockReviewPayload } from '../../../types/task';
+import { mapTask, mapSubtask, mapTaskTimeBlock } from '../supabaseMappers';
+
 import { isToday, isFuture, isPast, getISODateString } from '../../../utils/date';
 import { validateTaskInput, ValidationError } from '../../../utils/validation';
 import { queryCache } from '../../cache';
@@ -262,4 +263,184 @@ export class SupabaseTaskService implements ITaskService {
     this.ctx.notify();
     return task!;
   };
+
+  // 24-Hour Time-Blocking Engine
+  getTimeBlocks = async (date: string): Promise<TaskTimeBlock[]> => {
+    const userId = await this.ctx.getUserId();
+    const cacheKey = `time_blocks:${userId}:${date}`;
+    const cached = queryCache.get<TaskTimeBlock[]>(cacheKey);
+    if (cached) return cached;
+
+    const { data, error } = await this.ctx.client
+      .from('task_time_blocks')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', date)
+      .order('start_hour', { ascending: true })
+      .order('start_minute', { ascending: true });
+
+    if (error) {
+      // In local dev if table doesn't exist yet, return empty list gracefully
+      console.warn('Could not query task_time_blocks from Supabase:', error.message);
+      return [];
+    }
+
+    const blocks = (data || []).map(mapTaskTimeBlock);
+    queryCache.set(cacheKey, blocks);
+    return blocks;
+  };
+
+  createTimeBlock = async (block: Partial<TaskTimeBlock>): Promise<TaskTimeBlock> => {
+    if (!block.taskTitle || !block.taskTitle.trim()) {
+      throw new ValidationError('Task title is required for a time block.', 'taskTitle');
+    }
+
+    const userId = await this.ctx.getUserId();
+    const payload = {
+      user_id: userId,
+      task_id: block.taskId || null,
+      task_title: block.taskTitle.trim(),
+      description: block.description?.trim() || null,
+      date: block.date || getISODateString(new Date()),
+      start_hour: typeof block.startHour === 'number' ? block.startHour : 9,
+      start_minute: block.startMinute ?? 0,
+      duration_minutes: block.durationMinutes || 60,
+      subject_id: block.subjectId || null,
+      goal_id: block.goalId || null,
+      priority: block.priority || 'medium',
+      status: block.status || 'planned',
+      actual_minutes: block.actualMinutes ?? 0,
+      progress_percent: block.progressPercent ?? 0,
+      reflection: block.reflection || null,
+      blocker: block.blocker || null,
+      next_action: block.nextAction || null
+    };
+
+    const { data, error } = await this.ctx.client
+      .from('task_time_blocks')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw error || new Error('Failed to create task time block');
+    }
+
+    this.ctx.notify();
+    return mapTaskTimeBlock(data);
+  };
+
+  updateTimeBlock = async (id: string, updates: Partial<TaskTimeBlock>): Promise<TaskTimeBlock> => {
+    const userId = await this.ctx.getUserId();
+    const payload: Record<string, any> = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (updates.taskTitle !== undefined) payload.task_title = updates.taskTitle.trim();
+    if (updates.description !== undefined) payload.description = updates.description?.trim() || null;
+    if (updates.date !== undefined) payload.date = updates.date;
+    if (updates.startHour !== undefined) payload.start_hour = updates.startHour;
+    if (updates.startMinute !== undefined) payload.start_minute = updates.startMinute;
+    if (updates.durationMinutes !== undefined) payload.duration_minutes = updates.durationMinutes;
+    if (updates.subjectId !== undefined) payload.subject_id = updates.subjectId || null;
+    if (updates.goalId !== undefined) payload.goal_id = updates.goalId || null;
+    if (updates.priority !== undefined) payload.priority = updates.priority;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.actualMinutes !== undefined) payload.actual_minutes = updates.actualMinutes;
+    if (updates.progressPercent !== undefined) payload.progress_percent = updates.progressPercent;
+    if (updates.reflection !== undefined) payload.reflection = updates.reflection || null;
+    if (updates.blocker !== undefined) payload.blocker = updates.blocker || null;
+    if (updates.nextAction !== undefined) payload.next_action = updates.nextAction || null;
+
+    const { data, error } = await this.ctx.client
+      .from('task_time_blocks')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw error || new Error(`Failed to update task time block ${id}`);
+    }
+
+    // Synchronize parent task status if linked
+    const mapped = mapTaskTimeBlock(data);
+    if (mapped.taskId && mapped.status) {
+      try {
+        if (mapped.status === 'completed') {
+          await this.updateTask(mapped.taskId, { status: 'completed' });
+        } else if (mapped.status === 'partial') {
+          await this.updateTask(mapped.taskId, { status: 'partial' });
+        } else if (mapped.status === 'missed') {
+          await this.updateTask(mapped.taskId, { status: 'missed' });
+        } else if (mapped.status === 'planned') {
+          await this.updateTask(mapped.taskId, { status: 'todo' });
+        }
+      } catch (err) {
+        console.warn('Could not sync linked task status:', err);
+      }
+    }
+
+    this.ctx.notify();
+    return mapped;
+  };
+
+  deleteTimeBlock = async (id: string): Promise<boolean> => {
+    const userId = await this.ctx.getUserId();
+    const { error } = await this.ctx.client
+      .from('task_time_blocks')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    this.ctx.notify();
+    return true;
+  };
+
+  reviewTimeBlock = async (
+    id: string,
+    review: TimeBlockReviewPayload
+  ): Promise<{ updatedBlock: TaskTimeBlock; rescheduledBlock?: TaskTimeBlock }> => {
+    const updated = await this.updateTimeBlock(id, {
+      status: review.status,
+      progressPercent: review.progressPercent,
+      actualMinutes: review.actualMinutes,
+      reflection: review.reflection,
+      blocker: review.blocker,
+      nextAction: review.nextAction
+    });
+
+    let rescheduledBlock: TaskTimeBlock | undefined;
+    if (review.rescheduleToHour !== undefined) {
+      const targetDate = review.rescheduleToDate || updated.date;
+      rescheduledBlock = await this.createTimeBlock({
+        taskId: updated.taskId,
+        taskTitle: review.nextAction ? `${updated.taskTitle} (Next: ${review.nextAction})` : updated.taskTitle,
+        description: updated.description,
+        date: targetDate,
+        startHour: review.rescheduleToHour,
+        startMinute: 0,
+        durationMinutes: updated.durationMinutes,
+        subjectId: updated.subjectId,
+        goalId: updated.goalId,
+        priority: updated.priority,
+        status: 'planned',
+        progressPercent: 0,
+        actualMinutes: 0
+      });
+    }
+
+    return { updatedBlock: updated, rescheduledBlock };
+  };
+
+  rescheduleTimeBlock = async (id: string, newDate: string, newHour: number): Promise<TaskTimeBlock> => {
+    return this.updateTimeBlock(id, {
+      date: newDate,
+      startHour: newHour,
+      status: 'planned'
+    });
+  };
 }
+

@@ -30,9 +30,10 @@ import {
   MOCK_REVIEWS,
   MOCK_ROUTINES,
   MOCK_RESOURCES,
-  MOCK_REFLECTIONS
+  MOCK_REFLECTIONS,
+  MOCK_TIME_BLOCKS
 } from './mockData';
-import { Task, TaskFilterOptions, SubTask } from '../../types/task';
+import { Task, TaskFilterOptions, SubTask, TaskTimeBlock, TimeBlockReviewPayload } from '../../types/task';
 import { StudySubject, StudySession, StudyPlanItem, StudyTopic } from '../../types/study';
 import { Note, NoteFilterOptions } from '../../types/note';
 import { FocusSession } from '../../types/focus';
@@ -42,7 +43,18 @@ import { Flashcard, CardRating, ReviewQueueItem } from '../../types/learning';
 import { RecurringStudyRoutine } from '../../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
-import { StudyRoom, RoomParticipant, RoomMessage, CreateRoomPayload, RoomTimerState, ParticipantStatus } from '../../types/room';
+import {
+  StudyRoom,
+  RoomParticipant,
+  RoomMessage,
+  CreateRoomPayload,
+  RoomTimerState,
+  ParticipantStatus,
+  RoomTimelineEvent,
+  RoomEventType,
+  RoomReflection
+} from '../../types/room';
+
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
 import { UserProfile, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
 import { isToday, isPast, isFuture, getISODateString, isThisWeek } from '../../utils/date';
@@ -89,14 +101,49 @@ export class MockDataService implements IDataService {
   private _routines: RecurringStudyRoutine[] = JSON.parse(JSON.stringify(MOCK_ROUTINES));
   private _resources: StudyResource[] = JSON.parse(JSON.stringify(MOCK_RESOURCES));
   private _reflections: DailyReflection[] = JSON.parse(JSON.stringify(MOCK_REFLECTIONS));
+  private _timeBlocks: TaskTimeBlock[] = JSON.parse(JSON.stringify(MOCK_TIME_BLOCKS));
+  private _roomEvents: RoomTimelineEvent[] = [
+    {
+      id: 'evt_1',
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_mock_scholar',
+      userName: 'Kunal Raj',
+      eventType: 'session_start',
+      message: 'Pomodoro session started (25m)',
+      createdAt: new Date(Date.now() - 300000).toISOString()
+    }
+  ];
+  private _roomReflections: RoomReflection[] = [
+    {
+      id: 'refl_1',
+      roomId: 'room_solis_sanctuary',
+      userId: 'user_mock_scholar',
+      userName: 'Kunal Raj',
+      roomTitle: 'Distributed Systems & Algorithms Pod',
+      durationSeconds: 1500,
+      objectiveAchieved: true,
+      reflectionText: 'Proved the leader election safety invariant in Raft.',
+      nextStep: 'Continue log replication follower edge cases.',
+      createdAt: new Date(Date.now() - 86400000).toISOString()
+    }
+  ];
   private _rooms: StudyRoom[] = [
     {
       id: 'room_solis_sanctuary',
       hostId: 'user_mock_scholar',
       hostName: 'Kunal Raj',
+      roomCode: 'SOL101',
       title: 'Distributed Systems & Algorithms Pod',
+      subjectId: 'sbj_1',
+      subjectName: 'Distributed Systems',
+      topic: 'Raft Consensus Protocol & Invariants',
+      sessionType: 'pomodoro',
+      sharedObjective: 'Verify Raft safety invariants and complete 2 leetcode graph problems',
       timerState: 'running',
       targetDurationSeconds: 1500,
+      breakDurationSeconds: 300,
+      isBreak: false,
+      isPrivate: false,
       startedAt: new Date(Date.now() - 300000).toISOString(),
       pausedElapsedSeconds: 0,
       createdAt: new Date(Date.now() - 3600000).toISOString(),
@@ -107,9 +154,18 @@ export class MockDataService implements IDataService {
       id: 'room_focus_lab',
       hostId: 'user_alyssa_p',
       hostName: 'Alyssa Vance',
+      roomCode: 'ARC404',
       title: 'Deep Architecture Design Studio',
+      subjectId: 'sbj_3',
+      subjectName: 'Compiler Construction',
+      topic: 'LLVM IR Optimization passes',
+      sessionType: 'deep_focus',
+      sharedObjective: 'Draft end-to-end event-driven architecture RFC',
       timerState: 'idle',
       targetDurationSeconds: 3000,
+      breakDurationSeconds: 600,
+      isBreak: false,
+      isPrivate: false,
       startedAt: null,
       pausedElapsedSeconds: 0,
       createdAt: new Date(Date.now() - 7200000).toISOString(),
@@ -117,6 +173,7 @@ export class MockDataService implements IDataService {
       participantsCount: 2
     }
   ];
+
   private _roomParticipants: RoomParticipant[] = [
     {
       roomId: 'room_solis_sanctuary',
@@ -512,8 +569,143 @@ export class MockDataService implements IDataService {
       task.updatedAt = new Date().toISOString();
       this.notify();
       return JSON.parse(JSON.stringify(task));
+    },
+
+    // 24-Hour Time-Blocking Engine
+    getTimeBlocks: async (date: string): Promise<TaskTimeBlock[]> => {
+      await delay(15);
+      const blocks = this._timeBlocks
+        .filter((b) => b.date === date)
+        .sort((a, b) => a.startHour - b.startHour || (a.startMinute || 0) - (b.startMinute || 0));
+      return JSON.parse(JSON.stringify(blocks));
+    },
+
+    createTimeBlock: async (block: Partial<TaskTimeBlock>): Promise<TaskTimeBlock> => {
+      await delay(25);
+      if (!block.taskTitle || !block.taskTitle.trim()) {
+        throw new ValidationError('Task title is required for a time block.', 'taskTitle');
+      }
+
+      const newBlock: TaskTimeBlock = {
+        id: `blk_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        userId: this._user?.id || 'usr_001',
+        taskId: block.taskId,
+        taskTitle: block.taskTitle.trim(),
+        description: block.description?.trim(),
+        date: block.date || getISODateString(new Date()),
+        startHour: typeof block.startHour === 'number' ? block.startHour : 9,
+        startMinute: block.startMinute ?? 0,
+        durationMinutes: block.durationMinutes || 60,
+        subjectId: block.subjectId,
+        goalId: block.goalId,
+        priority: block.priority || 'medium',
+        status: block.status || 'planned',
+        actualMinutes: block.actualMinutes ?? 0,
+        progressPercent: block.progressPercent ?? 0,
+        reflection: block.reflection,
+        blocker: block.blocker,
+        nextAction: block.nextAction,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      this._timeBlocks.push(newBlock);
+      this.notify();
+      return JSON.parse(JSON.stringify(newBlock));
+    },
+
+    updateTimeBlock: async (id: string, updates: Partial<TaskTimeBlock>): Promise<TaskTimeBlock> => {
+      await delay(25);
+      const idx = this._timeBlocks.findIndex((b) => b.id === id);
+      if (idx === -1) throw new Error(`Time block with id ${id} not found`);
+
+      const current = this._timeBlocks[idx];
+      const updated: TaskTimeBlock = {
+        ...current,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+      this._timeBlocks[idx] = updated;
+
+      // Sync linked task if applicable
+      if (updated.taskId) {
+        const tIdx = this._tasks.findIndex((t) => t.id === updated.taskId);
+        if (tIdx !== -1) {
+          if (updated.status === 'completed') {
+            this._tasks[tIdx].status = 'completed';
+            this._tasks[tIdx].completedAt = new Date().toISOString();
+          } else if (updated.status === 'partial') {
+            this._tasks[tIdx].status = 'partial';
+          } else if (updated.status === 'missed') {
+            this._tasks[tIdx].status = 'missed';
+          } else if (updated.status === 'planned') {
+            this._tasks[tIdx].status = 'todo';
+            this._tasks[tIdx].completedAt = undefined;
+          }
+        }
+      }
+
+      this.notify();
+      return JSON.parse(JSON.stringify(updated));
+    },
+
+    deleteTimeBlock: async (id: string): Promise<boolean> => {
+      await delay(20);
+      const before = this._timeBlocks.length;
+      this._timeBlocks = this._timeBlocks.filter((b) => b.id !== id);
+      const changed = this._timeBlocks.length < before;
+      if (changed) this.notify();
+      return changed;
+    },
+
+    reviewTimeBlock: async (
+      id: string,
+      review: TimeBlockReviewPayload
+    ): Promise<{ updatedBlock: TaskTimeBlock; rescheduledBlock?: TaskTimeBlock }> => {
+      await delay(30);
+      const block = await this.tasks.updateTimeBlock(id, {
+        status: review.status,
+        progressPercent: review.progressPercent,
+        actualMinutes: review.actualMinutes,
+        reflection: review.reflection,
+        blocker: review.blocker,
+        nextAction: review.nextAction
+      });
+
+      let rescheduledBlock: TaskTimeBlock | undefined;
+      if (review.rescheduleToHour !== undefined) {
+        const todayStr = getISODateString(new Date());
+        const targetDate = review.rescheduleToDate || (block.date < todayStr ? todayStr : block.date);
+        rescheduledBlock = await this.tasks.createTimeBlock({
+          taskId: block.taskId,
+          taskTitle: review.nextAction ? `${block.taskTitle} (Next: ${review.nextAction})` : block.taskTitle,
+          description: block.description,
+          date: targetDate,
+          startHour: review.rescheduleToHour,
+          startMinute: 0,
+          durationMinutes: block.durationMinutes,
+          subjectId: block.subjectId,
+          goalId: block.goalId,
+          priority: block.priority,
+          status: 'planned',
+          progressPercent: 0,
+          actualMinutes: 0
+        });
+      }
+
+      return { updatedBlock: block, rescheduledBlock };
+    },
+
+    rescheduleTimeBlock: async (id: string, newDate: string, newHour: number): Promise<TaskTimeBlock> => {
+      await delay(25);
+      return this.tasks.updateTimeBlock(id, {
+        date: newDate,
+        startHour: newHour,
+        status: 'planned'
+      });
     }
   };
+
 
   /* ==========================================================================
      3. STUDY SERVICE IMPLEMENTATION (Topics, Plans, Sessions, Pure Progress)
@@ -1766,21 +1958,41 @@ export class MockDataService implements IDataService {
       );
     },
 
+    getRoomByCode: async (code: string): Promise<StudyRoom | null> => {
+      await delay(15);
+      const clean = code.trim().toUpperCase();
+      const found = this._rooms.find((r) => r.roomCode?.toUpperCase() === clean);
+      if (!found) return null;
+      const parts = this._roomParticipants.filter((p) => p.roomId === found.id);
+      return JSON.parse(JSON.stringify({ ...found, participantsCount: parts.length }));
+    },
+
     createRoom: async (payload: CreateRoomPayload): Promise<StudyRoom> => {
       await delay(30);
       if (!payload.title || !payload.title.trim()) {
         throw new ValidationError('Room title is required.');
       }
 
+      const generatedCode = payload.roomCode || `SOL${Math.floor(100 + Math.random() * 900)}`;
+
       const newRoom: StudyRoom = {
         id: `room_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         hostId: this._user?.id || 'user_mock_scholar',
         hostName: this._user?.name || 'Solis Scholar',
+        roomCode: generatedCode,
         title: payload.title.trim(),
+        subjectId: payload.subjectId,
+        subjectName: payload.subjectName,
+        topic: payload.topic,
+        sessionType: payload.sessionType || 'deep_focus',
+        sharedObjective: payload.sharedObjective?.trim(),
         timerState: 'idle',
         targetDurationSeconds: payload.targetDurationSeconds && payload.targetDurationSeconds > 0
           ? payload.targetDurationSeconds
           : 1500,
+        breakDurationSeconds: payload.breakDurationSeconds || 300,
+        isBreak: false,
+        isPrivate: payload.isPrivate ?? false,
         startedAt: null,
         pausedElapsedSeconds: 0,
         createdAt: new Date().toISOString(),
@@ -1795,7 +2007,18 @@ export class MockDataService implements IDataService {
         userName: newRoom.hostName,
         userEmail: this._user?.email || 'scholar@solis.space',
         status: 'focusing',
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
+        isReady: true
+      });
+
+      this._roomEvents.push({
+        id: `evt_${Date.now()}`,
+        roomId: newRoom.id,
+        userId: newRoom.hostId,
+        userName: newRoom.hostName || 'Host',
+        eventType: 'session_start',
+        message: `Sanctuary created: ${newRoom.title}`,
+        createdAt: new Date().toISOString()
       });
 
       this.notify();
@@ -1821,15 +2044,35 @@ export class MockDataService implements IDataService {
         room.timerState = 'paused';
         room.pausedElapsedSeconds = (room.pausedElapsedSeconds || 0) + additionalElapsed;
         room.startedAt = null;
+
+        this._roomEvents.push({
+          id: `evt_${Date.now()}`,
+          roomId,
+          userId: this._user?.id || 'host',
+          userName: this._user?.name || 'Host',
+          eventType: 'session_pause',
+          message: 'Session timer paused',
+          createdAt: new Date().toISOString()
+        });
       } else if (newState === 'running') {
         room.timerState = 'running';
         room.startedAt = new Date().toISOString();
-        if (previousState === 'idle') {
+        if (targetDuration && targetDuration > 0) {
+          room.targetDurationSeconds = targetDuration;
           room.pausedElapsedSeconds = 0;
-          if (targetDuration && targetDuration > 0) {
-            room.targetDurationSeconds = targetDuration;
-          }
+        } else if (previousState === 'idle' || (room.pausedElapsedSeconds || 0) >= (room.targetDurationSeconds || 1500)) {
+          room.pausedElapsedSeconds = 0;
         }
+
+        this._roomEvents.push({
+          id: `evt_${Date.now()}`,
+          roomId,
+          userId: this._user?.id || 'host',
+          userName: this._user?.name || 'Host',
+          eventType: previousState === 'paused' ? 'session_resume' : 'session_start',
+          message: previousState === 'paused' ? 'Session resumed' : 'Session started',
+          createdAt: new Date().toISOString()
+        });
       } else if (newState === 'idle') {
         room.timerState = 'idle';
         room.startedAt = null;
@@ -1837,9 +2080,67 @@ export class MockDataService implements IDataService {
         if (targetDuration && targetDuration > 0) {
           room.targetDurationSeconds = targetDuration;
         }
+
+        this._roomEvents.push({
+          id: `evt_${Date.now()}`,
+          roomId,
+          userId: this._user?.id || 'host',
+          userName: this._user?.name || 'Host',
+          eventType: 'session_end',
+          message: 'Session reset to idle',
+          createdAt: new Date().toISOString()
+        });
       }
 
       room.updatedAt = new Date().toISOString();
+      this.notify();
+      return JSON.parse(JSON.stringify(room));
+    },
+
+    startBreak: async (roomId: string, breakDurationSeconds?: number): Promise<StudyRoom> => {
+      await delay(25);
+      const room = this._rooms.find((r) => r.id === roomId);
+      if (!room) throw new ValidationError(`Room "${roomId}" not found.`);
+
+      room.isBreak = true;
+      room.timerState = 'paused';
+      if (breakDurationSeconds) {
+        room.breakDurationSeconds = breakDurationSeconds;
+      }
+      room.updatedAt = new Date().toISOString();
+
+      this._roomEvents.push({
+        id: `evt_${Date.now()}`,
+        roomId,
+        userId: this._user?.id || 'host',
+        userName: this._user?.name || 'Host',
+        eventType: 'break_start',
+        message: `Group break started (${Math.round((room.breakDurationSeconds || 300) / 60)}m)`,
+        createdAt: new Date().toISOString()
+      });
+
+      this.notify();
+      return JSON.parse(JSON.stringify(room));
+    },
+
+    endBreak: async (roomId: string): Promise<StudyRoom> => {
+      await delay(25);
+      const room = this._rooms.find((r) => r.id === roomId);
+      if (!room) throw new ValidationError(`Room "${roomId}" not found.`);
+
+      room.isBreak = false;
+      room.updatedAt = new Date().toISOString();
+
+      this._roomEvents.push({
+        id: `evt_${Date.now()}`,
+        roomId,
+        userId: this._user?.id || 'host',
+        userName: this._user?.name || 'Host',
+        eventType: 'break_end',
+        message: 'Group break ended. Flow resuming.',
+        createdAt: new Date().toISOString()
+      });
+
       this.notify();
       return JSON.parse(JSON.stringify(room));
     },
@@ -1864,10 +2165,22 @@ export class MockDataService implements IDataService {
         userName: this._user?.name || 'Solis Scholar',
         userEmail: this._user?.email || 'scholar@solis.space',
         status,
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
+        isReady: true
       };
 
       this._roomParticipants.push(newParticipant);
+
+      this._roomEvents.push({
+        id: `evt_${Date.now()}`,
+        roomId,
+        userId,
+        userName: newParticipant.userName || 'Scholar',
+        eventType: 'nudge',
+        message: `${newParticipant.userName} entered the sanctuary`,
+        createdAt: new Date().toISOString()
+      });
+
       this.notify();
       return JSON.parse(JSON.stringify(newParticipant));
     },
@@ -1935,15 +2248,99 @@ export class MockDataService implements IDataService {
       return JSON.parse(JSON.stringify(newMsg));
     },
 
+    getRoomEvents: async (roomId: string): Promise<RoomTimelineEvent[]> => {
+      await delay(15);
+      const events = this._roomEvents
+        .filter((e) => e.roomId === roomId)
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      return JSON.parse(JSON.stringify(events));
+    },
+
+    sendRoomEvent: async (
+      roomId: string,
+      eventType: RoomEventType,
+      message?: string
+    ): Promise<RoomTimelineEvent> => {
+      await delay(20);
+      const newEvt: RoomTimelineEvent = {
+        id: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        roomId,
+        userId: this._user?.id || 'usr_001',
+        userName: this._user?.name || 'Solis Scholar',
+        eventType,
+        message,
+        createdAt: new Date().toISOString()
+      };
+      this._roomEvents.push(newEvt);
+      this.notify();
+      return JSON.parse(JSON.stringify(newEvt));
+    },
+
+    saveRoomReflection: async (reflection: Partial<RoomReflection>): Promise<RoomReflection> => {
+      await delay(25);
+      const newRefl: RoomReflection = {
+        id: `refl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        roomId: reflection.roomId || 'room_default',
+        userId: this._user?.id || 'usr_001',
+        userName: this._user?.name || 'Solis Scholar',
+        roomTitle: reflection.roomTitle || 'Study Sanctuary',
+        subjectId: reflection.subjectId,
+        subjectName: reflection.subjectName,
+        durationSeconds: reflection.durationSeconds || 1500,
+        objectiveAchieved: reflection.objectiveAchieved ?? true,
+        reflectionText: reflection.reflectionText?.trim() || 'Session concluded successfully.',
+        nextStep: reflection.nextStep?.trim(),
+        retentionRating: reflection.retentionRating ?? 5,
+        createdAt: new Date().toISOString()
+      };
+      this._roomReflections.unshift(newRefl);
+
+      // Also log study session into study tracker if duration > 0
+      if (newRefl.durationSeconds >= 60) {
+        const studyMins = Math.max(1, Math.round(newRefl.durationSeconds / 60));
+        this._studySessions.unshift({
+          id: `sess_${Date.now()}`,
+          subjectId: newRefl.subjectId || '',
+          subjectName: newRefl.subjectName || newRefl.roomTitle,
+          type: 'deep_study',
+          durationMinutes: studyMins,
+          topicsCovered: [newRefl.roomTitle],
+          notes: newRefl.reflectionText,
+          retentionRating: (newRefl.retentionRating || 5) as any,
+          completedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      this.notify();
+      return JSON.parse(JSON.stringify(newRefl));
+    },
+
+    getRoomReflections: async (roomId: string): Promise<RoomReflection[]> => {
+      await delay(15);
+      const refls = this._roomReflections.filter((r) => r.roomId === roomId);
+      return JSON.parse(JSON.stringify(refls));
+    },
+
+    getUserRoomHistory: async (): Promise<RoomReflection[]> => {
+      await delay(15);
+      const userId = this._user?.id || 'user_mock_scholar';
+      const refls = this._roomReflections.filter((r) => r.userId === userId || r.userId === 'usr_001');
+      return JSON.parse(JSON.stringify(refls));
+    },
+
     deleteRoom: async (roomId: string): Promise<boolean> => {
       await delay(25);
       const prevLen = this._rooms.length;
       this._rooms = this._rooms.filter((r) => r.id !== roomId);
       this._roomParticipants = this._roomParticipants.filter((p) => p.roomId !== roomId);
       this._roomMessages = this._roomMessages.filter((m) => m.roomId !== roomId);
+      this._roomEvents = this._roomEvents.filter((e) => e.roomId !== roomId);
       const changed = this._rooms.length !== prevLen;
       if (changed) this.notify();
       return changed;
     }
   };
+
 }

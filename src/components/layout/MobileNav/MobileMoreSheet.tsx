@@ -10,8 +10,11 @@ import {
   HelpCircle,
   X,
   ChevronRight,
-  Users
+  Users,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '../../../context/ThemeContext';
 import { prefetchRoute } from '../../../utils/prefetch';
 import './MobileMoreSheet.css';
 
@@ -110,6 +113,7 @@ const MORE_SECTIONS = [
 export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const { isDark, toggleTheme } = useTheme();
 
   // Close on route change
   useEffect(() => {
@@ -188,6 +192,27 @@ export const MobileMoreSheet: React.FC<MobileMoreSheetProps> = ({ isOpen, onClos
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="solis-more-sheet__footer">
+          <button
+            type="button"
+            className="solis-more-sheet__theme-toggle tactile-press"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to Warm Ivory theme' : 'Switch to Deep Charcoal theme'}
+          >
+            <div className="solis-more-sheet__theme-icon">
+              {isDark ? <Sun size={18} color="var(--color-amber-400)" /> : <Moon size={18} color="var(--color-lavender-400)" />}
+            </div>
+            <div className="solis-more-sheet__theme-info">
+              <span className="solis-more-sheet__theme-title">
+                {isDark ? 'Switch to Warm Ivory' : 'Switch to Deep Charcoal'}
+              </span>
+              <span className="solis-more-sheet__theme-sub">
+                {isDark ? 'Day Flow (Clean & Radiant)' : 'Night Sanctuary (Deep Focus)'}
+              </span>
+            </div>
+          </button>
         </div>
       </div>
     </div>

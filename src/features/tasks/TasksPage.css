@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SOLIS — TASKS PAGE RESPONSIVE STYLES
+   SOLIS — TASKS PAGE RESPONSIVE STYLES & HOURLY TIME GRID SYSTEM
    ========================================================================== */
 
 .solis-tasks-form-grid {
@@ -86,4 +86,706 @@
 
 .solis-task-quick-input::placeholder {
   color: var(--text-muted);
+}
+
+/* View Mode Selector Bar */
+.solis-tasks-view-modes-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-tasks-date-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-tasks-date-display {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 4px 10px;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+/* ==========================================================================
+   HOURLY PLANNER (24-HOUR DAILY TIME GRID)
+   ========================================================================== */
+
+.solis-hourly-planner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solis-hourly-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+}
+
+.solis-hourly-summary-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.solis-hourly-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-hourly-stat-val {
+  font-size: var(--text-body);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.solis-hourly-stat-lbl {
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 24-Hour Grid */
+.solis-hourly-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-hour-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-elevated);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.solis-hour-row:hover {
+  border-color: var(--border-subtle);
+}
+
+.solis-hour-row--now {
+  background: rgba(255, 107, 74, 0.05);
+  border-color: rgba(255, 107, 74, 0.35);
+  box-shadow: 0 0 16px rgba(255, 107, 74, 0.08);
+}
+
+.solis-hour-row--past {
+  opacity: 0.85;
+}
+
+.solis-hour-axis {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.solis-hour-label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
+}
+
+.solis-hour-now-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-coral-500);
+  background: rgba(255, 107, 74, 0.12);
+  padding: 2px 8px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.solis-hour-now-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-coral-500);
+  animation: pulse-dot 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+}
+
+.solis-hour-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.solis-hour-blocks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-hour-empty-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-hour-empty-slot:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--color-coral-500);
+  color: var(--color-coral-500);
+}
+
+/* Time Block Card in Hourly Grid */
+.solis-time-block-card {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.solis-time-block-card:hover {
+  box-shadow: var(--shadow-subtle);
+  border-color: var(--border-focus);
+}
+
+.solis-time-block-card--active {
+  border-color: var(--color-coral-500);
+  background: linear-gradient(135deg, rgba(255, 107, 74, 0.08), transparent);
+}
+
+.solis-time-block-card--completed {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.solis-time-block-card--partial {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.solis-time-block-card--missed {
+  border-color: rgba(225, 29, 72, 0.3);
+}
+
+.solis-time-block-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-time-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.solis-time-block-check-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.solis-time-block-empty-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-focus);
+  transition: border-color 0.15s ease;
+}
+
+.solis-time-block-empty-check:hover {
+  border-color: var(--color-coral-500);
+}
+
+.solis-time-block-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-time-block-title--done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.solis-time-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-time-block-icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  transition: color 0.15s ease;
+}
+
+.solis-time-block-icon-btn:hover {
+  color: var(--text-primary);
+}
+
+.solis-time-block-desc {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.solis-time-block-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.solis-time-block-reflection-pill {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--color-coral-500);
+}
+
+.solis-time-block-review-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-amber-500, #f59e0b);
+  background: rgba(245, 158, 11, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   TIMELINE VIEW
+   ========================================================================== */
+
+.solis-timeline-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solis-timeline-conflict-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--text-primary);
+  font-size: var(--text-caption);
+}
+
+.solis-timeline-empty {
+  padding: 48px 24px;
+  text-align: center;
+  background: var(--bg-surface-primary);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.solis-timeline-track {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.solis-timeline-node {
+  display: grid;
+  grid-template-columns: 140px 32px 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.solis-timeline-node-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-top: 12px;
+}
+
+.solis-timeline-time-label {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+}
+
+.solis-timeline-time-end {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+}
+
+.solis-timeline-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  position: relative;
+}
+
+.solis-timeline-bullet {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  background: var(--bg-surface-primary);
+  margin-top: 16px;
+  z-index: 2;
+}
+
+.solis-timeline-bullet--completed {
+  border-color: var(--color-emerald-500, #10b981);
+  background: var(--color-emerald-500, #10b981);
+}
+
+.solis-timeline-bullet--partial {
+  border-color: var(--color-amber-500, #f59e0b);
+  background: var(--color-amber-500, #f59e0b);
+}
+
+.solis-timeline-bullet--missed {
+  border-color: var(--color-rose-500, #e11d48);
+  background: var(--color-rose-500, #e11d48);
+}
+
+.solis-timeline-bullet--active {
+  border-color: var(--color-coral-500);
+  background: var(--color-coral-500);
+  box-shadow: 0 0 10px var(--color-coral-500);
+}
+
+.solis-timeline-line {
+  position: absolute;
+  top: 30px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-subtle);
+}
+
+.solis-timeline-card {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.solis-timeline-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.solis-timeline-card-title {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-timeline-card-desc {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+.solis-timeline-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.solis-timeline-status-badge--completed {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-emerald-500, #10b981);
+}
+
+.solis-timeline-status-badge--partial {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--color-amber-500, #f59e0b);
+}
+
+.solis-timeline-status-badge--missed {
+  background: rgba(225, 29, 72, 0.12);
+  color: var(--color-rose-500, #e11d48);
+}
+
+.solis-timeline-status-badge--planned {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.solis-timeline-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* ==========================================================================
+   PRIORITY MATRIX VIEW (EISENHOWER 4-QUADRANT)
+   ========================================================================== */
+
+.solis-task-matrix-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .solis-task-matrix-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.solis-matrix-quadrant {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.solis-matrix-quadrant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-matrix-task-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-matrix-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.solis-matrix-card-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   TASK REVIEW SUMMARY (COGNITIVE VELOCITY & DAILY RETRO)
+   ========================================================================== */
+
+.solis-task-review-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.solis-review-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.solis-review-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .solis-review-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .solis-review-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.solis-review-kpi-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+}
+
+.solis-review-kpi-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.solis-review-kpi-data {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.solis-review-kpi-label {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-review-kpi-value {
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.solis-review-breakdown-section {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.solis-review-blocks-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.solis-review-block-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 140px 110px;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 768px) {
+  .solis-review-block-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
+.solis-review-block-time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-review-hour-tag {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+}
+
+.solis-review-block-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.solis-review-block-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-review-quote {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.solis-review-block-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.solis-review-block-action {
+  display: flex;
+  justify-content: flex-end;
 }

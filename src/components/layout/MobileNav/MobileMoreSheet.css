@@ -199,3 +199,58 @@
   color: var(--text-muted);
   flex-shrink: 0;
 }
+
+/* Mobile Sheet Footer Theme Switcher */
+.solis-more-sheet__footer {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.solis-more-sheet__theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-more-sheet__theme-toggle:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-default);
+}
+
+.solis-more-sheet__theme-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.solis-more-sheet__theme-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.solis-more-sheet__theme-title {
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+}
+
+.solis-more-sheet__theme-sub {
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+}

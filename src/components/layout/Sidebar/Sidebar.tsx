@@ -13,11 +13,14 @@ import {
   LogOut,
   Loader2,
   Sparkles,
-  Users
+  Users,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { APP_NAVIGATION } from '../../../constants/navigation';
 import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useTheme } from '../../../context/ThemeContext';
 import { useToast } from '../../../context/ToastContext';
 import { Avatar } from '../../ui/Avatar/Avatar';
 import { Logo } from '../../ui/Logo/Logo';
@@ -42,6 +45,7 @@ const ICON_MAP: Record<string, React.FC<{ size?: number }>> = {
 export const Sidebar: React.FC = () => {
   const { summary } = useData();
   const { user, logout, isLoggingOut } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -144,15 +148,26 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        <button
-          className="solis-sidebar__logout-btn"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          title="Sign out of Solis"
-          aria-label="Sign out"
-        >
-          {isLoggingOut ? <Loader2 size={16} className="solis-spin" /> : <LogOut size={16} />}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <button
+            className="solis-sidebar__logout-btn tactile-press"
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to Warm Ivory (Day Flow)' : 'Switch to Deep Charcoal (Night Sanctuary)'}
+            aria-label={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {isDark ? <Sun size={15} style={{ color: 'var(--color-amber-400)' }} /> : <Moon size={15} style={{ color: 'var(--color-lavender-400)' }} />}
+          </button>
+
+          <button
+            className="solis-sidebar__logout-btn tactile-press"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title="Sign out of Solis"
+            aria-label="Sign out"
+          >
+            {isLoggingOut ? <Loader2 size={16} className="solis-spin" /> : <LogOut size={16} />}
+          </button>
+        </div>
       </div>
     </aside>
   );

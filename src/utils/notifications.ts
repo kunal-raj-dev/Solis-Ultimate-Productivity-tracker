@@ -8,6 +8,9 @@ export interface NotificationPreferences {
   focusReminders: boolean;
   habitReminders: boolean;
   goalReminders: boolean;
+  timeBlockReminders: boolean;
+  hourReviewReminders: boolean;
+  roomAlerts: boolean;
   quietHoursEnabled: boolean;
   quietHoursStart: string; // HH:mm (e.g. "22:00")
   quietHoursEnd: string;   // HH:mm (e.g. "07:00")
@@ -19,6 +22,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   focusReminders: true,
   habitReminders: true,
   goalReminders: false,
+  timeBlockReminders: true,
+  hourReviewReminders: true,
+  roomAlerts: true,
   quietHoursEnabled: true,
   quietHoursStart: '22:00',
   quietHoursEnd: '07:00',
@@ -83,11 +89,63 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   }
 }
 
+/**
+ * Gentle acoustic notification chime using Web Audio API (zero external assets)
+ */
+export function playNotificationChime(type: 'start' | 'transition' | 'chime' = 'chime'): void {
+  try {
+    if (typeof window === 'undefined') return;
+    const prefs = loadNotificationPreferences();
+    if (!prefs.soundEnabled) return;
+
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    if (type === 'start') {
+      // Ascending gentle fifth (440Hz -> 660Hz)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(660, now + 0.35);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+    } else if (type === 'transition') {
+      // Reflective double-tone (523Hz C5)
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, now);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.25, now + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    } else {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now); // D5
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+    }
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 1.3);
+  } catch {
+    // AudioContext blocked or not allowed yet
+  }
+}
+
 export function sendBrowserNotification(
   title: string,
-  options?: NotificationOptions
+  options?: NotificationOptions,
+  fallbackChimeType?: 'start' | 'transition' | 'chime'
 ): boolean {
-  if (typeof window === 'undefined' || !('Notification' in window)) {
+  if (typeof window === 'undefined') {
     return false;
   }
 
@@ -96,7 +154,11 @@ export function sendBrowserNotification(
     return false; // Suppressed during quiet hours
   }
 
-  if (Notification.permission === 'granted') {
+  if (prefs.soundEnabled && fallbackChimeType) {
+    playNotificationChime(fallbackChimeType);
+  }
+
+  if ('Notification' in window && Notification.permission === 'granted') {
     try {
       new Notification(title, {
         icon: '/favicon.ico',
@@ -111,3 +173,82 @@ export function sendBrowserNotification(
 
   return false;
 }
+
+export function notifyTimeBlockStart(
+  blockTitle: string,
+  durationMinutes = 60,
+  onFallback?: (msg: string) => void
+): boolean {
+  const prefs = loadNotificationPreferences();
+  if (!prefs.timeBlockReminders) return false;
+  if (prefs.quietHoursEnabled && isWithinQuietHours(new Date(), prefs.quietHoursStart, prefs.quietHoursEnd)) {
+    return false;
+  }
+
+  const sent = sendBrowserNotification(
+    `Starting Planned Block: ${blockTitle}`,
+    {
+      body: `Your scheduled ${durationMinutes}m focus window is starting now. Enter the flow.`,
+      tag: 'time-block-start'
+    },
+    'start'
+  );
+
+  if (!sent && onFallback) {
+    onFallback(`Starting block: ${blockTitle} (${durationMinutes}m)`);
+  }
+  return sent;
+}
+
+export function notifyHourReviewPrompt(
+  hour: number,
+  blockTitle?: string,
+  onFallback?: (msg: string) => void
+): boolean {
+  const prefs = loadNotificationPreferences();
+  if (!prefs.hourReviewReminders) return false;
+  if (prefs.quietHoursEnabled && isWithinQuietHours(new Date(), prefs.quietHoursStart, prefs.quietHoursEnd)) {
+    return false;
+  }
+
+  const formattedHour = `${hour % 12 === 0 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
+  const sent = sendBrowserNotification(
+    `Hour Complete (${formattedHour})`,
+    {
+      body: blockTitle
+        ? `What did you get done for "${blockTitle}"? Take 30 seconds to capture progress.`
+        : 'The hour has concluded. Reflect on what was accomplished and plan what is next.',
+      tag: 'hour-review'
+    },
+    'transition'
+  );
+
+  if (!sent && onFallback) {
+    onFallback(`Hour complete: Reflect on ${blockTitle || 'your progress'}`);
+  }
+  return sent;
+}
+
+export function notifyStudyRoomEvent(
+  title: string,
+  body: string,
+  onFallback?: (msg: string) => void
+): boolean {
+  const prefs = loadNotificationPreferences();
+  if (!prefs.roomAlerts) return false;
+  if (prefs.quietHoursEnabled && isWithinQuietHours(new Date(), prefs.quietHoursStart, prefs.quietHoursEnd)) {
+    return false;
+  }
+
+  const sent = sendBrowserNotification(
+    title,
+    { body, tag: 'study-room-event' },
+    'chime'
+  );
+
+  if (!sent && onFallback) {
+    onFallback(`${title} — ${body}`);
+  }
+  return sent;
+}
+

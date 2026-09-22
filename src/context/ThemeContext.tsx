@@ -122,7 +122,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) => {
+      const isCurrentlyDark = prev === 'dark' || (prev === 'system' && isDark);
+      return isCurrentlyDark ? 'light' : 'dark';
+    });
   };
 
   return (

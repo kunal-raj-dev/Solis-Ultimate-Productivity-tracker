@@ -244,3 +244,82 @@
   background-color: var(--color-coral-600, #ea580c);
   transform: translateY(-1px);
 }
+
+/* Room Code Join Quick Bar */
+.solis-rooms-join-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+}
+
+.solis-room-card__tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 6px 0 10px;
+}
+
+.solis-room-card__code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-coral-500);
+  background: rgba(255, 107, 74, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.solis-room-card__objective {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--color-coral-500);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+/* History Tab Table */
+.solis-rooms-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.solis-rooms-history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+}
+
+.solis-rooms-history-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-rooms-history-quote {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-style: italic;
+}
+

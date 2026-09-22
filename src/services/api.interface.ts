@@ -1,4 +1,4 @@
-import { Task, TaskFilterOptions, SubTask } from '../types/task';
+import { Task, TaskFilterOptions, SubTask, TaskTimeBlock, TimeBlockReviewPayload } from '../types/task';
 import { StudySubject, StudySession, StudyPlanItem, StudyTopic } from '../types/study';
 import { Note, NoteFilterOptions } from '../types/note';
 import { FocusSession } from '../types/focus';
@@ -10,7 +10,17 @@ import { Flashcard, CardRating, ReviewQueueItem } from '../types/learning';
 import { RecurringStudyRoutine } from '../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../types/resource';
 import { DailyReflection } from '../types/reflection';
-import { StudyRoom, RoomParticipant, RoomMessage, CreateRoomPayload, RoomTimerState, ParticipantStatus } from '../types/room';
+import {
+  StudyRoom,
+  RoomParticipant,
+  RoomMessage,
+  CreateRoomPayload,
+  RoomTimerState,
+  ParticipantStatus,
+  RoomTimelineEvent,
+  RoomEventType,
+  RoomReflection
+} from '../types/room';
 
 export interface IAuthService {
   getCurrentUser(): Promise<UserProfile | null>;
@@ -32,7 +42,19 @@ export interface ITaskService {
   toggleSubTask(taskId: string, subTaskId: string): Promise<Task>;
   deleteSubTask(taskId: string, subTaskId: string): Promise<Task>;
   editSubTask(taskId: string, subTaskId: string, title: string): Promise<Task>;
+
+  // Time-Blocking & Hourly Planner Engine
+  getTimeBlocks(date: string): Promise<TaskTimeBlock[]>;
+  createTimeBlock(block: Partial<TaskTimeBlock>): Promise<TaskTimeBlock>;
+  updateTimeBlock(id: string, updates: Partial<TaskTimeBlock>): Promise<TaskTimeBlock>;
+  deleteTimeBlock(id: string): Promise<boolean>;
+  reviewTimeBlock(
+    id: string,
+    review: TimeBlockReviewPayload
+  ): Promise<{ updatedBlock: TaskTimeBlock; rescheduledBlock?: TaskTimeBlock }>;
+  rescheduleTimeBlock(id: string, newDate: string, newHour: number): Promise<TaskTimeBlock>;
 }
+
 
 export interface IStudyService {
   getSubjects(includeArchived?: boolean): Promise<StudySubject[]>;
@@ -145,16 +167,25 @@ export interface IReflectionService {
 export interface IRoomService {
   getRooms(): Promise<StudyRoom[]>;
   getRoom(roomId: string): Promise<StudyRoom | null>;
+  getRoomByCode(code: string): Promise<StudyRoom | null>;
   createRoom(payload: CreateRoomPayload): Promise<StudyRoom>;
   updateTimerState(roomId: string, newState: RoomTimerState, targetDuration?: number): Promise<StudyRoom>;
+  startBreak(roomId: string, breakDurationSeconds?: number): Promise<StudyRoom>;
+  endBreak(roomId: string): Promise<StudyRoom>;
   joinRoom(roomId: string, status?: ParticipantStatus): Promise<RoomParticipant>;
   leaveRoom(roomId: string): Promise<boolean>;
   updateParticipantStatus(roomId: string, status: ParticipantStatus): Promise<RoomParticipant>;
   getParticipants(roomId: string): Promise<RoomParticipant[]>;
   getMessages(roomId: string, limit?: number): Promise<RoomMessage[]>;
   sendMessage(roomId: string, content: string): Promise<RoomMessage>;
+  getRoomEvents(roomId: string): Promise<RoomTimelineEvent[]>;
+  sendRoomEvent(roomId: string, eventType: RoomEventType, message?: string): Promise<RoomTimelineEvent>;
+  saveRoomReflection(reflection: Partial<RoomReflection>): Promise<RoomReflection>;
+  getRoomReflections(roomId: string): Promise<RoomReflection[]>;
+  getUserRoomHistory(): Promise<RoomReflection[]>;
   deleteRoom(roomId: string): Promise<boolean>;
 }
+
 
 export interface IDataService {
   auth: IAuthService;

@@ -500,3 +500,125 @@
   padding-top: var(--space-3, 12px);
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
+
+/* Room Code Chip in Header */
+.solis-room-header__code-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 107, 74, 0.1);
+  border: 1px solid rgba(255, 107, 74, 0.25);
+  color: var(--color-coral-500);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-room-header__code-chip:hover {
+  background: rgba(255, 107, 74, 0.18);
+  border-color: var(--color-coral-500);
+}
+
+/* Shared Objective Banner */
+.solis-room-shared-objective-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--color-coral-500);
+  border-radius: var(--radius-md);
+}
+
+.solis-room-objective-label {
+  display: block;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.solis-room-objective-text {
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  margin: 2px 0 0;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Peer Reactions Bar */
+.solis-room-reactions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.solis-room-reaction-btn {
+  font-size: 18px;
+  padding: 6px 12px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solis-room-reaction-btn:hover {
+  transform: scale(1.2);
+  border-color: var(--color-coral-500);
+  background: rgba(255, 107, 74, 0.1);
+}
+
+/* Intermission Break Alert */
+.solis-room-break-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--color-amber-500, #f59e0b);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}
+
+/* Timeline Events Panel */
+.solis-room-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.solis-room-event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-room-event-time {
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+  margin-left: auto;
+}
+

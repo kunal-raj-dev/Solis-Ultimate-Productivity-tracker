@@ -1,6 +1,7 @@
 import { UserProfile } from '../../types/auth';
-import { Task } from '../../types/task';
+import { Task, TaskTimeBlock } from '../../types/task';
 import { StudySubject, StudySession, StudyPlanItem, StudyTopic } from '../../types/study';
+
 import { Note } from '../../types/note';
 import { FocusSession } from '../../types/focus';
 import { Habit } from '../../types/habit';
@@ -679,3 +680,71 @@ export const MOCK_REFLECTIONS: DailyReflection[] = [
     updatedAt: `${twoDaysAgoStr}T21:45:00.000Z`
   }
 ];
+
+export const MOCK_TIME_BLOCKS: TaskTimeBlock[] = [
+  {
+    id: 'block_1',
+    taskTitle: 'Distributed Systems Raft Consensus Invariants',
+    description: 'Formal verification of leader election & log matching properties',
+    date: todayStr,
+    startHour: 9,
+    startMinute: 0,
+    durationMinutes: 60,
+    subjectId: 'sbj_1',
+    priority: 'high',
+    status: 'completed',
+    actualMinutes: 55,
+    progressPercent: 100,
+    reflection: 'Finished leader election edge case proofs smoothly.',
+    createdAt: `${todayStr}T08:30:00.000Z`,
+    updatedAt: `${todayStr}T10:00:00.000Z`
+  },
+  {
+    id: 'block_2',
+    taskTitle: 'Compiler LLVM IR Optimization Pass',
+    description: 'Dead code elimination and constant folding graph analysis',
+    date: todayStr,
+    startHour: 11,
+    startMinute: 0,
+    durationMinutes: 60,
+    subjectId: 'sbj_3',
+    priority: 'urgent',
+    status: 'completed',
+    actualMinutes: 60,
+    progressPercent: 100,
+    reflection: 'Constant folding algorithm verified.',
+    createdAt: `${todayStr}T09:00:00.000Z`,
+    updatedAt: `${todayStr}T12:00:00.000Z`
+  },
+  {
+    id: 'block_3',
+    taskTitle: 'Algorithms: Red-Black Tree Rotation Cases',
+    description: 'Trace color rebalancing and double rotations on unbalanced trees',
+    date: todayStr,
+    startHour: 14,
+    startMinute: 0,
+    durationMinutes: 60,
+    subjectId: 'sbj_2',
+    priority: 'medium',
+    status: 'active',
+    actualMinutes: 20,
+    progressPercent: 40,
+    createdAt: `${todayStr}T11:00:00.000Z`,
+    updatedAt: `${todayStr}T14:20:00.000Z`
+  },
+  {
+    id: 'block_4',
+    taskTitle: 'System Design Architecture Whitepaper Review',
+    description: 'Evaluate partition tolerance tradeoffs and quorum reads',
+    date: todayStr,
+    startHour: 16,
+    startMinute: 0,
+    durationMinutes: 60,
+    priority: 'high',
+    status: 'planned',
+    progressPercent: 0,
+    createdAt: `${todayStr}T11:00:00.000Z`,
+    updatedAt: `${todayStr}T11:00:00.000Z`
+  }
+];
+

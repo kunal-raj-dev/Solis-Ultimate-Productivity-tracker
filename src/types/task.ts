@@ -1,6 +1,6 @@
 import { BaseEntity, ID, PriorityLevel } from './common';
 
-export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'archived';
+export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'partial' | 'missed' | 'archived';
 
 export type TaskCategory = 'study' | 'project' | 'review' | 'admin' | 'deep_work';
 
@@ -10,11 +10,49 @@ export type TaskSortField = 'priority' | 'dueDate' | 'createdAt' | 'title' | 'st
 
 export type TaskSortOrder = 'asc' | 'desc';
 
+export type TimeBlockStatus = 'planned' | 'active' | 'completed' | 'partial' | 'missed';
+
+export type TaskViewMode = 'today' | 'timeline' | 'inbox' | 'matrix' | 'review';
+
 export interface SubTask {
   id: ID;
   title: string;
   completed: boolean;
   createdAt?: string;
+}
+
+export interface TaskTimeBlock {
+  id: string;
+  userId?: string;
+  taskId?: ID;
+  taskTitle: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  startHour: number; // 0..23
+  startMinute?: number; // 0..59
+  durationMinutes: number; // default 60
+  subjectId?: ID;
+  goalId?: ID;
+  priority: PriorityLevel;
+  status: TimeBlockStatus;
+  actualMinutes?: number;
+  progressPercent?: number; // 0..100
+  reflection?: string;
+  blocker?: string;
+  nextAction?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimeBlockReviewPayload {
+  status: 'completed' | 'partial' | 'missed';
+  progressPercent: number;
+  actualMinutes: number;
+  reflection?: string;
+  blocker?: string;
+  nextAction?: string;
+  rescheduleToHour?: number;
+  rescheduleToDate?: string;
 }
 
 export interface Task extends BaseEntity {
@@ -31,6 +69,7 @@ export interface Task extends BaseEntity {
   subjectId?: ID;
   goalId?: ID;
   planItemId?: ID;
+  timeBlockId?: string;
   subTasks: SubTask[];
   tags: string[];
 }
@@ -44,3 +83,4 @@ export interface TaskFilterOptions {
   sortBy?: TaskSortField;
   sortOrder?: TaskSortOrder;
 }
+

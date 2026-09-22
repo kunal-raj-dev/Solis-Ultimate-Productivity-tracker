@@ -9,7 +9,6 @@ import {
   Check,
   Users,
   MessageSquare,
-  Flame,
   ArrowLeft,
   Radio,
   Trash2,
@@ -18,7 +17,10 @@ import {
   Sparkles,
   Coffee,
   Loader2,
-  WifiOff
+  WifiOff,
+  Target,
+  Brain,
+  KeyRound
 } from 'lucide-react';
 import { useStudyRoom } from '../../hooks/useStudyRoom';
 import { useAuth } from '../../context/AuthContext';
@@ -29,6 +31,7 @@ import { Avatar } from '../../components/ui/Avatar/Avatar';
 import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog/ConfirmationDialog';
 import { ParticipantStatus } from '../../types/room';
 import { formatSecondsToTimer } from '../../utils/formatters';
+import { RoomReflectionModal } from './RoomReflectionModal';
 import './ActiveRoomView.css';
 
 const DURATION_PRESETS = [
@@ -49,6 +52,7 @@ export const ActiveRoomView: React.FC = () => {
     room,
     presenceUsers,
     messages,
+    events,
     remainingSeconds,
     progressPercent,
     isHost,
@@ -58,18 +62,22 @@ export const ActiveRoomView: React.FC = () => {
     startTimer,
     pauseTimer,
     resetTimer,
+    startBreak,
+    endBreak,
     updateStatus,
     sendMessage,
+    sendTimelineEvent,
     leaveRoom,
     deleteRoom
   } = useStudyRoom(roomId);
 
-  const [activeTab, setActiveTab] = useState<'presence' | 'chat'>('presence');
+  const [activeTab, setActiveTab] = useState<'presence' | 'chat' | 'timeline'>('presence');
   const [chatInput, setChatInput] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [myStatus, setMyStatus] = useState<ParticipantStatus>('focusing');
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -99,6 +107,20 @@ export const ActiveRoomView: React.FC = () => {
     }
   };
 
+  const handleCopyCode = async () => {
+    if (!room?.roomCode) return;
+    try {
+      await navigator.clipboard.writeText(room.roomCode);
+      addToast({
+        title: 'Room Code Copied',
+        description: `#${room.roomCode} copied. Peers can enter via Room Code on the directory.`,
+        type: 'success'
+      });
+    } catch {
+      addToast({ title: 'Clipboard error', type: 'error' });
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -122,6 +144,37 @@ export const ActiveRoomView: React.FC = () => {
   const handleStatusChange = (status: ParticipantStatus) => {
     setMyStatus(status);
     updateStatus(status);
+  };
+
+  const handleToggleBreak = async () => {
+    if (room?.isBreak) {
+      await endBreak();
+      addToast({
+        title: 'Intermission Concluded',
+        description: 'Deep focus flow resumed.',
+        type: 'info'
+      });
+    } else {
+      await startBreak(room?.breakDurationSeconds || 300);
+      addToast({
+        title: 'Intermission Started',
+        description: `${Math.round((room?.breakDurationSeconds || 300) / 60)}m rest break underway.`,
+        type: 'info'
+      });
+    }
+  };
+
+  const handleSendReaction = async (emoji: string) => {
+    try {
+      await sendTimelineEvent('reaction', emoji);
+      addToast({
+        title: 'Reaction Shared',
+        description: `Broadcasted ${emoji} to the sanctuary.`,
+        type: 'success'
+      });
+    } catch {
+      addToast({ title: 'Could not send reaction', type: 'error' });
+    }
   };
 
   const handleCloseSanctuary = async () => {
@@ -190,9 +243,22 @@ export const ActiveRoomView: React.FC = () => {
             <h2 className="solis-active-room__title">
               <Radio size={18} color="var(--color-coral-500, #ff6b4a)" />
               {room.title}
+              {room.roomCode && (
+                <button
+                  type="button"
+                  className="solis-room-header__code-chip"
+                  onClick={handleCopyCode}
+                  title="Click to copy 6-digit Room Code"
+                >
+                  <KeyRound size={12} />
+                  <span>#{room.roomCode}</span>
+                </button>
+              )}
             </h2>
             <span className="solis-active-room__host-tag">
               Host: {room.hostName || 'Solis Scholar'} {isHost && ' (You)'}
+              {room.subjectName ? ` • ${room.subjectName}` : ''}
+              {room.sessionType ? ` • ${room.sessionType.replace('_', ' ')}` : ''}
             </span>
           </div>
         </div>
@@ -201,152 +267,178 @@ export const ActiveRoomView: React.FC = () => {
           {isReconnecting ? (
             <span className="solis-active-room__sync-pill solis-active-room__sync-pill--reconnecting">
               <WifiOff size={11} />
-              Reconnecting...
+              Reconnecting
             </span>
           ) : (
             <span className="solis-active-room__sync-pill solis-active-room__sync-pill--live">
-              <span className="solis-rooms-header__badge-dot" style={{ backgroundColor: 'var(--color-sage-500)' }} />
-              Synchronized
+              <span className="solis-rooms-header__badge-dot" />
+              Live Sync
             </span>
           )}
 
           <Button
-            variant="secondary"
+            variant="subtle"
             size="sm"
             onClick={handleCopyLink}
-            leftIcon={isCopied ? <Check size={14} color="var(--color-sage-500)" /> : <Copy size={14} />}
+            leftIcon={isCopied ? <Check size={14} /> : <Copy size={14} />}
           >
-            {isCopied ? 'Copied' : 'Share'}
+            {isCopied ? 'Copied' : 'Share Link'}
+          </Button>
+
+          <Button
+            variant="subtle"
+            size="sm"
+            onClick={() => setIsReflectionModalOpen(true)}
+            leftIcon={<Brain size={14} color="var(--color-coral-500)" />}
+          >
+            Reflect & Log
           </Button>
 
           {isHost && (
             <Button
-              variant="ghost"
+              variant="destructive"
               size="sm"
               onClick={() => setIsCloseDialogOpen(true)}
-              leftIcon={<Trash2 size={14} color="var(--color-rose-500)" />}
-              title="Close and disband sanctuary"
+              leftIcon={<Trash2 size={14} />}
             >
-              End Room
+              Close
             </Button>
           )}
         </div>
       </div>
 
-      {/* Main Layout Grid */}
-      <div className="solis-active-room__layout">
-        {/* Central Stage: High-Contrast Authoritative Epoch Timer */}
-        <div className="solis-active-room__stage">
-          <div
-            className={`solis-active-room__stage-glow solis-active-room__stage-glow--${room.timerState}`}
-          />
-
-          <div className="solis-room-timer-container">
-            <div className="solis-room-timer-display">
-              <span
-                className={`solis-room-timer-state-badge solis-room-timer-state-badge--${
-                  isCompleted ? 'completed' : room.timerState
-                }`}
-              >
-                {isCompleted ? (
-                  <>
-                    <Sparkles size={12} />
-                    Focus Block Completed
-                  </>
-                ) : room.timerState === 'running' ? (
-                  <>
-                    <Flame size={12} />
-                    Focus Pod In Flow
-                  </>
-                ) : room.timerState === 'paused' ? (
-                  <>
-                    <Pause size={12} />
-                    Session Paused
-                  </>
-                ) : (
-                  <>
-                    <Clock size={12} />
-                    Ready for Takeoff
-                  </>
-                )}
-              </span>
-
-              <div className="solis-room-timer-digits">
-                {formatSecondsToTimer(remainingSeconds)}
-              </div>
-
-              {/* Linear Progress Track */}
-              <div className="solis-room-progress-track">
-                <div
-                  className="solis-room-progress-fill"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
+      {/* Shared Objective Focal Banner */}
+      {room.sharedObjective && (
+        <div className="solis-room-shared-objective-banner">
+          <Target size={18} color="var(--color-coral-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <span className="solis-room-objective-label">Shared Pod Objective</span>
+            <p className="solis-room-objective-text">"{room.sharedObjective}"</p>
           </div>
+        </div>
+      )}
 
-          {/* Controls: Host vs Non-Host */}
-          <div className="solis-room-controls-pod">
+      {/* Break Mode Ambient Indicator */}
+      {room.isBreak && (
+        <div className="solis-room-break-banner">
+          <Coffee size={16} />
+          <span>Intermission in Progress — Step away, hydrate, and stretch. Focus resumes shortly.</span>
+        </div>
+      )}
+
+      {/* Main Focus Canvas + Sidebar Grid */}
+      <div className="solis-active-room__layout">
+        {/* Main Center Focus Panel */}
+        <div className="solis-active-room__center">
+          {/* Synchronized Epoch Countdown Card */}
+          <div className={`solis-room-timer-card ${room.isBreak ? 'solis-room-timer-card--break' : ''} ${room.timerState === 'running' ? 'solis-room-timer-card--active' : ''}`}>
+            <div className="solis-room-timer-card__status">
+              <span className={`solis-presence-dot solis-presence-dot--${room.timerState === 'running' ? 'focusing' : 'idle'}`} />
+              <span className="solis-room-timer-card__state-label">
+                {room.isBreak
+                  ? 'Intermission Break'
+                  : room.timerState === 'running'
+                  ? 'Synchronized Focus Flow'
+                  : room.timerState === 'paused'
+                  ? 'Session Paused by Host'
+                  : 'Sanctuary Open (Ready to Flow)'}
+              </span>
+            </div>
+
+            {/* Countdown Digits */}
+            <div className="solis-room-timer-card__digits">
+              {formatSecondsToTimer(remainingSeconds)}
+            </div>
+
+            {/* Authoritative Progress Track */}
+            <div className="solis-room-timer-card__track">
+              <div
+                className="solis-room-timer-card__fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            {isCompleted && (
+              <div className="solis-room-timer-card__complete-banner">
+                <Sparkles size={16} color="var(--color-coral-500)" />
+                <span>Session Target Reached! Well done scholars.</span>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsReflectionModalOpen(true)}
+                  style={{ marginLeft: '10px' }}
+                >
+                  Record Reflection
+                </Button>
+              </div>
+            )}
+
+            {/* Host Master Controls */}
             {isHost ? (
               <>
-                <div className="solis-room-controls-actions">
+                <div className="solis-room-controls-row">
                   {room.timerState !== 'running' ? (
                     <Button
                       variant="primary"
                       size="lg"
+                      className="tactile-press"
                       onClick={() => startTimer()}
                       leftIcon={<Play size={18} fill="currentColor" />}
                     >
-                      {room.timerState === 'paused' ? 'Resume Session' : 'Start Focus Sprint'}
+                      {remainingSeconds === 0
+                        ? 'Start New Cycle'
+                        : room.timerState === 'paused'
+                        ? 'Resume Session'
+                        : 'Start Focus Flow'}
                     </Button>
                   ) : (
                     <Button
                       variant="secondary"
                       size="lg"
+                      className="tactile-press"
                       onClick={() => pauseTimer()}
                       leftIcon={<Pause size={18} />}
                     >
-                      Pause Session
+                      Pause Flow
                     </Button>
                   )}
 
                   <Button
                     variant="ghost"
-                    size="lg"
+                    size="md"
                     onClick={() => resetTimer()}
-                    leftIcon={<RotateCcw size={18} />}
-                    title="Reset timer to target duration"
+                    leftIcon={<RotateCcw size={16} />}
+                    title="Reset to target duration"
                   >
                     Reset
                   </Button>
+
+                  <Button
+                    variant={room.isBreak ? 'accent' : 'subtle'}
+                    size="md"
+                    onClick={handleToggleBreak}
+                    leftIcon={<Coffee size={16} />}
+                  >
+                    {room.isBreak ? 'End Break' : 'Start Break'}
+                  </Button>
                 </div>
 
-                {/* Duration adjusters when idle */}
-                {room.timerState === 'idle' && (
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                {/* Preset Switcher (Available when idle or paused) */}
+                {room.timerState !== 'running' && (
+                  <div className="solis-room-presets-row">
+                    <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                      Presets:
+                    </span>
                     {DURATION_PRESETS.map((preset) => (
                       <button
                         key={preset.seconds}
                         type="button"
                         onClick={() => resetTimer(preset.seconds)}
+                        className="solis-room-preset-btn"
                         style={{
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          border:
-                            room.targetDurationSeconds === preset.seconds
-                              ? '1px solid var(--color-coral-500)'
-                              : '1px solid var(--border-subtle)',
-                          backgroundColor:
-                            room.targetDurationSeconds === preset.seconds
-                              ? 'rgba(255, 107, 74, 0.15)'
-                              : 'rgba(255, 255, 255, 0.04)',
-                          color:
-                            room.targetDurationSeconds === preset.seconds
-                              ? 'var(--color-coral-500)'
-                              : 'var(--text-secondary)',
-                          fontSize: 'var(--text-micro)',
-                          fontWeight: 600,
-                          cursor: 'pointer'
+                          background: room.targetDurationSeconds === preset.seconds ? 'rgba(255, 107, 74, 0.15)' : undefined,
+                          borderColor: room.targetDurationSeconds === preset.seconds ? 'var(--color-coral-500)' : undefined,
+                          color: room.targetDurationSeconds === preset.seconds ? 'var(--color-coral-500)' : undefined
                         }}
                       >
                         {preset.label}
@@ -363,6 +455,24 @@ export const ActiveRoomView: React.FC = () => {
                 </span>
               </div>
             )}
+
+            {/* Peer Reactions Row */}
+            <div className="solis-room-reactions-bar">
+              <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', marginRight: '6px' }}>
+                Cheer Peers:
+              </span>
+              {['👏', '🧠', '⚡', '☕', '🔥'].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  className="solis-room-reaction-btn"
+                  onClick={() => handleSendReaction(emoji)}
+                  title={`Send ${emoji} reaction to the room`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Self-Presence Status Switcher */}
@@ -401,7 +511,7 @@ export const ActiveRoomView: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar: Presence & Chat Panels */}
+        {/* Sidebar: Presence & Chat & Timeline Panels */}
         <div className="solis-active-room__sidebar">
           <div className="solis-active-room__tabs">
             <button
@@ -418,7 +528,15 @@ export const ActiveRoomView: React.FC = () => {
               onClick={() => setActiveTab('chat')}
             >
               <MessageSquare size={15} />
-              Room Chat ({messages.length})
+              Chat ({messages.length})
+            </button>
+            <button
+              type="button"
+              className={`solis-active-room__tab ${activeTab === 'timeline' ? 'solis-active-room__tab--active' : ''}`}
+              onClick={() => setActiveTab('timeline')}
+            >
+              <Sparkles size={15} />
+              Events ({events.length})
             </button>
           </div>
 
@@ -521,6 +639,42 @@ export const ActiveRoomView: React.FC = () => {
               </form>
             </div>
           )}
+
+          {/* Timeline Events Tab Panel */}
+          {activeTab === 'timeline' && (
+            <div className="solis-active-room__panel">
+              <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 'var(--text-micro)', fontWeight: 600, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
+                  Live Event Feed
+                </span>
+                <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                  {events.length} events
+                </span>
+              </div>
+
+              <div className="solis-room-events-list">
+                {events.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-caption)', padding: '30px 0' }}>
+                    No events logged yet. Start timer, pause, break, or cheer peers with reactions!
+                  </div>
+                ) : (
+                  events.map((ev) => (
+                    <div key={ev.id} className="solis-room-event-row">
+                      <span>
+                        {ev.eventType === 'session_start' ? '🚀' : ev.eventType === 'session_pause' ? '⏸️' : ev.eventType === 'break_start' ? '☕' : ev.eventType === 'break_end' ? '⚡' : ev.eventType === 'reaction' ? ev.message || '👏' : '📌'}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>{ev.userName}</strong> {ev.eventType === 'reaction' ? `reacted with ${ev.message}` : ev.message}
+                      </div>
+                      <span className="solis-room-event-time">
+                        {new Date(ev.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -534,6 +688,13 @@ export const ActiveRoomView: React.FC = () => {
         onConfirm={handleCloseSanctuary}
         onClose={() => setIsCloseDialogOpen(false)}
         variant="danger"
+      />
+
+      {/* Calm Reflective Closing Synthesis Sheet */}
+      <RoomReflectionModal
+        isOpen={isReflectionModalOpen}
+        room={room}
+        onClose={() => setIsReflectionModalOpen(false)}
       />
     </div>
   );

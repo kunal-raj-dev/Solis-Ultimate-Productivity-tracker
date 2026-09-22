@@ -221,7 +221,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!selectedTaskId || tasks.length === 0) return;
     const found = tasks.find((t) => t.id === selectedTaskId);
     if (found) {
-      if (found.subjectId && !selectedSubjectId) {
+      if (found.subjectId) {
         setSelectedSubjectId(found.subjectId);
       }
       if (found.title && (!focusTitle || focusTitle === 'Deep Study & Architectural Flow')) {
@@ -233,7 +233,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         else selectPreset('custom', found.estimatedMinutes);
       }
     }
-  }, [selectedTaskId, tasks, selectedSubjectId, focusTitle, preset]);
+  }, [selectedTaskId, tasks, focusTitle, preset]);
 
   const completeTimer = useCallback(() => {
     soundscapeEngine.stop();

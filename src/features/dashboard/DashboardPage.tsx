@@ -14,7 +14,8 @@ import {
   Compass,
   Moon,
   ChevronRight,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -117,6 +118,11 @@ export const DashboardPage: React.FC = () => {
   const [dailyIntention, setDailyIntention] = useState(() => {
     return localStorage.getItem(todayKey) || '';
   });
+  const [intentionSaved, setIntentionSaved] = useState(false);
+
+  // Quick Task inline creation state
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
 
   const greetingInfo = getTimeOfDayGreeting(user?.name || 'Scholar');
 
@@ -183,6 +189,39 @@ export const DashboardPage: React.FC = () => {
   const handleSaveIntention = (val: string) => {
     setDailyIntention(val);
     localStorage.setItem(todayKey, val);
+    setIntentionSaved(true);
+    setTimeout(() => setIntentionSaved(false), 2000);
+  };
+
+  const handleQuickTaskSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = quickTaskTitle.trim();
+    if (!trimmed) {
+      addToast({ title: 'Please enter a task intention first', type: 'info' });
+      return;
+    }
+    if (isQuickAdding) return;
+    setIsQuickAdding(true);
+    try {
+      const newTask = await dataService.tasks.createTask({
+        title: trimmed,
+        category: 'study',
+        priority: 'medium',
+        dueDate: getISODateString(new Date()),
+        estimatedMinutes: 25
+      });
+      setTasks((prev) => [newTask, ...prev]);
+      setQuickTaskTitle('');
+      addToast({
+        title: 'Task Created',
+        description: newTask.title,
+        type: 'success'
+      });
+    } catch {
+      addToast({ title: 'Could not create task', type: 'error' });
+    } finally {
+      setIsQuickAdding(false);
+    }
   };
 
   const handleToggleTask = async (id: string) => {
@@ -445,6 +484,11 @@ export const DashboardPage: React.FC = () => {
                 placeholder="What is your singular intention today?"
                 className="solis-daily-intention-input"
               />
+              {intentionSaved && (
+                <span style={{ fontSize: 'var(--text-micro)', color: 'var(--status-success)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  ✓ Anchored
+                </span>
+              )}
             </div>
           </div>
 
@@ -477,126 +521,105 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* REAL CONTINUITY / MEMORY STRIP */}
-        {(lastFocus || lastStudy || nextPendingPlan || latestNote) && (
-          <div className="solis-continuity-strip" style={{ marginTop: 'var(--space-lg)' }}>
-            <div className="solis-continuity-meta">
-              <Compass size={18} color="var(--color-coral-500)" />
-              <div>
-                <div className="solis-continuity-title">
-                  {nextPendingPlan
-                    ? `Next Scheduled: ${nextPendingPlan.title}`
+        {/* UNIFIED ACTIVE ORBIT & INTELLIGENCE CAPSULE */}
+        {(nextPendingPlan || topRecommendation || lastFocus || lastStudy || latestNote) && (
+          <div className="solis-active-orbit-card">
+            <div className="solis-active-orbit-header">
+              <div className="solis-active-orbit-tag">
+                <Compass size={15} color="var(--color-coral-500)" />
+                <span>
+                  {topRecommendation
+                    ? 'Recommended Focus Horizon'
+                    : nextPendingPlan
+                    ? 'Next Scheduled Study Block'
                     : lastFocus
-                    ? `Last Focused on: ${lastFocus.title || lastFocus.topic}`
-                    : `Latest Thought: ${latestNote?.title}`}
-                </div>
-                <div className="solis-continuity-subtitle">
-                  {nextPendingPlan
-                    ? `${nextPendingPlan.subjectName || 'General'} • ${nextPendingPlan.targetMinutes}m planned (${nextPendingPlan.scheduledTime || 'Today'})`
-                    : lastFocus
-                    ? `${lastFocus.subjectName || 'General Flow'} • ${lastFocus.durationMinutes}m logged`
-                    : `${latestNote?.subjectName || 'Knowledge Studio'} • ${formatFriendlyDate(latestNote?.updatedAt || '')}`}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              {nextPendingPlan ? (
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  className="tactile-press"
-                  rightIcon={<ChevronRight size={14} />}
-                  onClick={() => navigate(`/app/focus?subjectId=${nextPendingPlan.subjectId}&planId=${nextPendingPlan.id}&title=${encodeURIComponent(nextPendingPlan.title)}`)}
-                >
-                  Continue Where You Left Off
-                </Button>
-              ) : lastFocus ? (
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  className="tactile-press"
-                  rightIcon={<ChevronRight size={14} />}
-                  onClick={() => navigate(`/app/focus?subjectId=${lastFocus.subjectId || ''}`)}
-                >
-                  Resume Subject Focus
-                </Button>
-              ) : (
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  className="tactile-press"
-                  rightIcon={<ChevronRight size={14} />}
-                  onClick={() => navigate('/app/notes')}
-                >
-                  Open External Memory
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* DETERMINISTIC INTELLIGENCE RECOMMENDATION POD */}
-        {topRecommendation && (
-          <div
-            style={{
-              marginTop: 'var(--space-md)',
-              padding: '16px 20px',
-              borderRadius: 'var(--radius-xl)',
-              background: 'var(--bg-surface-primary)',
-              border: '1px solid var(--border-subtle)',
-              borderLeft: '4px solid var(--color-coral-500)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} color="var(--color-coral-500)" />
-                <span style={{ fontSize: 'var(--text-micro)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
-                  Recommended Focus Step
+                    ? 'Recent Study Momentum'
+                    : 'External Knowledge State'}
                 </span>
               </div>
-              <Badge variant={topRecommendation.type === 'spaced_retrieval' ? 'amber' : 'coral'}>
-                {topRecommendation.type === 'spaced_retrieval' ? 'Spaced Retrieval' : topRecommendation.type === 'retention_intervention' ? 'Retention Alert' : 'Daily Flow'}
+              <Badge variant={topRecommendation?.type === 'spaced_retrieval' ? 'amber' : topRecommendation ? 'coral' : 'neutral'}>
+                {topRecommendation
+                  ? (topRecommendation.type === 'spaced_retrieval' ? 'Spaced Retrieval Due' : 'Active Intelligence')
+                  : nextPendingPlan
+                  ? (nextPendingPlan.scheduledTime ? `${nextPendingPlan.scheduledTime} • Planned` : 'Today')
+                  : 'Continuity Anchor'}
               </Badge>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ fontFamily: 'var(--font-interface)', fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
-                {topRecommendation.title}
+            <div className="solis-active-orbit-body">
+              <div className="solis-active-orbit-content">
+                <div className="solis-active-orbit-title">
+                  {topRecommendation?.title || nextPendingPlan?.title || (lastFocus ? `Resume: ${lastFocus.title || lastFocus.topic || 'Subject Study'}` : latestNote?.title || 'Knowledge Note')}
+                </div>
+                <div className="solis-active-orbit-sub">
+                  {topRecommendation?.whyExplanation || topRecommendation?.evidence || (
+                    nextPendingPlan
+                      ? `${nextPendingPlan.subjectName || 'General'} • ${nextPendingPlan.targetMinutes}m planned`
+                      : lastFocus
+                      ? `${lastFocus.subjectName || 'General'} • ${lastFocus.durationMinutes}m logged`
+                      : `${latestNote?.subjectName || 'Notes'} • ${formatFriendlyDate(latestNote?.updatedAt || '')}`
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                {topRecommendation.whyExplanation || topRecommendation.evidence}
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-              <Button
-                variant="subtle"
-                size="sm"
-                className="tactile-press"
-                rightIcon={<ChevronRight size={14} />}
-                onClick={() => {
-                  if (topRecommendation.actionPayload?.type === 'start_focus') {
-                    navigate('/app/focus', {
-                      state: {
-                        subjectId: topRecommendation.actionPayload.subjectId,
-                        subjectName: topRecommendation.actionPayload.subjectName,
-                        topic: topRecommendation.actionPayload.topicTitle,
-                        durationMinutes: topRecommendation.actionPayload.durationMinutes || 25
+              <div className="solis-active-orbit-actions">
+                {topRecommendation ? (
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    className="tactile-press"
+                    leftIcon={<Flame size={14} />}
+                    onClick={() => {
+                      if (topRecommendation.actionPayload?.type === 'start_focus') {
+                        navigate('/app/focus', {
+                          state: {
+                            subjectId: topRecommendation.actionPayload.subjectId,
+                            subjectName: topRecommendation.actionPayload.subjectName,
+                            topic: topRecommendation.actionPayload.topicTitle,
+                            durationMinutes: topRecommendation.actionPayload.durationMinutes || 25
+                          }
+                        });
+                      } else if (topRecommendation.actionPayload?.type === 'drill_flashcards') {
+                        navigate('/app/study');
+                      } else {
+                        navigate(topRecommendation.actionPayload?.targetRoute || '/app/study');
                       }
-                    });
-                  } else if (topRecommendation.actionPayload?.type === 'drill_flashcards') {
-                    navigate('/app/study');
-                  } else {
-                    navigate(topRecommendation.actionPayload?.targetRoute || '/app/study');
-                  }
-                }}
-              >
-                {topRecommendation.actionLabel || topRecommendation.action || 'Start Action'}
-              </Button>
+                    }}
+                  >
+                    {topRecommendation.actionLabel || 'Engage Focus'}
+                  </Button>
+                ) : nextPendingPlan ? (
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    className="tactile-press"
+                    leftIcon={<Flame size={14} />}
+                    onClick={() => navigate(`/app/focus?subjectId=${nextPendingPlan.subjectId}&planId=${nextPendingPlan.id}&title=${encodeURIComponent(nextPendingPlan.title)}`)}
+                  >
+                    Begin Study Block
+                  </Button>
+                ) : lastFocus ? (
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    className="tactile-press"
+                    rightIcon={<ChevronRight size={14} />}
+                    onClick={() => navigate(`/app/focus?subjectId=${lastFocus.subjectId || ''}`)}
+                  >
+                    Resume Subject
+                  </Button>
+                ) : (
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    className="tactile-press"
+                    rightIcon={<ChevronRight size={14} />}
+                    onClick={() => navigate('/app/notes')}
+                  >
+                    Open Notes
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -855,6 +878,28 @@ export const DashboardPage: React.FC = () => {
               </Link>
             </div>
 
+            {/* Quick Task Input Bar */}
+            <form onSubmit={handleQuickTaskSubmit} className="solis-dashboard-quick-task-bar">
+              <input
+                type="text"
+                placeholder="+ Add task intention for today... (Press Enter)"
+                value={quickTaskTitle}
+                onChange={(e) => setQuickTaskTitle(e.target.value)}
+                disabled={isQuickAdding}
+                className="solis-dashboard-quick-task-input"
+                aria-label="Add task for today"
+              />
+              <button
+                type="submit"
+                disabled={isQuickAdding || !quickTaskTitle.trim()}
+                className="solis-dashboard-quick-task-submit tactile-press"
+                aria-label="Add task"
+                title="Add task intention"
+              >
+                <Plus size={15} />
+              </button>
+            </form>
+
             {activeTasks.length === 0 ? (
               <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)' }}>
@@ -871,11 +916,13 @@ export const DashboardPage: React.FC = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="solis-flow-item__main">
-                      <Checkbox
-                        checked={task.status === 'completed'}
-                        onChange={() => handleToggleTask(task.id)}
-                        aria-label={`Complete task ${task.title}`}
-                      />
+                      <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
+                        <Checkbox
+                          checked={task.status === 'completed'}
+                          onChange={() => handleToggleTask(task.id)}
+                          aria-label={`Complete task ${task.title}`}
+                        />
+                      </div>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
                           {task.title}
@@ -890,6 +937,22 @@ export const DashboardPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
+
+                    <Button
+                      variant="subtle"
+                      size="sm"
+                      className="tactile-press"
+                      leftIcon={<Flame size={12} color="var(--color-coral-500)" />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const subjectParam = task.subjectId ? `&subjectId=${task.subjectId}` : '';
+                        navigate(`/app/focus?taskId=${task.id}${subjectParam}&title=${encodeURIComponent(task.title)}`);
+                      }}
+                      title="Focus on this task in the sanctuary"
+                      aria-label={`Focus on task ${task.title}`}
+                    >
+                      Focus
+                    </Button>
                   </div>
                 ))}
               </div>

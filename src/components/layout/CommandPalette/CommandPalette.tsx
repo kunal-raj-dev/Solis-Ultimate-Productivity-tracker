@@ -31,7 +31,7 @@ export interface CommandPaletteProps {
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const { openGuide } = useGuide();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -101,7 +101,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     },
     {
       id: 'action-toggle-theme',
-      title: theme === 'dark' ? 'Switch to Warm Ivory (Day)' : 'Switch to Deep Charcoal (Night)',
+      title: isDark ? 'Switch to Warm Ivory (Day)' : 'Switch to Deep Charcoal (Night)',
       subtitle: 'Toggle global atmosphere theme',
       type: 'action',
       shortcut: 'M',
@@ -182,7 +182,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
         return <Compass size={16} color="var(--color-amber-500)" />;
       case 'action':
         if (item.id === 'action-toggle-theme') {
-          return theme === 'dark' ? <Sun size={16} color="var(--color-amber-500)" /> : <Moon size={16} color="var(--color-coral-500)" />;
+          return isDark ? <Sun size={16} color="var(--color-amber-500)" /> : <Moon size={16} color="var(--color-coral-500)" />;
         }
         return <Plus size={16} color="var(--color-coral-500)" />;
       case 'navigation':

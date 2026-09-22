@@ -178,4 +178,44 @@ describe('Phase 4 — Cross-Domain Interconnections', () => {
     expect(linked).toHaveLength(1);
     expect(linked[0].id).toBe(task.id);
   });
+
+  it('bridges task into focus session, preserving subject linkage and marking task complete with minutes on reflection', async () => {
+    const subject = await service.study.createSubject({
+      name: 'Distributed Systems',
+      code: 'CS 640',
+      color: 'coral'
+    });
+
+    const task = await service.tasks.createTask({
+      title: 'Implement Raft Log Compaction',
+      category: 'study',
+      priority: 'urgent',
+      subjectId: subject.id,
+      dueDate: '2026-09-22',
+      estimatedMinutes: 50
+    });
+    expect(task.subjectId).toBe(subject.id);
+
+    const session = await service.focus.saveFocusSession({
+      mode: 'deep_flow',
+      durationMinutes: 50,
+      subjectId: task.subjectId,
+      subjectName: subject.name,
+      taskId: task.id,
+      topic: task.title,
+      title: task.title,
+      completed: true,
+      flowQuality: 5
+    });
+    expect(session.taskId).toBe(task.id);
+    expect(session.subjectId).toBe(subject.id);
+
+    const completedTask = await service.tasks.updateTask(task.id, {
+      status: 'completed',
+      completedMinutes: 50,
+      completedAt: new Date().toISOString()
+    });
+    expect(completedTask.status).toBe('completed');
+    expect(completedTask.completedMinutes).toBe(50);
+  });
 });

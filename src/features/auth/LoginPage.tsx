@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
 import { Input } from '../../components/ui/Input/Input';
 import { Button } from '../../components/ui/Button/Button';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { ServiceContainer } from '../../services/dataService';
 import './AuthPages.css';
 
 export const LoginPage: React.FC = () => {
@@ -65,6 +66,26 @@ export const LoginPage: React.FC = () => {
     } catch (err: any) {
       const msg = err?.message || 'Authentication error. Please check your credentials.';
       setLocalError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGuestExplore = async () => {
+    setIsSubmitting(true);
+    setLocalError(null);
+    clearError();
+    try {
+      ServiceContainer.switchToMock();
+      await login({ email: 'scholar@solis.space', password: 'guest-session' });
+      addToast({
+        title: 'Guest Sanctuary Loaded',
+        description: 'Exploring Solis with full interactive mock workspace.',
+        type: 'success'
+      });
+      navigate('/app/dashboard', { replace: true });
+    } catch (err: any) {
+      setLocalError(err?.message || 'Could not load guest session.');
     } finally {
       setIsSubmitting(false);
     }
@@ -152,6 +173,23 @@ export const LoginPage: React.FC = () => {
           rightIcon={<ArrowRight size={16} />}
         >
           Enter Workspace
+        </Button>
+
+        <div className="solis-auth-divider">
+          <span>or explore instantly</span>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="md"
+          isFullWidth
+          disabled={isSubmitting}
+          className="solis-auth-guest-btn tactile-press"
+          leftIcon={<Sparkles size={16} color="var(--color-coral-500)" />}
+          onClick={handleGuestExplore}
+        >
+          Explore Demo Sanctuary (Instant Guest)
         </Button>
       </form>
 

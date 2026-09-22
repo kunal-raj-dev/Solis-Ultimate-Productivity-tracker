@@ -91,6 +91,47 @@
   border: 1px solid var(--border-subtle);
 }
 
+.solis-app-header__theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-app-header__theme-btn:hover {
+  background-color: var(--bg-surface-tertiary);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.solis-app-header__theme-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.solis-theme-icon {
+  transition: transform var(--duration-deliberate) var(--ease-spatial);
+}
+
+.solis-theme-icon--sun {
+  color: var(--color-amber-400);
+}
+
+.solis-theme-icon--moon {
+  color: var(--color-lavender-400);
+}
+
+.solis-app-header__theme-btn:hover .solis-theme-icon {
+  transform: rotate(18deg) scale(1.1);
+}
+
 .solis-app-header__user-btn {
   display: flex;
   align-items: center;
@@ -131,15 +172,28 @@
   .solis-app-header {
     padding: 0 var(--space-sm);
   }
+  .solis-app-header__guide-btn {
+    display: none;
+  }
+  .solis-app-header__date-day {
+    display: none;
+  }
+  .solis-app-header__time-dot {
+    display: none;
+  }
   .solis-app-header__date {
+    max-width: none;
+  }
+  .solis-app-header__time {
     font-size: var(--text-caption);
-    max-width: 170px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-weight: 600;
   }
   .solis-app-header__search-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
+  }
+  .solis-app-header__theme-btn {
+    width: 34px;
+    height: 34px;
   }
 }

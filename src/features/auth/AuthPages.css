@@ -58,3 +58,40 @@
 .solis-auth-footer-nav a:hover {
   text-decoration: underline;
 }
+
+.solis-auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: var(--space-xs) 0;
+  color: var(--text-muted);
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.solis-auth-divider::before,
+.solis-auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.solis-auth-divider span {
+  padding: 0 var(--space-sm);
+}
+
+.solis-auth-guest-btn {
+  border-color: var(--border-subtle);
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-primary);
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-auth-guest-btn:hover {
+  border-color: var(--color-coral-500);
+  background-color: var(--subject-coral-subtle);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+

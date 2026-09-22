@@ -1,35 +1,24 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus,
-  CheckCircle2,
   Search,
-  ChevronDown,
-  ChevronUp,
-  Edit2,
-  Trash2,
   Clock,
-  Tag,
-  AlertCircle,
-  X,
   Sparkles,
-  Check,
-  Flame,
-  Target
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
-import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
+import { Badge } from '../../components/ui/Badge/Badge';
 import { Card } from '../../components/ui/Card/Card';
-import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { Input } from '../../components/ui/Input/Input';
 import { DatePicker, TimePicker } from '../../components/ui/DatePicker';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
 import { Textarea } from '../../components/ui/Textarea/Textarea';
-import { Progress } from '../../components/ui/Progress/Progress';
 import { Modal } from '../../components/feedback/Modal/Modal';
-import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
@@ -38,27 +27,49 @@ import {
   Task,
   TaskCategory,
   TaskTimeFilter,
-  TaskSortField
+  TaskSortField,
+  TaskTimeBlock,
+  TaskViewMode,
+  TimeBlockReviewPayload
 } from '../../types/task';
 import { StudySubject } from '../../types/study';
 import { Goal } from '../../types/goal';
 import { PriorityLevel } from '../../types/common';
 import { formatFriendlyDate, getISODateString } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
+import { useTimeBlockScheduler } from '../../hooks/useTimeBlockScheduler';
+import { HourlyPlannerView } from './HourlyPlannerView';
+import { TaskTimelineView } from './TaskTimelineView';
+import { TaskInboxView } from './TaskInboxView';
+import { TaskPriorityMatrix } from './TaskPriorityMatrix';
+import { TaskReviewSummary } from './TaskReviewSummary';
+import { CreateTimeBlockModal } from './CreateTimeBlockModal';
+import { HourReviewModal } from './HourReviewModal';
 import './TasksPage.css';
 
 export const TasksPage: React.FC = () => {
   const { addToast } = useToast();
   const { openGuide } = useGuide();
-  const navigate = useNavigate();
 
+  // Core Data State
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [initialLoadStatus, setInitialLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [isRetrying, setIsRetrying] = useState(false);
-  const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+
+  // View Mode & Temporal State
+  const [viewMode, setViewMode] = useState<TaskViewMode>('today');
+  const [selectedDate, setSelectedDate] = useState<string>(getISODateString(new Date()));
+  const [timeBlocks, setTimeBlocks] = useState<TaskTimeBlock[]>([]);
+
+  // Time Block Modals State
+  const [isCreateBlockModalOpen, setIsCreateBlockModalOpen] = useState(false);
+  const [selectedBlockHour, setSelectedBlockHour] = useState<number>(new Date().getHours());
+  const [editingBlock, setEditingBlock] = useState<TaskTimeBlock | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [reviewingBlock, setReviewingBlock] = useState<TaskTimeBlock | null>(null);
 
   // Quick Capture State
   const [quickTitle, setQuickTitle] = useState('');
@@ -76,7 +87,7 @@ export const TasksPage: React.FC = () => {
   // Filter out archived subjects for task assignment
   const activeSubjects = useMemo(() => subjects.filter((s) => s.status !== 'archived'), [subjects]);
 
-  // Modal State
+  // Task Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
@@ -96,10 +107,6 @@ export const TasksPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Inline subtask input per expanded task
-  const [newSubtaskTitles, setNewSubtaskTitles] = useState<Record<string, string>>({});
-  const [editingSubtask, setEditingSubtask] = useState<{ taskId: string; subId: string; title: string } | null>(null);
-
   const openCreateModal = useCallback(() => {
     setEditingTask(null);
     setFormTitle('');
@@ -117,6 +124,7 @@ export const TasksPage: React.FC = () => {
     setIsCreateModalOpen(true);
   }, [searchParams]);
 
+  // Load Tasks
   const loadTasks = useCallback(async (isInitial = false) => {
     if (isInitial) setInitialLoadStatus('loading');
     else setSyncStatus('syncing');
@@ -158,13 +166,28 @@ export const TasksPage: React.FC = () => {
     }
   }, [selectedCategory, selectedTimeFilter, searchQuery, sortBy]);
 
+  // Load Time Blocks for Selected Date
+  const loadTimeBlocks = useCallback(async (date: string) => {
+    try {
+      const blocks = await dataService.tasks.getTimeBlocks(date);
+      setTimeBlocks(blocks);
+    } catch (err) {
+      console.error('Failed to load time blocks:', err);
+    }
+  }, []);
+
   useEffect(() => {
     loadTasks(true);
     const unsubscribe = dataService.subscribe(() => {
       loadTasks(false);
+      loadTimeBlocks(selectedDate);
     });
     return () => unsubscribe();
-  }, [loadTasks]);
+  }, [loadTasks, loadTimeBlocks, selectedDate]);
+
+  useEffect(() => {
+    loadTimeBlocks(selectedDate);
+  }, [selectedDate, loadTimeBlocks]);
 
   useEffect(() => {
     if (searchParams.get('action') === 'new') {
@@ -172,21 +195,202 @@ export const TasksPage: React.FC = () => {
     }
   }, [searchParams, openCreateModal]);
 
+  // Keyboard Shortcuts (N = New Task, T = Today View, 1..5 = Mode Switching)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) {
+        return;
+      }
+
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        openCreateModal();
+      } else if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        setViewMode('today');
+        setSelectedDate(getISODateString(new Date()));
+      } else if (e.key === '1') {
+        setViewMode('today');
+      } else if (e.key === '2') {
+        setViewMode('timeline');
+      } else if (e.key === '3') {
+        setViewMode('inbox');
+      } else if (e.key === '4') {
+        setViewMode('matrix');
+      } else if (e.key === '5') {
+        setViewMode('review');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [openCreateModal]);
+
+  const handleSchedulerReviewNeeded = useCallback((block: TaskTimeBlock) => {
+    setReviewingBlock(block);
+    setIsReviewModalOpen(true);
+  }, []);
+
+  const handleSchedulerFallbackNotice = useCallback((message: string) => {
+    addToast({
+      title: 'Time Block Notice',
+      description: message,
+      type: 'info'
+    });
+  }, [addToast]);
+
+  // Time Block Scheduler Hook (Triggers reminders and reflections)
+  useTimeBlockScheduler({
+    timeBlocks,
+    onReviewNeeded: handleSchedulerReviewNeeded,
+    onFallbackNotice: handleSchedulerFallbackNotice
+  });
+
   const handleRetry = async () => {
     setIsRetrying(true);
-    await loadTasks(tasks.length === 0);
+    await Promise.all([loadTasks(tasks.length === 0), loadTimeBlocks(selectedDate)]);
     setIsRetrying(false);
   };
 
-  const toggleAccordion = (id: string) => {
-    setExpandedTaskIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const handleNavigateDate = (deltaDays: number) => {
+    const current = new Date(selectedDate);
+    current.setDate(current.getDate() + deltaDays);
+    setSelectedDate(getISODateString(current));
   };
 
+  const handleJumpToToday = () => {
+    setSelectedDate(getISODateString(new Date()));
+  };
+
+  // Time Block Operations
+  const handleOpenCreateBlock = (hour: number) => {
+    setEditingBlock(null);
+    setSelectedBlockHour(hour);
+    setIsCreateBlockModalOpen(true);
+  };
+
+  const handleOpenEditBlock = (block: TaskTimeBlock) => {
+    setEditingBlock(block);
+    setSelectedBlockHour(block.startHour);
+    setIsCreateBlockModalOpen(true);
+  };
+
+  const handleOpenReviewBlock = (block: TaskTimeBlock) => {
+    setReviewingBlock(block);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleCreateOrUpdateBlock = async (blockData: Partial<TaskTimeBlock>) => {
+    try {
+      if (editingBlock) {
+        const updated = await dataService.tasks.updateTimeBlock(editingBlock.id, blockData);
+        setTimeBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+        addToast({ title: 'Time Block Updated', description: updated.taskTitle, type: 'success' });
+      } else {
+        const created = await dataService.tasks.createTimeBlock(blockData);
+        setTimeBlocks((prev) => [...prev, created]);
+        addToast({ title: 'Time Block Committed', description: created.taskTitle, type: 'success' });
+      }
+      setIsCreateBlockModalOpen(false);
+      setEditingBlock(null);
+    } catch (err: any) {
+      addToast({ title: 'Could not schedule block', description: err?.message, type: 'error' });
+      throw err;
+    }
+  };
+
+  const handleDeleteTimeBlock = async (blockId: string) => {
+    const prev = timeBlocks;
+    setTimeBlocks((current) => current.filter((b) => b.id !== blockId));
+    try {
+      await dataService.tasks.deleteTimeBlock(blockId);
+      addToast({ title: 'Time Block Removed', type: 'info' });
+    } catch {
+      setTimeBlocks(prev);
+      addToast({ title: 'Could not delete time block', type: 'error' });
+    }
+  };
+
+  const handleToggleBlockComplete = async (block: TaskTimeBlock) => {
+    const nextStatus = block.status === 'completed' ? 'planned' : 'completed';
+    try {
+      const updated = await dataService.tasks.updateTimeBlock(block.id, {
+        status: nextStatus,
+        progressPercent: nextStatus === 'completed' ? 100 : 0
+      });
+      setTimeBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      if (block.taskId) {
+        const nextTaskStatus = nextStatus === 'completed' ? 'completed' : 'todo';
+        await dataService.tasks.updateTask(block.taskId, { status: nextTaskStatus });
+        setTasks((prev) => prev.map((t) => (t.id === block.taskId ? { ...t, status: nextTaskStatus } : t)));
+      }
+      addToast({
+        title: nextStatus === 'completed' ? 'Block Completed' : 'Block Reopened',
+        type: 'success'
+      });
+    } catch {
+      addToast({ title: 'Could not toggle block status', type: 'error' });
+    }
+  };
+
+  const handleReviewBlockSubmit = async (payload: TimeBlockReviewPayload) => {
+    if (!reviewingBlock) return;
+    try {
+      const res = await dataService.tasks.reviewTimeBlock(reviewingBlock.id, payload);
+      setTimeBlocks((prev) => {
+        const updated = prev.map((b) => (b.id === res.updatedBlock.id ? res.updatedBlock : b));
+        if (res.rescheduledBlock && res.rescheduledBlock.date === selectedDate) {
+          return [...updated, res.rescheduledBlock];
+        }
+        return updated;
+      });
+
+      // Synchronize linked task in state
+      if (reviewingBlock.taskId) {
+        const nextTaskStatus = payload.status === 'completed' ? 'completed' : payload.status === 'partial' ? 'partial' : 'missed';
+        setTasks((prev) => prev.map((t) => (t.id === reviewingBlock.taskId ? { ...t, status: nextTaskStatus } : t)));
+      }
+
+      addToast({
+        title: 'Hour Reviewed',
+        description: `Logged ${payload.actualMinutes}m (${payload.status})`,
+        type: 'success'
+      });
+      setIsReviewModalOpen(false);
+      setReviewingBlock(null);
+    } catch (err: any) {
+      addToast({ title: 'Could not save review', description: err?.message, type: 'error' });
+      throw err;
+    }
+  };
+
+  const handleScheduleTaskToHour = async (task: Task, hour: number) => {
+    try {
+      const created = await dataService.tasks.createTimeBlock({
+        taskId: task.id,
+        taskTitle: task.title,
+        description: task.description,
+        date: selectedDate,
+        startHour: hour,
+        startMinute: 0,
+        durationMinutes: task.estimatedMinutes || 60,
+        subjectId: task.subjectId,
+        goalId: task.goalId,
+        priority: task.priority
+      });
+      setTimeBlocks((prev) => [...prev, created]);
+      addToast({
+        title: 'Task Slotted into Grid',
+        description: `"${task.title}" at ${hour % 12 === 0 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
+        type: 'success'
+      });
+    } catch (err: any) {
+      addToast({ title: 'Could not slot task', description: err?.message, type: 'error' });
+    }
+  };
+
+  // Task CRUD Operations
   const handleToggleTask = async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const prevTasks = tasks;
@@ -220,7 +424,7 @@ export const TasksPage: React.FC = () => {
         title: trimmed,
         category: (selectedCategory !== 'all' ? selectedCategory : 'study') as TaskCategory,
         priority: 'medium',
-        dueDate: getISODateString(new Date())
+        dueDate: selectedDate
       });
       setTasks((prev) => [created, ...prev]);
       setQuickTitle('');
@@ -244,7 +448,7 @@ export const TasksPage: React.FC = () => {
     setFormPriority(task.priority);
     setFormSubjectId(task.subjectId || '');
     setFormGoalId(task.goalId || '');
-    setFormDueDate(task.dueDate || getISODateString(new Date()));
+    setFormDueDate(task.dueDate || selectedDate);
     setFormDueTime(task.dueTime || '18:00');
     setFormEstimatedMinutes(String(task.estimatedMinutes || 30));
     setFormTags(task.tags.join(', '));
@@ -328,14 +532,12 @@ export const TasksPage: React.FC = () => {
     }
   };
 
-  const handleAddSubtask = async (taskId: string, e: React.FormEvent) => {
-    e.preventDefault();
-    const title = newSubtaskTitles[taskId]?.trim();
-    if (!title) return;
-
+  const handleAddSubtask = async (taskId: string, title: string) => {
     try {
-      await dataService.tasks.addSubTask(taskId, title);
-      setNewSubtaskTitles((prev) => ({ ...prev, [taskId]: '' }));
+      const subtask = await dataService.tasks.addSubTask(taskId, title);
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, subTasks: [...t.subTasks, subtask] } : t))
+      );
     } catch (err) {
       addToast({
         title: 'Error adding subtask',
@@ -347,7 +549,8 @@ export const TasksPage: React.FC = () => {
 
   const handleToggleSubtask = async (taskId: string, subId: string) => {
     try {
-      await dataService.tasks.toggleSubTask(taskId, subId);
+      const updated = await dataService.tasks.toggleSubTask(taskId, subId);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
     } catch {
       addToast({ title: 'Error toggling subtask', type: 'error' });
     }
@@ -355,26 +558,10 @@ export const TasksPage: React.FC = () => {
 
   const handleDeleteSubtask = async (taskId: string, subId: string) => {
     try {
-      await dataService.tasks.deleteSubTask(taskId, subId);
+      const updated = await dataService.tasks.deleteSubTask(taskId, subId);
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
     } catch {
       addToast({ title: 'Error deleting subtask', type: 'error' });
-    }
-  };
-
-  const handleSaveEditSubtask = async (taskId: string, subId: string) => {
-    if (!editingSubtask || !editingSubtask.title.trim()) return;
-    const newTitle = editingSubtask.title.trim();
-    setEditingSubtask(null);
-
-    try {
-      await dataService.tasks.editSubTask(taskId, subId, newTitle);
-      addToast({ title: 'Subtask Updated', description: newTitle, type: 'success' });
-    } catch (err) {
-      addToast({
-        title: 'Error updating subtask',
-        description: err instanceof Error ? err.message : 'Invalid title',
-        type: 'error'
-      });
     }
   };
 
@@ -394,110 +581,90 @@ export const TasksPage: React.FC = () => {
     { id: 'review', label: 'Review' }
   ];
 
+  const viewModeOptions: { value: string; label: string }[] = [
+    { value: 'today', label: 'Hourly Planner (24h)' },
+    { value: 'timeline', label: 'Timeline' },
+    { value: 'inbox', label: 'Task Inbox' },
+    { value: 'matrix', label: 'Priority Matrix' },
+    { value: 'review', label: 'Daily Review' }
+  ];
+
   return (
     <div>
       <SectionHeader
-        tag={<Badge variant="coral">Tasks</Badge>}
-        title="Tasks & Execution"
-        subtitle="Clarify your intentions, break down complexity, and drive daily momentum with focused execution."
+        tag={<Badge variant="coral">Tasks & Time-Blocking</Badge>}
+        title="Tasks & Hourly Sanctuary"
+        subtitle="Organize intentions into a 24-hour daily horizon, focus deeply, and reflect at the turn of each hour."
         guideId="task-sanctuary"
         onOpenGuide={openGuide}
         actions={
-          <Button
-            variant="accent"
-            size="md"
-            leftIcon={<Plus size={16} />}
-            onClick={openCreateModal}
-          >
-            New Task
-          </Button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              variant="subtle"
+              size="md"
+              leftIcon={<Clock size={16} />}
+              onClick={() => handleOpenCreateBlock(new Date().getHours())}
+            >
+              Plan Block
+            </Button>
+            <Button
+              variant="accent"
+              size="md"
+              leftIcon={<Plus size={16} />}
+              onClick={openCreateModal}
+            >
+              New Task
+            </Button>
+          </div>
         }
       />
 
-      {/* Filter and Control Toolbar */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'var(--space-xl)' }}>
-        {/* Time Filters */}
+      {/* View Mode & Date Navigation Bar */}
+      <div className="solis-tasks-view-modes-nav">
         <div style={{ overflowX: 'auto', paddingBottom: '2px' }}>
           <SegmentedControl
             variant="contained"
-            size="sm"
-            value={selectedTimeFilter}
-            onChange={(val) => setSelectedTimeFilter(val as TaskTimeFilter)}
-            options={timeFilters.map((tf) => ({ value: tf.id, label: tf.label }))}
+            size="md"
+            value={viewMode}
+            onChange={(val) => setViewMode(val as TaskViewMode)}
+            options={viewModeOptions}
           />
         </div>
 
-        {/* Category, Search & Sort Bar */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '12px',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <div style={{ overflowX: 'auto' }}>
-            <SegmentedControl
-              variant="pills"
+        {(viewMode === 'today' || viewMode === 'timeline' || viewMode === 'review') && (
+          <div className="solis-tasks-date-controls">
+            <Button
+              variant="subtle"
               size="sm"
-              value={selectedCategory}
-              onChange={setSelectedCategory}
-              options={categories.map((c) => ({ value: c.id, label: c.label }))}
-            />
+              onClick={() => handleNavigateDate(-1)}
+              aria-label="Previous day"
+              leftIcon={<ChevronLeft size={14} />}
+            >
+              Prev
+            </Button>
+            <span className="solis-tasks-date-display">
+              {formatFriendlyDate(selectedDate)}
+            </span>
+            <Button
+              variant="subtle"
+              size="sm"
+              onClick={() => handleNavigateDate(1)}
+              aria-label="Next day"
+              rightIcon={<ChevronRight size={14} />}
+            >
+              Next
+            </Button>
+            {selectedDate !== getISODateString(new Date()) && (
+              <Button variant="outline" size="sm" onClick={handleJumpToToday}>
+                Today
+              </Button>
+            )}
           </div>
-
-          <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px', maxWidth: '520px', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 180px', minWidth: '150px' }}>
-              <Input
-                placeholder="Search statements, tags, or notes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                leftIcon={<Search size={14} />}
-              />
-            </div>
-            <div style={{ flex: '0 0 auto', minWidth: '130px' }}>
-              <CustomSelect
-                variant="subtle"
-                value={sortBy}
-                onChange={(val) => setSortBy(val as TaskSortField)}
-                options={[
-                  { value: 'priority', label: 'Priority' },
-                  { value: 'dueDate', label: 'Due Date' },
-                  { value: 'createdAt', label: 'Created' },
-                  { value: 'title', label: 'Title' }
-                ]}
-              />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Quick Capture Bar (Capture -> Clarify -> Execute) */}
-      <form onSubmit={handleQuickCreate} className="solis-task-quick-capture">
-        <Sparkles size={16} color="var(--color-coral-500)" className="solis-task-quick-sparkle" />
-        <input
-          type="text"
-          value={quickTitle}
-          onChange={(e) => setQuickTitle(e.target.value)}
-          placeholder="Capture a deliberate intention... (Press Enter to commit)"
-          className="solis-task-quick-input"
-          disabled={isQuickSubmitting}
-          aria-label="Quick capture task"
-        />
-        <Button
-          type="submit"
-          variant="accent"
-          size="sm"
-          disabled={!quickTitle.trim() || isQuickSubmitting}
-          isLoading={isQuickSubmitting}
-        >
-          Capture
-        </Button>
-      </form>
-
-      {/* Tasks List */}
-      {syncStatus === 'error' && tasks.length > 0 && (
+      {/* Sync Error Banner */}
+      {syncStatus === 'error' && (
         <div
           style={{
             display: 'flex',
@@ -515,7 +682,7 @@ export const TasksPage: React.FC = () => {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <AlertCircle size={14} color="var(--color-amber-500)" />
-            <span>Couldn't sync latest tasks with server. Displaying last saved version.</span>
+            <span>Couldn't sync latest tasks with server. Displaying offline state.</span>
           </div>
           <Button variant="outline" size="sm" onClick={handleRetry} isLoading={isRetrying}>
             Retry Sync
@@ -530,7 +697,7 @@ export const TasksPage: React.FC = () => {
           <Skeleton height="76px" />
         </div>
       ) : initialLoadStatus === 'error' && tasks.length === 0 ? (
-        <Card className="depth-1" style={{ textAlign: 'center', padding: '36px 16px' }}>
+        <Card variant="primary" style={{ textAlign: 'center', padding: '36px 16px' }}>
           <AlertCircle size={28} color="var(--status-error)" style={{ margin: '0 auto 8px' }} />
           <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
             We couldn't load your tasks.
@@ -542,456 +709,237 @@ export const TasksPage: React.FC = () => {
             Retry
           </Button>
         </Card>
-      ) : tasks.length === 0 ? (
-        <EmptyState
-          illustration="tasks"
-          icon={CheckCircle2}
-          title={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Your task space is clear" : "No tasks match the active filters"}
-          description={!searchQuery && selectedCategory === 'all' && selectedTimeFilter === 'all' ? "Decide what deserves your attention today. Create an intentional task and attach it to a subject to track momentum." : "No tasks match the active filters. Adjust your criteria or capture a new task."}
-          actionLabel="Create Intentional Task"
-          onAction={openCreateModal}
-        />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {tasks.map((task) => {
-            const isExpanded = expandedTaskIds.has(task.id);
-            const totalSubs = task.subTasks.length;
-            const doneSubs = task.subTasks.filter((s) => s.completed).length;
-            const subProgress = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
+        <>
+          {/* VIEW MODE 1: HOURLY PLANNER (24-HOUR DAILY TIME GRID) */}
+          {viewMode === 'today' && (
+            <HourlyPlannerView
+              selectedDate={selectedDate}
+              timeBlocks={timeBlocks}
+              tasks={tasks}
+              subjects={subjects}
+              goals={goals}
+              onOpenCreateBlock={handleOpenCreateBlock}
+              onOpenEditBlock={handleOpenEditBlock}
+              onOpenReviewBlock={handleOpenReviewBlock}
+              onDeleteBlock={handleDeleteTimeBlock}
+              onToggleBlockComplete={handleToggleBlockComplete}
+            />
+          )}
 
-            return (
-              <Card
-                key={task.id}
-                className="depth-1"
-                style={{
-                  padding: 'var(--space-md) var(--space-lg)',
-                  backgroundColor: task.status === 'completed' ? 'var(--bg-surface-subtle)' : 'var(--bg-surface-primary)',
-                  borderColor: 'var(--border-subtle)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', flex: 1 }}>
-                    <div style={{ paddingTop: '3px' }}>
-                      <Checkbox
-                        checked={task.status === 'completed'}
-                        onChange={() => handleToggleTask(task.id)}
-                        aria-label={`Toggle task ${task.title}`}
-                      />
-                    </div>
+          {/* VIEW MODE 2: CONTINUOUS TIMELINE */}
+          {viewMode === 'timeline' && (
+            <TaskTimelineView
+              selectedDate={selectedDate}
+              timeBlocks={timeBlocks}
+              subjects={subjects}
+              onOpenCreateBlock={handleOpenCreateBlock}
+              onOpenEditBlock={handleOpenEditBlock}
+              onOpenReviewBlock={handleOpenReviewBlock}
+              onDeleteBlock={handleDeleteTimeBlock}
+            />
+          )}
 
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <h3
-                          style={{
-                            fontFamily: 'var(--font-interface)',
-                            fontSize: 'var(--text-body)',
-                            fontWeight: 600,
-                            textDecoration: task.status === 'completed' ? 'line-through' : 'none',
-                            color: task.status === 'completed' ? 'var(--text-muted)' : 'var(--text-primary)'
-                          }}
-                        >
-                          {task.title}
-                        </h3>
+          {/* VIEW MODE 3: TASK INBOX & BACKLOG */}
+          {viewMode === 'inbox' && (
+            <div>
+              {/* Quick Capture Bar */}
+              <form onSubmit={handleQuickCreate} className="solis-task-quick-capture">
+                <Sparkles size={16} color="var(--color-coral-500)" className="solis-task-quick-sparkle" />
+                <input
+                  type="text"
+                  value={quickTitle}
+                  onChange={(e) => setQuickTitle(e.target.value)}
+                  placeholder="Capture a deliberate intention... (Press Enter to commit)"
+                  className="solis-task-quick-input"
+                  disabled={isQuickSubmitting}
+                  aria-label="Quick capture task"
+                />
+                <Button
+                  type="submit"
+                  variant="accent"
+                  size="sm"
+                  disabled={!quickTitle.trim() || isQuickSubmitting}
+                  isLoading={isQuickSubmitting}
+                >
+                  Capture
+                </Button>
+              </form>
 
-                        <Badge variant={task.priority === 'urgent' ? 'coral' : task.priority === 'high' ? 'coral' : 'amber'}>
-                          {task.priority}
-                        </Badge>
-                        <Badge variant="neutral">{task.category}</Badge>
-                        {(() => {
-                          const linkedSub = subjects.find((s) => s.id === task.subjectId);
-                          return linkedSub ? (
-                            <Badge variant={(linkedSub.color as BadgeVariant) || 'coral'}>
-                              {linkedSub.name}
-                            </Badge>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const linkedGoal = goals.find((g) => g.id === task.goalId);
-                          return linkedGoal ? (
-                            <Badge
-                              variant="amber"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate('/app/goals');
-                              }}
-                              title={`Linked Goal: ${linkedGoal.title}`}
-                            >
-                              <Target size={11} />
-                              <span>{linkedGoal.title}</span>
-                            </Badge>
-                          ) : null;
-                        })()}
-                      </div>
-
-                      {task.description && (
-                        <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          {task.description}
-                        </p>
-                      )}
-
-                      {/* Meta Pills */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginTop: '8px' }}>
-                        {task.dueDate && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
-                            <Clock size={12} color="var(--color-coral-500)" />
-                            {formatFriendlyDate(task.dueDate)} {task.dueTime ? `at ${task.dueTime}` : ''}
-                          </span>
-                        )}
-
-                        {task.estimatedMinutes && (
-                          <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>
-                            ~{task.estimatedMinutes}m
-                          </span>
-                        )}
-
-                        {task.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            style={{
-                              fontSize: 'var(--text-micro)',
-                              color: 'var(--text-muted)',
-                              background: 'var(--bg-surface-secondary)',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              border: '1px solid var(--border-subtle)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <Tag size={10} />
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Subtasks Progress Indicator */}
-                      {totalSubs > 0 && (
-                        <div style={{ marginTop: '10px', maxWidth: '320px' }}>
-                          <Progress
-                            value={subProgress}
-                            size="sm"
-                            variant="momentum"
-                            label={`Subtasks (${doneSubs}/${totalSubs})`}
-                            showValueText
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {task.status !== 'completed' && (
-                      <Button
-                        variant="subtle"
-                        size="sm"
-                        className="tactile-press"
-                        leftIcon={<Flame size={13} color="var(--color-coral-500)" />}
-                        onClick={() =>
-                          navigate(`/app/focus?taskId=${task.id}`, {
-                            state: {
-                              taskId: task.id,
-                              title: task.title,
-                              subjectId: task.subjectId,
-                              durationMinutes: task.estimatedMinutes || 25
-                            }
-                          })
-                        }
-                        title="Launch Focus Session on this Task"
-                        aria-label={`Launch focus on ${task.title}`}
-                      >
-                        Focus
-                      </Button>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleAccordion(task.id)}
-                      title="Subtasks"
-                      aria-label="Toggle subtasks list"
-                    >
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      <span style={{ fontSize: 'var(--text-caption)' }}>
-                        {totalSubs > 0 ? `${doneSubs}/${totalSubs}` : 'Subtasks'}
-                      </span>
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditModal(task)}
-                      aria-label="Edit task"
-                      title="Edit"
-                    >
-                      <Edit2 size={14} />
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeletingTaskId(task.id)}
-                      aria-label="Delete task"
-                      title="Delete"
-                      style={{ color: 'var(--status-error)' }}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
+              {/* Filter Toolbar */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'var(--space-xl)' }}>
+                <div style={{ overflowX: 'auto', paddingBottom: '2px' }}>
+                  <SegmentedControl
+                    variant="contained"
+                    size="sm"
+                    value={selectedTimeFilter}
+                    onChange={(val) => setSelectedTimeFilter(val as TaskTimeFilter)}
+                    options={timeFilters.map((tf) => ({ value: tf.id, label: tf.label }))}
+                  />
                 </div>
 
-                {/* Expandable Subtasks Manager */}
-                {isExpanded && (
-                  <div
-                    style={{
-                      marginTop: 'var(--space-md)',
-                      paddingTop: 'var(--space-md)',
-                      borderTop: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-surface-secondary)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: 'var(--space-md)'
-                    }}
-                  >
-                    <h4 style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                      Subtasks Breakdown
-                    </h4>
-
-                    {task.subTasks.length === 0 ? (
-                      <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                        No subtasks added yet. Break this task into small actionable steps.
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-                        {task.subTasks.map((sub) => {
-                          const isEditingThisSub = editingSubtask?.taskId === task.id && editingSubtask?.subId === sub.id;
-
-                          return (
-                            <div
-                              key={sub.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '6px 10px',
-                                background: 'var(--bg-surface-primary)',
-                                borderRadius: '6px',
-                                border: isEditingThisSub ? '1px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
-                                minHeight: '38px'
-                              }}
-                            >
-                              {isEditingThisSub ? (
-                                <form
-                                  onSubmit={(e) => {
-                                    e.preventDefault();
-                                    handleSaveEditSubtask(task.id, sub.id);
-                                  }}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}
-                                >
-                                  <input
-                                    type="text"
-                                    value={editingSubtask.title}
-                                    onChange={(e) =>
-                                      setEditingSubtask((prev) => (prev ? { ...prev, title: e.target.value } : null))
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Escape') setEditingSubtask(null);
-                                    }}
-                                    autoFocus
-                                    style={{
-                                      flex: 1,
-                                      background: 'var(--bg-surface-secondary)',
-                                      border: '1px solid var(--border-focus)',
-                                      borderRadius: 'var(--radius-sm)',
-                                      padding: '4px 8px',
-                                      color: 'var(--text-primary)',
-                                      fontSize: 'var(--text-body-sm)',
-                                      outline: 'none'
-                                    }}
-                                    aria-label="Edit subtask title"
-                                  />
-                                  <button
-                                    type="submit"
-                                    className="tactile-press"
-                                    style={{
-                                      background: 'var(--color-coral-500)',
-                                      border: 'none',
-                                      color: '#fff',
-                                      cursor: 'pointer',
-                                      padding: '4px 8px',
-                                      borderRadius: 'var(--radius-sm)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      fontSize: 'var(--text-micro)',
-                                      fontWeight: 600
-                                    }}
-                                    title="Save (Enter)"
-                                    aria-label="Save subtask"
-                                  >
-                                    <Check size={13} />
-                                    <span>Save</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingSubtask(null)}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--text-muted)',
-                                      cursor: 'pointer',
-                                      padding: '4px',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}
-                                    title="Cancel (Esc)"
-                                    aria-label="Cancel editing"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </form>
-                              ) : (
-                                <>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                                    <Checkbox
-                                      checked={sub.completed}
-                                      onChange={() => handleToggleSubtask(task.id, sub.id)}
-                                      aria-label={`Toggle subtask ${sub.title}`}
-                                    />
-                                    <span
-                                      onDoubleClick={() => setEditingSubtask({ taskId: task.id, subId: sub.id, title: sub.title })}
-                                      style={{
-                                        fontSize: 'var(--text-body-sm)',
-                                        textDecoration: sub.completed ? 'line-through' : 'none',
-                                        color: sub.completed ? 'var(--text-muted)' : 'var(--text-primary)',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        cursor: 'pointer'
-                                      }}
-                                      title="Double-click to edit"
-                                    >
-                                      {sub.title}
-                                    </span>
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '8px' }}>
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingSubtask({ taskId: task.id, subId: sub.id, title: sub.title })}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: 'var(--text-muted)',
-                                        cursor: 'pointer',
-                                        padding: '4px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        borderRadius: 'var(--radius-xs)'
-                                      }}
-                                      aria-label={`Edit subtask ${sub.title}`}
-                                      title="Edit subtask"
-                                    >
-                                      <Edit2 size={13} />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteSubtask(task.id, sub.id)}
-                                      style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: 'var(--text-muted)',
-                                        cursor: 'pointer',
-                                        padding: '4px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        borderRadius: 'var(--radius-xs)'
-                                      }}
-                                      aria-label={`Delete subtask ${sub.title}`}
-                                      title="Delete subtask"
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Inline Add Subtask Input */}
-                    <form onSubmit={(e) => handleAddSubtask(task.id, e)} style={{ display: 'flex', gap: '8px' }}>
-                      <Input
-                        placeholder="Add next actionable step..."
-                        value={newSubtaskTitles[task.id] || ''}
-                        onChange={(e) => setNewSubtaskTitles((prev) => ({ ...prev, [task.id]: e.target.value }))}
-                      />
-                      <Button variant="secondary" size="sm" type="submit">
-                        Add Step
-                      </Button>
-                    </form>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ overflowX: 'auto' }}>
+                    <SegmentedControl
+                      variant="pills"
+                      size="sm"
+                      value={selectedCategory}
+                      onChange={setSelectedCategory}
+                      options={categories.map((c) => ({ value: c.id, label: c.label }))}
+                    />
                   </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px', maxWidth: '520px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 180px', minWidth: '150px' }}>
+                      <Input
+                        placeholder="Search statements, tags, or notes..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        leftIcon={<Search size={14} />}
+                      />
+                    </div>
+                    <div style={{ flex: '0 0 auto', minWidth: '130px' }}>
+                      <CustomSelect
+                        variant="subtle"
+                        value={sortBy}
+                        onChange={(val) => setSortBy(val as TaskSortField)}
+                        options={[
+                          { value: 'priority', label: 'Priority' },
+                          { value: 'dueDate', label: 'Due Date' },
+                          { value: 'createdAt', label: 'Created' },
+                          { value: 'title', label: 'Title' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <TaskInboxView
+                tasks={tasks}
+                subjects={subjects}
+                goals={goals}
+                onToggleTask={handleToggleTask}
+                onEditTask={openEditModal}
+                onDeleteTask={(taskId) => setDeletingTaskId(taskId)}
+                onScheduleToHour={handleScheduleTaskToHour}
+                onAddSubtask={handleAddSubtask}
+                onToggleSubtask={handleToggleSubtask}
+                onDeleteSubtask={handleDeleteSubtask}
+              />
+            </div>
+          )}
+
+          {/* VIEW MODE 4: PRIORITY MATRIX (EISENHOWER) */}
+          {viewMode === 'matrix' && (
+            <TaskPriorityMatrix
+              tasks={tasks}
+              subjects={subjects}
+              onScheduleToHour={handleScheduleTaskToHour}
+              onToggleTask={handleToggleTask}
+            />
+          )}
+
+          {/* VIEW MODE 5: DAILY REVIEW & REFLECTION */}
+          {viewMode === 'review' && (
+            <TaskReviewSummary
+              selectedDate={selectedDate}
+              timeBlocks={timeBlocks}
+              tasks={tasks}
+              subjects={subjects}
+              onOpenReviewBlock={handleOpenReviewBlock}
+              onNavigateDate={handleNavigateDate}
+              onSwitchToPlanner={() => setViewMode('today')}
+            />
+          )}
+        </>
       )}
 
-      {/* Task Create / Edit Modal with Progressive Disclosure & Subject Linkage */}
+      {/* Modal 1: Create / Edit Time Block Modal */}
+      <CreateTimeBlockModal
+        isOpen={isCreateBlockModalOpen}
+        onClose={() => {
+          setIsCreateBlockModalOpen(false);
+          setEditingBlock(null);
+        }}
+        onSubmit={handleCreateOrUpdateBlock}
+        defaultHour={selectedBlockHour}
+        defaultDate={selectedDate}
+        tasks={tasks}
+        subjects={subjects}
+        goals={goals}
+        editingBlock={editingBlock}
+      />
+
+      {/* Modal 2: Frictionless Hour Review & Transition Modal */}
+      <HourReviewModal
+        isOpen={isReviewModalOpen}
+        block={reviewingBlock}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setReviewingBlock(null);
+        }}
+        onSubmit={handleReviewBlockSubmit}
+      />
+
+      {/* Modal 3: Create / Edit Intentional Task Modal */}
       <Modal
-        isOpen={isCreateModalOpen || editingTask !== null}
+        isOpen={isCreateModalOpen}
         onClose={() => {
           setIsCreateModalOpen(false);
           setEditingTask(null);
         }}
-        title={editingTask ? 'Edit Task' : 'Add Intentional Task'}
+        title={editingTask ? 'Edit Task' : 'Create Task'}
       >
-        <form onSubmit={handleSaveTask} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSaveTask} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {formError && (
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
                 padding: '8px 12px',
-                borderRadius: '6px',
                 backgroundColor: 'var(--status-error-bg)',
+                border: '1px solid var(--status-error)',
+                borderRadius: 'var(--radius-sm)',
                 color: 'var(--status-error)',
                 fontSize: 'var(--text-caption)'
               }}
             >
-              <AlertCircle size={14} />
-              <span>{formError}</span>
+              {formError}
             </div>
           )}
 
           <Input
-            label="Task Statement"
-            placeholder="e.g. Master Raft Consensus State Invariants"
+            label="Task Statement *"
+            placeholder="What exact intention will you bring into focus?"
             value={formTitle}
             onChange={(e) => setFormTitle(e.target.value)}
             required
             autoFocus
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+          <div className="solis-tasks-form-grid">
             <CustomSelect
               label="Domain Category"
               value={formCategory}
               onChange={(val) => setFormCategory(val as TaskCategory)}
               options={[
-                { value: 'study', label: 'Study & Coursework' },
+                { value: 'study', label: 'Study' },
                 { value: 'deep_work', label: 'Deep Work' },
                 { value: 'project', label: 'Project' },
-                { value: 'review', label: 'Review & Recall' },
-                { value: 'admin', label: 'Admin / Logistics' }
+                { value: 'review', label: 'Review' },
+                { value: 'admin', label: 'Admin' }
               ]}
             />
 
             <CustomSelect
-              label="Priority Level"
+              label="Priority"
               value={formPriority}
               onChange={(val) => setFormPriority(val as PriorityLevel)}
               options={[
@@ -1023,7 +971,6 @@ export const TasksPage: React.FC = () => {
             />
           </div>
 
-          {/* Progressive Disclosure: Additional Context & Presets */}
           <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '10px', marginTop: '2px' }}>
             <button
               type="button"
@@ -1121,7 +1068,7 @@ export const TasksPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal with shared Destructive Primitive */}
+      {/* Modal 4: Delete Confirmation Modal */}
       <Modal
         isOpen={deletingTaskId !== null}
         onClose={() => setDeletingTaskId(null)}

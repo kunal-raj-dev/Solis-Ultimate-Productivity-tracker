@@ -89,6 +89,30 @@ export const DEFAULT_NAVIGATION_COMMANDS: CommandItem[] = [
     shortcut: 'G T'
   },
   {
+    id: 'nav-hourly-planner',
+    title: 'Open 24h Hourly Planner',
+    subtitle: 'Daily time-grid & synchronized block scheduler',
+    type: 'action',
+    actionUrl: '/app/tasks?mode=today',
+    shortcut: 'T'
+  },
+  {
+    id: 'nav-task-review',
+    title: 'Review Daily Time Blocks',
+    subtitle: 'Inspect cognitive velocity & planned vs actual focus',
+    type: 'action',
+    actionUrl: '/app/tasks?mode=review',
+    shortcut: 'G R'
+  },
+  {
+    id: 'nav-rooms',
+    title: 'Go to Collaborative Study Rooms',
+    subtitle: 'Peer focus pods, shared objectives & epoch timers',
+    type: 'navigation',
+    actionUrl: '/app/rooms',
+    shortcut: 'G P'
+  },
+  {
     id: 'nav-analytics',
     title: 'Go to Intelligence & Analytics',
     subtitle: 'Mastery metrics & cognitive rhythm',

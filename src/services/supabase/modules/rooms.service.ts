@@ -1,6 +1,17 @@
 import { IRoomService } from '../../api.interface';
-import { StudyRoom, RoomParticipant, RoomMessage, CreateRoomPayload, RoomTimerState, ParticipantStatus } from '../../../types/room';
-import { mapStudyRoom, mapRoomParticipant, mapRoomMessage } from '../supabaseMappers';
+import {
+  StudyRoom,
+  RoomParticipant,
+  RoomMessage,
+  CreateRoomPayload,
+  RoomTimerState,
+  ParticipantStatus,
+  RoomTimelineEvent,
+  RoomEventType,
+  RoomReflection
+} from '../../../types/room';
+import { mapStudyRoom, mapRoomParticipant, mapRoomMessage, mapRoomTimelineEvent, mapRoomReflection } from '../supabaseMappers';
+
 import { queryCache } from '../../cache';
 import { SupabaseServiceContext } from './types';
 
@@ -48,18 +59,43 @@ export class SupabaseRoomsService implements IRoomService {
     return mapStudyRoom(data, data.profiles?.name, data.room_participants ? data.room_participants.length : 0);
   };
 
+  getRoomByCode = async (code: string): Promise<StudyRoom | null> => {
+    const clean = code.trim().toUpperCase();
+    const { data, error } = await this.ctx.client
+      .from('study_rooms')
+      .select(`
+        *,
+        profiles:host_id (id, name),
+        room_participants (user_id)
+      `)
+      .ilike('room_code', clean)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return mapStudyRoom(data, data.profiles?.name, data.room_participants ? data.room_participants.length : 0);
+  };
+
   createRoom = async (payload: CreateRoomPayload): Promise<StudyRoom> => {
     const userId = await this.ctx.getUserId();
     const duration = payload.targetDurationSeconds && payload.targetDurationSeconds > 0
       ? payload.targetDurationSeconds
       : 1500;
+    const generatedCode = payload.roomCode || `SOL${Math.floor(100 + Math.random() * 900)}`;
 
     const { data, error } = await this.ctx.client
       .from('study_rooms')
       .insert({
         host_id: userId,
+        room_code: generatedCode,
         title: payload.title.trim(),
+        subject_id: payload.subjectId || null,
+        topic: payload.topic || null,
+        session_type: payload.sessionType || 'deep_focus',
+        shared_objective: payload.sharedObjective?.trim() || null,
         target_duration_seconds: duration,
+        break_duration_seconds: payload.breakDurationSeconds || 300,
+        is_break: false,
+        is_private: payload.isPrivate ?? false,
         timer_state: 'idle',
         paused_elapsed_seconds: 0
       })
@@ -81,9 +117,25 @@ export class SupabaseRoomsService implements IRoomService {
         joined_at: new Date().toISOString()
       });
 
+    // Record creation event in room timeline
+    try {
+      await this.ctx.client
+        .from('study_room_events')
+        .insert({
+          room_id: data.id,
+          user_id: userId,
+          user_name: data.profiles?.name || 'Host',
+          event_type: 'session_start',
+          message: `Sanctuary created: ${payload.title}`
+        });
+    } catch (e) {
+      // Non-critical event insert error
+    }
+
     this.ctx.notify();
     return mapStudyRoom(data, data.profiles?.name, 1);
   };
+
 
   updateTimerState = async (
     roomId: string,
@@ -115,11 +167,11 @@ export class SupabaseRoomsService implements IRoomService {
     } else if (newState === 'running') {
       updatePayload.timer_state = 'running';
       updatePayload.started_at = new Date().toISOString();
-      if (currentRoom.timer_state === 'idle') {
+      if (targetDuration && targetDuration > 0) {
+        updatePayload.target_duration_seconds = targetDuration;
         updatePayload.paused_elapsed_seconds = 0;
-        if (targetDuration && targetDuration > 0) {
-          updatePayload.target_duration_seconds = targetDuration;
-        }
+      } else if (currentRoom.timer_state === 'idle' || (currentRoom.paused_elapsed_seconds || 0) >= (currentRoom.target_duration_seconds || 1500)) {
+        updatePayload.paused_elapsed_seconds = 0;
       }
     } else if (newState === 'idle') {
       updatePayload.timer_state = 'idle';
@@ -264,6 +316,177 @@ export class SupabaseRoomsService implements IRoomService {
     return mapRoomMessage(data, data.profiles?.name);
   };
 
+  startBreak = async (roomId: string, breakDurationSeconds?: number): Promise<StudyRoom> => {
+    const updatePayload: Record<string, any> = {
+      is_break: true,
+      timer_state: 'paused',
+      updated_at: new Date().toISOString()
+    };
+    if (breakDurationSeconds && breakDurationSeconds > 0) {
+      updatePayload.break_duration_seconds = breakDurationSeconds;
+    }
+
+    const { data, error } = await this.ctx.client
+      .from('study_rooms')
+      .update(updatePayload)
+      .eq('id', roomId)
+      .select(`*, profiles:host_id (id, name), room_participants (user_id)`)
+      .single();
+
+    if (error || !data) throw error || new Error('Failed to start break');
+
+    const userId = await this.ctx.getUserId();
+    try {
+      await this.ctx.client.from('study_room_events').insert({
+        room_id: roomId,
+        user_id: userId,
+        event_type: 'break_start',
+        message: `Group break started (${Math.round((data.break_duration_seconds || 300) / 60)}m)`
+      });
+    } catch {}
+
+    this.ctx.notify();
+    return mapStudyRoom(data, data.profiles?.name, data.room_participants ? data.room_participants.length : 0);
+  };
+
+  endBreak = async (roomId: string): Promise<StudyRoom> => {
+    const { data, error } = await this.ctx.client
+      .from('study_rooms')
+      .update({ is_break: false, updated_at: new Date().toISOString() })
+      .eq('id', roomId)
+      .select(`*, profiles:host_id (id, name), room_participants (user_id)`)
+      .single();
+
+    if (error || !data) throw error || new Error('Failed to end break');
+
+    const userId = await this.ctx.getUserId();
+    try {
+      await this.ctx.client.from('study_room_events').insert({
+        room_id: roomId,
+        user_id: userId,
+        event_type: 'break_end',
+        message: 'Group break ended'
+      });
+    } catch {}
+
+    this.ctx.notify();
+    return mapStudyRoom(data, data.profiles?.name, data.room_participants ? data.room_participants.length : 0);
+  };
+
+  getRoomEvents = async (roomId: string): Promise<RoomTimelineEvent[]> => {
+    const { data, error } = await this.ctx.client
+      .from('study_room_events')
+      .select(`*, profiles:user_id (name)`)
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+
+    if (error) {
+      console.warn('Could not query study_room_events:', error.message);
+      return [];
+    }
+
+    return (data || []).map((row: any) => mapRoomTimelineEvent(row, row.profiles?.name || row.user_name));
+  };
+
+  sendRoomEvent = async (
+    roomId: string,
+    eventType: RoomEventType,
+    message?: string
+  ): Promise<RoomTimelineEvent> => {
+    const userId = await this.ctx.getUserId();
+    const { data: profile } = await this.ctx.client.from('profiles').select('name').eq('id', userId).maybeSingle();
+
+    const { data, error } = await this.ctx.client
+      .from('study_room_events')
+      .insert({
+        room_id: roomId,
+        user_id: userId,
+        user_name: profile?.name || 'Solis Scholar',
+        event_type: eventType,
+        message: message || null
+      })
+      .select()
+      .single();
+
+    if (error || !data) throw error || new Error('Failed to record room event');
+    this.ctx.notify();
+    return mapRoomTimelineEvent(data, profile?.name);
+  };
+
+  saveRoomReflection = async (reflection: Partial<RoomReflection>): Promise<RoomReflection> => {
+    const userId = await this.ctx.getUserId();
+    const { data: profile } = await this.ctx.client.from('profiles').select('name').eq('id', userId).maybeSingle();
+
+    const { data, error } = await this.ctx.client
+      .from('study_room_reflections')
+      .insert({
+        room_id: reflection.roomId,
+        user_id: userId,
+        user_name: profile?.name || 'Solis Scholar',
+        room_title: reflection.roomTitle || 'Study Sanctuary',
+        subject_id: reflection.subjectId || null,
+        subject_name: reflection.subjectName || null,
+        duration_seconds: reflection.durationSeconds || 1500,
+        objective_achieved: reflection.objectiveAchieved ?? true,
+        reflection_text: reflection.reflectionText?.trim() || 'Session concluded successfully.',
+        next_step: reflection.nextStep?.trim() || null,
+        retention_rating: reflection.retentionRating ?? 5
+      })
+      .select()
+      .single();
+
+    if (error || !data) throw error || new Error('Failed to save room reflection');
+
+    // Also log study session in study history if duration >= 60 seconds
+    if ((reflection.durationSeconds || 0) >= 60) {
+      try {
+        await this.ctx.client.from('study_sessions').insert({
+          user_id: userId,
+          subject_name: reflection.subjectName || reflection.roomTitle || 'Study Sanctuary',
+          duration_minutes: Math.max(1, Math.round((reflection.durationSeconds || 0) / 60)),
+          notes: reflection.reflectionText || 'Study Room Session Completed'
+        });
+      } catch (err) {
+        console.warn('Could not auto-log study session:', err);
+      }
+    }
+
+    this.ctx.notify();
+    return mapRoomReflection(data, profile?.name, reflection.roomTitle);
+  };
+
+  getRoomReflections = async (roomId: string): Promise<RoomReflection[]> => {
+    const { data, error } = await this.ctx.client
+      .from('study_room_reflections')
+      .select(`*, profiles:user_id (name)`)
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Could not query study_room_reflections:', error.message);
+      return [];
+    }
+
+    return (data || []).map((row: any) => mapRoomReflection(row, row.profiles?.name));
+  };
+
+  getUserRoomHistory = async (): Promise<RoomReflection[]> => {
+    const userId = await this.ctx.getUserId();
+    const { data, error } = await this.ctx.client
+      .from('study_room_reflections')
+      .select(`*, study_rooms (title)`)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('Could not query user room reflections:', error.message);
+      return [];
+    }
+
+    return (data || []).map((row: any) => mapRoomReflection(row, undefined, row.study_rooms?.title));
+  };
+
   deleteRoom = async (roomId: string): Promise<boolean> => {
     const { error } = await this.ctx.client
       .from('study_rooms')
@@ -276,3 +499,4 @@ export class SupabaseRoomsService implements IRoomService {
     return true;
   };
 }
+

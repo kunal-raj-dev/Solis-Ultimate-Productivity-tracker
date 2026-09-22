@@ -7,16 +7,20 @@ import {
   RoomParticipant,
   RoomMessage,
   RoomPresenceUser,
-  ParticipantStatus
+  ParticipantStatus,
+  RoomTimelineEvent,
+  RoomEventType
 } from '../types/room';
 import { playFocusCompletionChime } from '../utils/timer';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { mapStudyRoom } from '../services/supabase/supabaseMappers';
 
 export interface UseStudyRoomResult {
   room: StudyRoom | null;
   participants: RoomParticipant[];
   presenceUsers: RoomPresenceUser[];
   messages: RoomMessage[];
+  events: RoomTimelineEvent[];
   remainingSeconds: number;
   progressPercent: number;
   isHost: boolean;
@@ -26,8 +30,11 @@ export interface UseStudyRoomResult {
   startTimer: (targetDuration?: number) => Promise<void>;
   pauseTimer: () => Promise<void>;
   resetTimer: (targetDuration?: number) => Promise<void>;
+  startBreak: (breakDurationSeconds?: number) => Promise<void>;
+  endBreak: () => Promise<void>;
   updateStatus: (status: ParticipantStatus) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  sendTimelineEvent: (type: RoomEventType, message?: string) => Promise<void>;
   leaveRoom: () => Promise<void>;
   deleteRoom: () => Promise<void>;
   refreshRoom: () => Promise<void>;
@@ -64,6 +71,7 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
   const [participants, setParticipants] = useState<RoomParticipant[]>([]);
   const [presenceUsers, setPresenceUsers] = useState<RoomPresenceUser[]>([]);
   const [messages, setMessages] = useState<RoomMessage[]>([]);
+  const [events, setEvents] = useState<RoomTimelineEvent[]>([]);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(1500);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isReconnecting, setIsReconnecting] = useState<boolean>(false);
@@ -81,15 +89,16 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
 
   const isHost = Boolean(user && room && user.id === room.hostId);
 
-  // Fetch initial room data & messages
+  // Fetch initial room data & messages & timeline events
   const fetchRoomData = useCallback(async () => {
     if (!roomId) return;
     try {
       setError(null);
-      const [roomData, partsData, msgsData] = await Promise.all([
+      const [roomData, partsData, msgsData, eventsData] = await Promise.all([
         dataService.rooms.getRoom(roomId),
         dataService.rooms.getParticipants(roomId),
-        dataService.rooms.getMessages(roomId)
+        dataService.rooms.getMessages(roomId),
+        dataService.rooms.getRoomEvents(roomId)
       ]);
 
       if (!roomData) {
@@ -101,6 +110,7 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
       setRoom(roomData);
       setParticipants(partsData);
       setMessages(msgsData);
+      setEvents(eventsData || []);
 
       const initialRemaining = computeAuthoritativeRemaining(roomData);
       setRemainingSeconds(initialRemaining);
@@ -211,18 +221,12 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
         }
         if (payload.new) {
           setRoom((prev) => {
-            const updated = {
-              ...(prev || ({} as StudyRoom)),
-              id: (payload.new as any).id,
-              hostId: (payload.new as any).host_id,
-              title: (payload.new as any).title,
-              timerState: (payload.new as any).timer_state,
-              targetDurationSeconds: (payload.new as any).target_duration_seconds,
-              startedAt: (payload.new as any).started_at,
-              pausedElapsedSeconds: (payload.new as any).paused_elapsed_seconds,
-              updatedAt: (payload.new as any).updated_at
+            const mapped = mapStudyRoom(payload.new, prev?.hostName, prev?.participantsCount);
+            return {
+              ...prev,
+              ...mapped,
+              subjectName: prev?.subjectName || mapped.subjectName
             };
-            return updated;
           });
         }
       }
@@ -278,6 +282,32 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
       }
     );
 
+    // 5. Listen for Postgres Changes on study_room_events
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'study_room_events',
+        filter: `room_id=eq.${roomId}`
+      },
+      (payload) => {
+        if (payload.new) {
+          const evRow = payload.new as any;
+          const mapped: RoomTimelineEvent = {
+            id: evRow.id,
+            roomId: evRow.room_id,
+            userId: evRow.user_id,
+            userName: evRow.user_name || 'Scholar',
+            eventType: evRow.event_type,
+            message: evRow.message,
+            createdAt: evRow.created_at
+          };
+          setEvents((prev) => (prev.some((e) => e.id === mapped.id) ? prev : [...prev, mapped]));
+        }
+      }
+    );
+
     // Subscribe to the channel & track initial presence
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
@@ -309,6 +339,7 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
       try {
         const updated = await dataService.rooms.updateTimerState(roomId, 'running', targetDuration);
         setRoom(updated);
+        await dataService.rooms.sendRoomEvent(roomId, 'session_start', `Host started session timer (${Math.round((targetDuration || updated.targetDurationSeconds) / 60)}m)`);
       } catch (err: any) {
         console.error('Failed to start timer:', err);
         setError(err?.message || 'Only the room host can start the session timer.');
@@ -322,6 +353,7 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
     try {
       const updated = await dataService.rooms.updateTimerState(roomId, 'paused');
       setRoom(updated);
+      await dataService.rooms.sendRoomEvent(roomId, 'session_pause', 'Session timer paused.');
     } catch (err: any) {
       console.error('Failed to pause timer:', err);
       setError(err?.message || 'Only the room host can pause the session timer.');
@@ -337,6 +369,46 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
       } catch (err: any) {
         console.error('Failed to reset timer:', err);
         setError(err?.message || 'Only the room host can reset the session timer.');
+      }
+    },
+    [roomId]
+  );
+
+  const startBreak = useCallback(
+    async (breakSeconds?: number) => {
+      if (!roomId) return;
+      try {
+        const updated = await dataService.rooms.startBreak(roomId, breakSeconds);
+        setRoom(updated);
+        await dataService.rooms.sendRoomEvent(roomId, 'break_start', `Intermission started (${Math.round((breakSeconds || 300) / 60)}m)`);
+      } catch (err: any) {
+        console.error('Failed to start break:', err);
+        setError(err?.message || 'Only the room host can start break mode.');
+      }
+    },
+    [roomId]
+  );
+
+  const endBreak = useCallback(async () => {
+    if (!roomId) return;
+    try {
+      const updated = await dataService.rooms.endBreak(roomId);
+      setRoom(updated);
+      await dataService.rooms.sendRoomEvent(roomId, 'break_end', 'Intermission ended. Deep focus resumed.');
+    } catch (err: any) {
+      console.error('Failed to end break:', err);
+      setError(err?.message || 'Could not resume from break.');
+    }
+  }, [roomId]);
+
+  const sendTimelineEvent = useCallback(
+    async (type: RoomEventType, message?: string) => {
+      if (!roomId) return;
+      try {
+        const ev = await dataService.rooms.sendRoomEvent(roomId, type, message);
+        setEvents((prev) => (prev.some((e) => e.id === ev.id) ? prev : [...prev, ev]));
+      } catch (err: any) {
+        console.error('Failed to send room event:', err);
       }
     },
     [roomId]
@@ -412,6 +484,7 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
     participants,
     presenceUsers: presenceUsers.length > 0 ? presenceUsers : (participants as unknown as RoomPresenceUser[]),
     messages,
+    events,
     remainingSeconds,
     progressPercent,
     isHost,
@@ -421,8 +494,11 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
     startTimer,
     pauseTimer,
     resetTimer,
+    startBreak,
+    endBreak,
     updateStatus,
     sendMessage,
+    sendTimelineEvent,
     leaveRoom,
     deleteRoom,
     refreshRoom: fetchRoomData

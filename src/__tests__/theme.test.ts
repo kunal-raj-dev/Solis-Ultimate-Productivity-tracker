@@ -182,4 +182,16 @@ describe('Solis Theme System & Night Mode Semantic Synchronization', () => {
     applyThemeEngine('light', root, meta);
     expect(root.getAttribute('data-theme')).toBe('light');
   });
+
+  it('correctly toggles away from system mode based on active isDark state', () => {
+    const resolveNextTheme = (prev: ThemeMode, isDark: boolean): ThemeMode => {
+      const isCurrentlyDark = prev === 'dark' || (prev === 'system' && isDark);
+      return isCurrentlyDark ? 'light' : 'dark';
+    };
+
+    expect(resolveNextTheme('system', true)).toBe('light');
+    expect(resolveNextTheme('system', false)).toBe('dark');
+    expect(resolveNextTheme('dark', true)).toBe('light');
+    expect(resolveNextTheme('light', false)).toBe('dark');
+  });
 });

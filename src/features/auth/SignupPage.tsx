@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button/Button';
 import { CustomSelect } from '../../components/ui/Select/CustomSelect';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { ServiceContainer } from '../../services/dataService';
 import './AuthPages.css';
 
 export const SignupPage: React.FC = () => {
@@ -16,7 +17,7 @@ export const SignupPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const { signup, isAuthenticated, isLoading: authLoading, authError, clearError } = useAuth();
+  const { login, signup, isAuthenticated, isLoading: authLoading, authError, clearError } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -163,6 +164,41 @@ export const SignupPage: React.FC = () => {
           leftIcon={<Sparkles size={16} />}
         >
           Initialize Sanctuary
+        </Button>
+
+        <div className="solis-auth-divider">
+          <span>or try demo space</span>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="md"
+          isFullWidth
+          disabled={isSubmitting}
+          className="solis-auth-guest-btn tactile-press"
+          leftIcon={<Sparkles size={16} color="var(--color-coral-500)" />}
+          onClick={async () => {
+            setIsSubmitting(true);
+            setLocalError(null);
+            clearError();
+            try {
+              ServiceContainer.switchToMock();
+              await login({ email: 'scholar@solis.space', password: 'guest-session' });
+              addToast({
+                title: 'Demo Sanctuary Ready',
+                description: 'Loaded with complete mock study curriculum and goals.',
+                type: 'success'
+              });
+              navigate('/app/dashboard', { replace: true });
+            } catch (err: any) {
+              setLocalError(err?.message || 'Could not load guest session.');
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+        >
+          Explore Demo Sanctuary (Instant Guest)
         </Button>
       </form>
 
