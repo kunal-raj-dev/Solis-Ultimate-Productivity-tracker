@@ -78,6 +78,8 @@ export const ActiveRoomView: React.FC = () => {
   const [myStatus, setMyStatus] = useState<ParticipantStatus>('focusing');
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
+  const [personalIntention, setPersonalIntention] = useState(() => localStorage.getItem(`solis_room_intention_${roomId}`) || '');
+  const [isEditingIntention, setIsEditingIntention] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +120,17 @@ export const ActiveRoomView: React.FC = () => {
       });
     } catch {
       addToast({ title: 'Clipboard error', type: 'error' });
+    }
+  };
+
+  const handleSaveIntention = () => {
+    if (roomId) {
+      localStorage.setItem(`solis_room_intention_${roomId}`, personalIntention.trim());
+    }
+    setIsEditingIntention(false);
+    if (personalIntention.trim()) {
+      sendTimelineEvent('reaction', `Set intention: "${personalIntention.trim()}"`);
+      addToast({ title: 'Intention Committed', description: `Focusing on: "${personalIntention.trim()}"`, type: 'success' });
     }
   };
 
@@ -317,6 +330,52 @@ export const ActiveRoomView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Personal Focus Intention */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          padding: '10px 16px',
+          backgroundColor: 'var(--bg-surface-secondary)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)',
+          marginBottom: '16px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+          <Sparkles size={16} color="var(--color-amber-500)" />
+          <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+            My Personal Outcome:
+          </span>
+          {isEditingIntention ? (
+            <Input
+              value={personalIntention}
+              onChange={(e) => setPersonalIntention(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveIntention()}
+              placeholder="e.g. Finish 5 recursion problems..."
+              autoFocus
+              style={{ flex: 1 }}
+            />
+          ) : (
+            <span style={{ fontSize: 'var(--text-body-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {personalIntention ? `"${personalIntention}"` : 'Declare what you are working on...'}
+            </span>
+          )}
+        </div>
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() => {
+            if (isEditingIntention) handleSaveIntention();
+            else setIsEditingIntention(true);
+          }}
+        >
+          {isEditingIntention ? 'Commit' : personalIntention ? 'Change' : '+ Set'}
+        </Button>
+      </div>
 
       {/* Break Mode Ambient Indicator */}
       {room.isBreak && (

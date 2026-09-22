@@ -58,6 +58,24 @@ export const RoomReflectionModal: React.FC<RoomReflectionModalProps> = ({
 
       await dataService.rooms.saveRoomReflection(reflectionPayload);
 
+      // 1b. Canonical Study Session Integration (Cross-Feature Domain Sync)
+      if (room.subjectId) {
+        try {
+          await dataService.study.logSession({
+            subjectId: room.subjectId,
+            subjectName: room.subjectName || 'Study Room Session',
+            type: 'deep_study',
+            durationMinutes: sessionMinutes,
+            topicsCovered: room.topic ? [room.topic] : ['Study Sanctuary'],
+            notes: keyTakeaways.trim(),
+            retentionRating: (Math.min(5, Math.max(1, retentionRating)) as 1 | 2 | 3 | 4 | 5) || 4,
+            completedAt: new Date().toISOString()
+          });
+        } catch (studyErr) {
+          // Logged non-destructively
+        }
+      }
+
       // 2. Optionally create follow-up Task if entered
       if (convertTaskTitle.trim()) {
         await dataService.tasks.createTask({

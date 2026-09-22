@@ -131,9 +131,9 @@
 }
 
 .solis-room-card:hover {
-  transform: translateY(-2px);
   border-color: var(--border-focus, rgba(255, 107, 74, 0.3));
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  background-color: var(--bg-surface-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .solis-room-card--running {
@@ -242,7 +242,6 @@
 
 .solis-room-card__enter-btn:hover {
   background-color: var(--color-coral-600, #ea580c);
-  transform: translateY(-1px);
 }
 
 /* Room Code Join Quick Bar */

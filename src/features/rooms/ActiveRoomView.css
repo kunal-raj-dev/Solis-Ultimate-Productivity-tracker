@@ -412,12 +412,10 @@
 
 .solis-presence-dot--focusing {
   background-color: var(--color-sage-500, #10b981);
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
 .solis-presence-dot--break {
   background-color: var(--color-lavender-500, #8b5cf6);
-  box-shadow: 0 0 6px rgba(139, 92, 246, 0.6);
 }
 
 .solis-presence-dot--idle {

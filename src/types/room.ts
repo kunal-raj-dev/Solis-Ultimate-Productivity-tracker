@@ -7,6 +7,8 @@ export type RoomTimerState = 'idle' | 'running' | 'paused';
 
 export type ParticipantStatus = 'focusing' | 'break' | 'idle' | 'brainstorming';
 
+export type RoomParticipantRole = 'owner' | 'co_host' | 'participant' | 'viewer';
+
 export type RoomSessionType = 'deep_focus' | 'pomodoro' | 'exam_cram' | 'silent_reading' | 'code_review';
 
 export interface StudyRoom {
@@ -38,6 +40,7 @@ export interface RoomParticipant {
   userName?: string;
   userEmail?: string;
   status: ParticipantStatus;
+  role?: RoomParticipantRole;
   joinedAt: string;
   personalObjective?: string;
   isReady?: boolean;
@@ -106,6 +109,7 @@ export interface RoomPresenceUser {
   userId: string;
   name: string;
   status: ParticipantStatus;
+  role?: RoomParticipantRole;
   joinedAt: string;
   personalObjective?: string;
   isReady?: boolean;
