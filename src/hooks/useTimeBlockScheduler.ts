@@ -12,13 +12,20 @@ interface UseTimeBlockSchedulerOptions {
   onFallbackNotice?: (message: string) => void;
 }
 
+// Shared global cache across scheduler instances to prevent duplicate notifications
+export const globalNotifiedStarts = new Set<string>();
+export const globalNotifiedReviews = new Set<string>();
+
+export function resetSchedulerHistory(): void {
+  globalNotifiedStarts.clear();
+  globalNotifiedReviews.clear();
+}
+
 export function useTimeBlockScheduler({
   timeBlocks,
   onReviewNeeded,
   onFallbackNotice
 }: UseTimeBlockSchedulerOptions): void {
-  const notifiedStartsRef = useRef<Set<string>>(new Set());
-  const notifiedReviewsRef = useRef<Set<string>>(new Set());
   const onReviewNeededRef = useRef(onReviewNeeded);
   const onFallbackNoticeRef = useRef(onFallbackNotice);
 
@@ -57,10 +64,10 @@ export function useTimeBlockScheduler({
         if (
           elapsedSinceStart >= 0 &&
           elapsedSinceStart <= 3 &&
-          !notifiedStartsRef.current.has(blockKey) &&
+          !globalNotifiedStarts.has(blockKey) &&
           block.status === 'planned'
         ) {
-          notifiedStartsRef.current.add(blockKey);
+          globalNotifiedStarts.add(blockKey);
           notifyTimeBlockStart(
             block.taskTitle,
             block.durationMinutes,
@@ -75,9 +82,9 @@ export function useTimeBlockScheduler({
         if (
           isAtTransitionBoundary &&
           (block.status === 'planned' || block.status === 'active') &&
-          !notifiedReviewsRef.current.has(blockKey)
+          !globalNotifiedReviews.has(blockKey)
         ) {
-          notifiedReviewsRef.current.add(blockKey);
+          globalNotifiedReviews.add(blockKey);
           notifyHourReviewPrompt(
             blockEndHour,
             block.taskTitle,

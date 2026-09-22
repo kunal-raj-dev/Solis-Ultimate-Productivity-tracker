@@ -80,7 +80,12 @@ export const AdaptiveStudySuggester: React.FC = () => {
                   variant="outline" 
                   size="sm" 
                   rightIcon={<ArrowRight size={14} />}
-                  onClick={() => navigate(resolveStudySuggestionRoute(sug))}
+                  onClick={() => navigate(resolveStudySuggestionRoute(sug), {
+                    state: {
+                      subjectId: sug.actionPayload?.subjectId,
+                      title: sug.title
+                    }
+                  })}
                 >
                   Action
                 </Button>

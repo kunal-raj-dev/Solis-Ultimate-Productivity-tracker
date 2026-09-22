@@ -480,6 +480,25 @@ export class MockDataService implements IDataService {
       };
 
       this._tasks[index] = updated;
+
+      // Bidirectional sync with linked study plan item and time blocks
+      if (updates.status !== undefined) {
+        const isDone = updates.status === 'completed';
+        if (updated.planItemId) {
+          const planItem = this._studyPlan.find((p) => p.id === updated.planItemId);
+          if (planItem) {
+            planItem.completed = isDone;
+          }
+        }
+        this._timeBlocks.forEach((tb) => {
+          if (tb.taskId === id) {
+            tb.status = isDone ? 'completed' : 'planned';
+            tb.progressPercent = isDone ? 100 : 0;
+            tb.updatedAt = new Date().toISOString();
+          }
+        });
+      }
+
       this.notify();
       return { ...updated };
     },

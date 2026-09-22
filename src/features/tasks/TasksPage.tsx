@@ -77,7 +77,7 @@ export const TasksPage: React.FC = () => {
   const [reviewingBlock, setReviewingBlock] = useState<TaskTimeBlock | null>(null);
 
   // URL Params for deep linking
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Filter & Search State
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -240,10 +240,51 @@ export const TasksPage: React.FC = () => {
   }, [selectedDate, loadTimeBlocks]);
 
   useEffect(() => {
-    if (searchParams.get('action') === 'new') {
+    const action = searchParams.get('action');
+    if (action === 'new') {
       openCreateModal();
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('action');
+        return next;
+      }, { replace: true });
+    } else if (action === 'replan') {
+      setViewMode('timeline');
+      const conflictId = searchParams.get('id');
+      const targetTime = searchParams.get('time');
+      if (conflictId && targetTime) {
+        const [hStr, mStr] = targetTime.split(':');
+        const targetHour = parseInt(hStr, 10);
+        const targetMin = parseInt(mStr, 10) || 0;
+        if (!isNaN(targetHour)) {
+          dataService.tasks.getTimeBlocks(selectedDate).then((blocks) => {
+            const targetBlock = blocks.find((b) => b.id === conflictId);
+            if (targetBlock) {
+              dataService.tasks.updateTimeBlock(conflictId, {
+                startHour: targetHour,
+                startMinute: targetMin,
+                status: 'planned'
+              }).then((updated) => {
+                setTimeBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+                addToast({
+                  title: 'Calendar Conflict Resolved',
+                  description: `Rescheduled "${targetBlock.taskTitle}" to ${targetTime}.`,
+                  type: 'success'
+                });
+              }).catch(() => {});
+            }
+          });
+        }
+      }
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('action');
+        next.delete('id');
+        next.delete('time');
+        return next;
+      }, { replace: true });
     }
-  }, [searchParams, openCreateModal]);
+  }, [searchParams, openCreateModal, selectedDate, addToast, setSearchParams]);
 
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
   const undoShortcutLabel = isMac ? '⌘Z' : 'Ctrl+Z';

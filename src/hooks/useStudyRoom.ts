@@ -43,7 +43,9 @@ export interface UseStudyRoomResult {
 export function computeAuthoritativeRemaining(room: StudyRoom | null): number {
   if (!room) return 0;
 
-  const target = room.targetDurationSeconds || 1500;
+  const target = room.isBreak
+    ? (room.breakDurationSeconds || 300)
+    : (room.targetDurationSeconds || 1500);
   const pausedElapsed = room.pausedElapsedSeconds || 0;
 
   if (room.timerState === 'idle') {

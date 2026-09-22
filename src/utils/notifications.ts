@@ -3,6 +3,8 @@
  * Handles browser notification permissions, quiet hours, and scheduling.
  */
 
+import { notificationService } from '../services/notifications/notification.service';
+
 export interface NotificationPreferences {
   studyReminders: boolean;
   focusReminders: boolean;
@@ -185,6 +187,17 @@ export function notifyTimeBlockStart(
     return false;
   }
 
+  try {
+    notificationService.dispatch({
+      category: 'task',
+      priority: 'high',
+      title: `Starting Planned Block: ${blockTitle}`,
+      message: `Your scheduled ${durationMinutes}m focus window is starting now. Enter the flow.`,
+      actionUrl: '/app/tasks',
+      actionLabel: 'Open Timeline'
+    }, { skipBrowserNotification: true });
+  } catch {}
+
   const sent = sendBrowserNotification(
     `Starting Planned Block: ${blockTitle}`,
     {
@@ -212,6 +225,20 @@ export function notifyHourReviewPrompt(
   }
 
   const formattedHour = `${hour % 12 === 0 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
+
+  try {
+    notificationService.dispatch({
+      category: 'task',
+      priority: 'normal',
+      title: `Hour Complete (${formattedHour})`,
+      message: blockTitle
+        ? `What did you get done for "${blockTitle}"? Take 30 seconds to capture progress.`
+        : 'The hour has concluded. Reflect on what was accomplished and plan what is next.',
+      actionUrl: '/app/tasks',
+      actionLabel: 'Log Hour Review'
+    }, { skipBrowserNotification: true });
+  } catch {}
+
   const sent = sendBrowserNotification(
     `Hour Complete (${formattedHour})`,
     {
@@ -239,6 +266,17 @@ export function notifyStudyRoomEvent(
   if (prefs.quietHoursEnabled && isWithinQuietHours(new Date(), prefs.quietHoursStart, prefs.quietHoursEnd)) {
     return false;
   }
+
+  try {
+    notificationService.dispatch({
+      category: 'room',
+      priority: 'normal',
+      title,
+      message: body,
+      actionUrl: '/app/study-rooms',
+      actionLabel: 'Enter Room'
+    }, { skipBrowserNotification: true });
+  } catch {}
 
   const sent = sendBrowserNotification(
     title,

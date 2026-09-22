@@ -467,6 +467,42 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         parkedThoughts: parkedThoughts.length > 0 ? parkedThoughts : undefined
       });
 
+      // Synchronize into canonical Study Sessions & Syllabus Topic Mastery
+      if (selectedSubjectId) {
+        try {
+          const rating = (Math.min(5, Math.max(1, Math.round(data.flowQuality))) as 1 | 2 | 3 | 4 | 5) || 4;
+          await dataService.study.logSession({
+            subjectId: selectedSubjectId,
+            subjectName: selectedSubject?.name || 'General Study',
+            planItemId: selectedPlanItemId || undefined,
+            type: preset === 'deep_flow' ? 'deep_study' : 'active_recall',
+            durationMinutes: completedSessionMinutes,
+            topicsCovered: focusTitle ? [focusTitle] : [],
+            notes: data.notes || undefined,
+            retentionRating: rating,
+            completedAt: new Date().toISOString()
+          });
+
+          // Check if there is an unstudied syllabus topic matching this focus title and advance it to 'learning'
+          if (focusTitle && focusTitle.trim()) {
+            try {
+              const subjectTopics = await dataService.study.getTopics(selectedSubjectId);
+              const trimmed = focusTitle.trim().toLowerCase();
+              const matchedTopic = subjectTopics.find(
+                (t) => t.title && t.title.trim().toLowerCase() === trimmed
+              );
+              if (matchedTopic && matchedTopic.masteryLevel === 'unstudied') {
+                await dataService.study.updateTopic(matchedTopic.id, { masteryLevel: 'learning' });
+              }
+            } catch {
+              // Non-critical topic progression catch
+            }
+          }
+        } catch (studyErr) {
+          console.error('Failed to sync study session from focus:', studyErr);
+        }
+      }
+
       // Update linked task progress and/or completion
       if (selectedTaskId) {
         try {

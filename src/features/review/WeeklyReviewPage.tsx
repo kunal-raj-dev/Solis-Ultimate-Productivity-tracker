@@ -136,10 +136,42 @@ export const WeeklyReviewPage: React.FC = () => {
         planningRealismRatio: intelReport.execution.planningRealismRatio,
         consistencyPercentage: intelReport.rhythm.consistencyPercentage
       };
-      const res = await aiService.synthesizeWeek(data);
-      setAiSynthesis(res);
-    } catch (err: any) {
-      addToast({ title: 'AI Error', description: err.message, type: 'error' });
+      try {
+        const res = await aiService.synthesizeWeek(data);
+        setAiSynthesis(res);
+      } catch (aiErr: any) {
+        // Fallback to deterministic data-grounded synthesis
+        console.warn('AI unavailable, falling back to deterministic weekly synthesis:', aiErr);
+        const deterministicSummary = `You dedicated ${totalStudyHours}h to focused study and completed ${completedTasks.length} tasks across ${focusSessions.length} focus sessions this week.`;
+        const observations = [
+          intelReport.execution.planningRealismRatio > 1.25
+            ? `Planning realism ratio was ${intelReport.execution.planningRealismRatio.toFixed(2)}x (tasks required more time than estimated).`
+            : `Execution pacing was consistent with a ${intelReport.rhythm.consistencyPercentage.toFixed(0)}% rhythm consistency.`,
+          focusSessions.length >= 4
+            ? `Deep flow momentum was strong with ${focusSessions.length} recorded focus blocks.`
+            : `Focus volume was modest (${focusSessions.length} sessions); consider scheduling structured daily blocks.`,
+          frictionPoints.trim()
+            ? `Self-reported friction: "${frictionPoints.slice(0, 70)}..."`
+            : `No operational blockers logged during reflection.`
+        ];
+        const suggestions = [
+          `Target ${nextWeekTargetHours}h of deliberate study next week.`,
+          topRecommendation,
+          `Schedule 45-minute continuous focus blocks during high-clarity morning hours.`
+        ];
+
+        setAiSynthesis({
+          summary: deterministicSummary,
+          observations,
+          suggestions
+        });
+
+        addToast({
+          title: 'Algorithmic Synthesis',
+          description: 'Loaded deterministic weekly review synthesis (AI offline/unconfigured).',
+          type: 'info'
+        });
+      }
     } finally {
       setIsGeneratingAi(false);
     }

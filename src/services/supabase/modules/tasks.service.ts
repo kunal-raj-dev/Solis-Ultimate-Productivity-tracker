@@ -182,6 +182,30 @@ export class SupabaseTaskService implements ITaskService {
 
     if (error || !data) throw error || new Error(`Task ${id} update failed`);
 
+    // Bidirectional sync with linked study plan item and time blocks
+    if (updates.status !== undefined) {
+      const isDone = updates.status === 'completed';
+      if (data.plan_item_id) {
+        try {
+          await this.ctx.client
+            .from('study_plan_items')
+            .update({ completed: isDone })
+            .eq('id', data.plan_item_id)
+            .eq('user_id', userId);
+        } catch {}
+      }
+      try {
+        await this.ctx.client
+          .from('task_time_blocks')
+          .update({
+            status: isDone ? 'completed' : 'planned',
+            progress_percent: isDone ? 100 : 0
+          })
+          .eq('task_id', id)
+          .eq('user_id', userId);
+      } catch {}
+    }
+
     this.ctx.notify();
     return mapTask(data, data.subtasks || []);
   };

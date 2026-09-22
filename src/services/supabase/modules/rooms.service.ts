@@ -443,9 +443,11 @@ export class SupabaseRoomsService implements IRoomService {
       try {
         await this.ctx.client.from('study_sessions').insert({
           user_id: userId,
+          subject_id: reflection.subjectId || null,
           subject_name: reflection.subjectName || reflection.roomTitle || 'Study Sanctuary',
           duration_minutes: Math.max(1, Math.round((reflection.durationSeconds || 0) / 60)),
-          notes: reflection.reflectionText || 'Study Room Session Completed'
+          notes: reflection.reflectionText || 'Study Room Session Completed',
+          retention_rating: reflection.retentionRating || 5
         });
       } catch (err) {
         console.warn('Could not auto-log study session:', err);

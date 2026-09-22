@@ -138,12 +138,25 @@ export class NotificationService {
   }
 
   public dispatch(
-    payload: Omit<SolisNotification, 'id' | 'createdAt' | 'read'>
+    payload: Omit<SolisNotification, 'id' | 'createdAt' | 'read'>,
+    options?: { skipBrowserNotification?: boolean }
   ): SolisNotification | null {
     if (!this.preferences.enabled) return null;
     if (!this.preferences.categories[payload.category]) return null;
 
     const isQuiet = this.isInQuietHours();
+
+    // Deduplication: prevent identical unread notification within 5 minutes
+    const fiveMinsAgo = Date.now() - 5 * 60 * 1000;
+    const isDuplicate = this.notifications.some(
+      (n) =>
+        !n.read &&
+        n.title === payload.title &&
+        n.message === payload.message &&
+        n.category === payload.category &&
+        new Date(n.createdAt).getTime() > fiveMinsAgo
+    );
+    if (isDuplicate) return null;
 
     const newNotif: SolisNotification = {
       ...payload,
@@ -157,6 +170,7 @@ export class NotificationService {
 
     // Trigger Browser Web Notification if permission granted and not muted by quiet hours
     if (
+      !options?.skipBrowserNotification &&
       (!isQuiet || payload.priority === 'urgent') &&
       this.preferences.webPushEnabled &&
       typeof window !== 'undefined' &&

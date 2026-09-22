@@ -33,12 +33,68 @@ export const AIGenerationModal: React.FC<AIGenerationModalProps> = ({
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedCards([]);
-    try {
-      const cards = await aiService.generateFlashcards(noteContent, 3);
-      setGeneratedCards(cards);
-    } catch (err: any) {
-      addToast({ title: 'AI Generation Failed', description: err.message, type: 'error' });
-    } finally {
+      try {
+        const cards = await aiService.generateFlashcards(noteContent, 3);
+        setGeneratedCards(cards);
+      } catch (err: any) {
+        // Fallback: heuristic card extraction from note content
+        console.warn('AI unavailable, extracting flashcards heuristically:', err);
+        const lines = noteContent
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l.length > 10 && !l.startsWith('#'));
+
+        const fallbackCards: Array<{ front: string; back: string; type: 'standard' | 'cloze' | 'concept' }> = [];
+
+        // Pattern 1: Term: Definition
+        for (const line of lines) {
+          const colonMatch = line.match(/^[-*]?\s*\*\*?([^*:]+)\*\*?:\s*(.+)$/);
+          if (colonMatch && colonMatch[1] && colonMatch[2]) {
+            fallbackCards.push({
+              front: `What is ${colonMatch[1].trim()}?`,
+              back: colonMatch[2].trim(),
+              type: 'concept'
+            });
+            if (fallbackCards.length >= 3) break;
+          }
+        }
+
+        // Pattern 2: Headings and paragraphs
+        if (fallbackCards.length < 3) {
+          const sections = noteContent.split(/#{1,3}\s+/).filter(Boolean);
+          for (const sec of sections) {
+            const secLines = sec.split('\n').map((s) => s.trim()).filter(Boolean);
+            if (secLines.length >= 2) {
+              const prompt = secLines[0];
+              const answer = secLines.slice(1).join(' ');
+              if (prompt.length < 80 && answer.length > 20) {
+                fallbackCards.push({
+                  front: `Explain: ${prompt}`,
+                  back: answer.slice(0, 200),
+                  type: 'standard'
+                });
+                if (fallbackCards.length >= 3) break;
+              }
+            }
+          }
+        }
+
+        // Generic fallback from note title if still empty
+        if (fallbackCards.length === 0) {
+          fallbackCards.push({
+            front: `Core principles of ${noteTitle || 'this topic'}`,
+            back: noteContent.slice(0, 220) || 'Review foundational notes for details.',
+            type: 'concept'
+          });
+        }
+
+        setGeneratedCards(fallbackCards);
+        addToast({
+          title: 'Algorithmic Flashcards',
+          description: `Extracted ${fallbackCards.length} flashcard(s) from note structure (AI offline/unconfigured).`,
+          type: 'info'
+        });
+      } finally {
       setIsGenerating(false);
     }
   };

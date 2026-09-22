@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
 import { Sidebar } from '../components/layout/Sidebar/Sidebar';
@@ -12,6 +12,10 @@ import { useCircadianCanvas } from '../hooks/useCircadianCanvas';
 import { FocusProvider } from '../context/FocusContext';
 import { MiniFocusPlayer } from '../components/layout/MiniFocusPlayer/MiniFocusPlayer';
 import { isFocusRoute } from '../constants/navigation';
+import { dataService } from '../services/dataService';
+import { getISODateString } from '../utils/date';
+import { notifyTimeBlockStart, notifyHourReviewPrompt } from '../utils/notifications';
+import { globalNotifiedStarts, globalNotifiedReviews } from '../hooks/useTimeBlockScheduler';
 import { cn } from '../utils/classNames';
 import './AppLayout.css';
 
@@ -30,6 +34,56 @@ export const AppLayout: React.FC = () => {
   });
 
   useCircadianCanvas();
+
+  // Global Time Block Monitor: ensures scheduled alerts fire across all views
+  useEffect(() => {
+    let isMounted = true;
+    const checkTodaySchedule = async () => {
+      try {
+        const todayStr = getISODateString(new Date());
+        const blocks = await dataService.tasks.getTimeBlocks(todayStr);
+        if (!isMounted || !blocks || !blocks.length) return;
+
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const nowTotalMins = currentHour * 60 + currentMinute;
+
+        blocks.forEach((block) => {
+          if (block.date !== todayStr) return;
+          const blockKey = `${block.id}_${block.date}_${block.startHour}_${block.startMinute || 0}`;
+          const totalStartMins = block.startHour * 60 + (block.startMinute || 0);
+          const totalEndMins = totalStartMins + (block.durationMinutes || 60);
+          const blockEndHour = Math.floor(totalEndMins / 60) % 24;
+
+          const elapsedSinceStart = nowTotalMins - totalStartMins;
+          if (elapsedSinceStart >= 0 && elapsedSinceStart <= 3 && block.status === 'planned') {
+            if (!globalNotifiedStarts.has(blockKey)) {
+              globalNotifiedStarts.add(blockKey);
+              notifyTimeBlockStart(block.taskTitle, block.durationMinutes);
+            }
+          }
+
+          const elapsedSinceEnd = nowTotalMins - totalEndMins;
+          if (elapsedSinceEnd >= 0 && elapsedSinceEnd <= 15 && (block.status === 'planned' || block.status === 'active')) {
+            if (!globalNotifiedReviews.has(blockKey)) {
+              globalNotifiedReviews.add(blockKey);
+              notifyHourReviewPrompt(blockEndHour, block.taskTitle);
+            }
+          }
+        });
+      } catch {
+        // Silently skip background poll errors
+      }
+    };
+
+    checkTodaySchedule();
+    const interval = setInterval(checkTodaySchedule, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleToggleSidebar = () => {
     setIsSidebarCollapsed((prev) => {
