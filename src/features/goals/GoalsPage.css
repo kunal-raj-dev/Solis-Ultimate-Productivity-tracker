@@ -22,7 +22,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .solis-goals-stat-card:hover {
@@ -31,7 +31,7 @@
 }
 
 .solis-goals-stat-card--highlight {
-  background: linear-gradient(135deg, var(--bg-surface-primary) 0%, var(--bg-surface-secondary) 100%);
+  background: var(--bg-surface-secondary);
   border-color: var(--color-lavender-300, rgba(147, 112, 219, 0.2));
 }
 
@@ -89,6 +89,7 @@
   display: flex;
   align-items: baseline;
   gap: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .solis-goals-stat-card__subvalue {
@@ -282,7 +283,7 @@
   gap: 4px;
   height: 36px;
   padding: 0 10px;
-  border: 1px dashed var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: none;
   color: var(--text-muted);
@@ -698,7 +699,7 @@
   padding: 10px;
   background-color: var(--bg-surface-secondary);
   border-radius: var(--radius-md);
-  border: 1px dashed var(--border-subtle);
+  border: 1px solid var(--border-subtle);
 }
 
 .solis-goal-card__inline-input {

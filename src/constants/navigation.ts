@@ -7,10 +7,10 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
     items: [
       {
         id: 'dashboard',
-        label: 'Daily Flow',
+        label: 'Today',
         path: '/app/dashboard',
         iconName: 'Compass',
-        description: 'Context, momentum, and daily arrival'
+        description: 'Daily operating system & intentional schedule'
       },
       {
         id: 'tasks',

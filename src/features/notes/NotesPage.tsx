@@ -12,7 +12,9 @@ import {
   BookOpen,
   Save,
   Download,
-  Flame
+  Flame,
+  Sparkles,
+  CheckSquare
 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -26,6 +28,8 @@ import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { ConfirmationDialog } from '../../components/feedback/ConfirmationDialog/ConfirmationDialog';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
+import { AIGenerationModal } from '../../components/features/Notes/AIGenerationModal';
+import { AITakeQuizModal } from '../../components/features/Notes/AITakeQuizModal';
 import { MarkdownReadingView } from '../../components/features/Notes/MarkdownReadingView';
 import { calculateNoteMetrics, serializeNoteToMarkdown } from '../../utils/notes/markdownParser';
 import { useToast } from '../../context/ToastContext';
@@ -64,10 +68,12 @@ export const NotesPage: React.FC = () => {
   const [mobileView, setMobileView] = useState<'index' | 'editor'>('index');
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+  const [isAIGenModalOpen, setIsAIGenModalOpen] = useState(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || searchParams.get('search') || '');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterSubjectId, setFilterSubjectId] = useState<string>('all');
 
@@ -80,6 +86,33 @@ export const NotesPage: React.FC = () => {
   const [newTagInput, setNewTagInput] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [noteViewMode, setNoteViewMode] = useState<'edit' | 'read' | 'split'>('edit');
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && q !== searchQuery) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && notes.length > 0) {
+      const match = notes.find((n) => n.title.toLowerCase() === q.toLowerCase());
+      if (match && selectedNote?.id !== match.id) {
+        handleSelectNote(match);
+      }
+    }
+  }, [searchParams, notes, selectedNote]);
+
+  useEffect(() => {
+    const paramId = searchParams.get('id') || searchParams.get('noteId');
+    if (paramId && notes.length > 0) {
+      const match = notes.find((n) => n.id === paramId);
+      if (match && selectedNote?.id !== match.id) {
+        handleSelectNote(match);
+      }
+    }
+  }, [searchParams, notes, selectedNote]);
 
   const noteMetrics = useMemo(() => calculateNoteMetrics(content), [content]);
 
@@ -125,6 +158,52 @@ export const NotesPage: React.FC = () => {
       addToast({ title: 'Flashcard Generated from Note', description: cardData.frontPrompt.substring(0, 40) + '...', type: 'success' });
     } catch (err) {
       addToast({ title: 'Could not create flashcard', type: 'error' });
+    }
+  };
+
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleConvertToTask = async () => {
+    if (!selectedNote) return;
+
+    let taskTitle = '';
+    const textarea = contentTextareaRef.current;
+    if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+      taskTitle = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd).trim();
+    }
+
+    if (!taskTitle) {
+      const lines = content.split('\n');
+      const actionLine = lines.find((l) => /^(\s*[-*]\s*\[\s*\]|\s*[-*]\s*TODO:?|\s*TODO:?)/i.test(l));
+      if (actionLine) {
+        taskTitle = actionLine.replace(/^(\s*[-*]\s*\[\s*\]|\s*[-*]\s*TODO:?|\s*TODO:?)/i, '').trim();
+      }
+    }
+
+    if (!taskTitle) {
+      taskTitle = `Review note: ${title || 'Knowledge Note'}`;
+    }
+
+    try {
+      const newTask = await dataService.tasks.createTask({
+        title: taskTitle,
+        description: `Generated from Knowledge Note: "${title || 'Untitled'}" (ID: ${selectedNote.id})`,
+        priority: 'medium',
+        status: 'todo',
+        subjectId: subjectId || undefined
+      });
+
+      addToast({
+        title: 'Task Created from Note',
+        description: `"${newTask.title}" added to your task pipeline.`,
+        type: 'success'
+      });
+    } catch (err) {
+      addToast({
+        title: 'Task Creation Failed',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
     }
   };
 
@@ -663,10 +742,20 @@ export const NotesPage: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  leftIcon={<CheckSquare size={13} color="var(--color-emerald-500, #10b981)" />}
+                  onClick={handleConvertToTask}
+                  title="Convert selected text or note to actionable Task"
+                >
+                  + Task
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
                   leftIcon={<BrainCircuit size={13} />}
                   onClick={() => setIsCardModalOpen(true)}
                   style={{ color: 'var(--color-coral-500)' }}
-                  title="Generate Flashcard from Note"
+                  title="Create Flashcard Manually"
                 >
                   + Card
                 </Button>
@@ -674,9 +763,30 @@ export const NotesPage: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  leftIcon={<Sparkles size={13} />}
+                  onClick={() => setIsAIGenModalOpen(true)}
+                  style={{ color: 'var(--color-amber-500)' }}
+                  title="Generate Flashcards with AI"
+                >
+                  Auto-Gen
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Sparkles size={13} />}
+                  onClick={() => setIsQuizModalOpen(true)}
+                  style={{ color: 'var(--color-lavender-500)' }}
+                  title="Generate Quiz with AI"
+                >
+                  Quiz
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
                   leftIcon={<Bookmark size={13} />}
                   onClick={() => setIsResourceModalOpen(true)}
-                  style={{ color: 'var(--color-amber-500)' }}
                   title="Attach & Cite Study Resource"
                 >
                   + Cite
@@ -771,6 +881,7 @@ export const NotesPage: React.FC = () => {
             {/* Thinking Body according to active mode */}
             {noteViewMode === 'edit' && (
               <textarea
+                ref={contentTextareaRef}
                 value={content}
                 onChange={(e) => handleContentChange(e.target.value)}
                 placeholder="Write structured insights, mathematical derivations, architecture proofs, or lecture syntheses..."
@@ -780,7 +891,11 @@ export const NotesPage: React.FC = () => {
 
             {noteViewMode === 'read' && (
               <div style={{ minHeight: '480px' }}>
-                <MarkdownReadingView content={content} onToggleTask={handleToggleMarkdownTask} />
+                <MarkdownReadingView
+                  content={content}
+                  onToggleTask={handleToggleMarkdownTask}
+                  onWikilinkClick={(target) => navigate(`/app/notes?q=${encodeURIComponent(target)}`)}
+                />
               </div>
             )}
 
@@ -796,7 +911,11 @@ export const NotesPage: React.FC = () => {
                   />
                 </div>
                 <div className="solis-notes-split-pane solis-notes-split-pane--preview">
-                  <MarkdownReadingView content={content} onToggleTask={handleToggleMarkdownTask} />
+                  <MarkdownReadingView
+                    content={content}
+                    onToggleTask={handleToggleMarkdownTask}
+                    onWikilinkClick={(target) => navigate(`/app/notes?q=${encodeURIComponent(target)}`)}
+                  />
                 </div>
               </div>
             )}
@@ -888,6 +1007,27 @@ export const NotesPage: React.FC = () => {
         confirmLabel="Delete Note"
         variant="danger"
       />
+
+      {/* AI Flashcard Generator Modal */}
+      {selectedNote && (
+        <>
+          <AIGenerationModal
+            isOpen={isAIGenModalOpen}
+            onClose={() => setIsAIGenModalOpen(false)}
+            noteTitle={title}
+            noteContent={content}
+            subjectId={subjectId}
+            noteId={selectedNote.id}
+          />
+          
+          <AITakeQuizModal
+            isOpen={isQuizModalOpen}
+            onClose={() => setIsQuizModalOpen(false)}
+            noteTitle={title}
+            noteContent={content}
+          />
+        </>
+      )}
     </div>
   );
 };

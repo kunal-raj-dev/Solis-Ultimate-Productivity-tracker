@@ -11,7 +11,10 @@ import {
   Sun,
   Flame,
   ArrowRight,
-  Plus
+  Plus,
+  Calendar,
+  Users,
+  Sparkles
 } from 'lucide-react';
 import {
   searchWorkspace,
@@ -60,12 +63,28 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
 
   const quickActions: CommandItem[] = [
     {
-      id: 'action-open-guides',
-      title: 'Open Guide Center & Help',
-      subtitle: 'Browse 18 structured guides on study mastery',
+      id: 'action-plan-day',
+      title: 'Plan My Day (Auto-Schedule)',
+      subtitle: 'Distribute tasks and study blocks into true available time',
       type: 'action',
-      shortcut: '?',
-      onSelect: () => openGuide()
+      shortcut: 'P',
+      actionUrl: '/app/dashboard?action=plan'
+    },
+    {
+      id: 'action-start-room',
+      title: 'Create Collaborative Study Room',
+      subtitle: 'Host a focus pod with epoch timers & shared reflections',
+      type: 'action',
+      shortcut: 'R',
+      actionUrl: '/app/rooms'
+    },
+    {
+      id: 'action-calendar-overlay',
+      title: 'Inspect Calendar Free Time & Conflicts',
+      subtitle: 'View external commitments, true free time & focus slots',
+      type: 'action',
+      shortcut: 'C',
+      actionUrl: '/app/dashboard'
     },
     {
       id: 'action-new-task',
@@ -98,6 +117,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       type: 'action',
       shortcut: 'S',
       actionUrl: '/app/study?action=log'
+    },
+    {
+      id: 'action-open-guides',
+      title: 'Open Guide Center & Help',
+      subtitle: 'Browse 18 structured guides on study mastery',
+      type: 'action',
+      shortcut: '?',
+      onSelect: () => openGuide()
+    },
+    {
+      id: 'action-toggle-sidebar',
+      title: 'Toggle Sidebar Collapse',
+      subtitle: 'Expand or collapse sidebar into focused icon rail',
+      type: 'action',
+      shortcut: '⌘\\',
+      onSelect: () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: '\\', metaKey: true }));
+      }
     },
     {
       id: 'action-toggle-theme',
@@ -183,6 +220,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       case 'action':
         if (item.id === 'action-toggle-theme') {
           return isDark ? <Sun size={16} color="var(--color-amber-500)" /> : <Moon size={16} color="var(--color-coral-500)" />;
+        }
+        if (item.id === 'action-calendar-overlay') {
+          return <Calendar size={16} color="var(--color-sky-500, #0284c7)" />;
+        }
+        if (item.id === 'action-start-room') {
+          return <Users size={16} color="var(--color-violet-500, #8b5cf6)" />;
+        }
+        if (item.id === 'action-plan-day') {
+          return <Sparkles size={16} color="var(--color-coral-500)" />;
         }
         return <Plus size={16} color="var(--color-coral-500)" />;
       case 'navigation':

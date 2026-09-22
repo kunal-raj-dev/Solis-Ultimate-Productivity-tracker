@@ -23,6 +23,7 @@ import { Habit, HabitFrequency } from '../../types/habit';
 import { Goal } from '../../types/goal';
 import { getPastNDaysISO, isToday } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
+import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 import './HabitsPage.css';
 
 export const HabitsPage: React.FC = () => {
@@ -49,7 +50,11 @@ export const HabitsPage: React.FC = () => {
   const [habitColor, setHabitColor] = useState('coral');
   const [formError, setFormError] = useState<string | null>(null);
 
-  const past7Days = getPastNDaysISO(7);
+  // Quick Capture State
+  const [quickTitle, setQuickTitle] = useState('');
+  const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
+
+  const past14Days = getPastNDaysISO(14);
 
   const loadHabits = useCallback(async (isInitial = false) => {
     if (isInitial) setInitialLoadStatus('loading');
@@ -98,6 +103,7 @@ export const HabitsPage: React.FC = () => {
   };
 
   const handleToggleDay = async (habitId: string, dateStr: string) => {
+    hapticsEngine.playMechanicalTick();
     const prevHabits = habits;
     try {
       const updated = await dataService.habits.toggleHabitDate(habitId, dateStr);
@@ -113,6 +119,28 @@ export const HabitsPage: React.FC = () => {
     } catch {
       setHabits(prevHabits);
       addToast({ title: 'Could not update habit record', type: 'error' });
+    }
+  };
+
+  const handleQuickCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = quickTitle.trim();
+    if (!trimmed) return;
+    setIsQuickSubmitting(true);
+    try {
+      const created = await dataService.habits.createHabit({
+        title: trimmed,
+        category: 'study',
+        frequency: 'daily',
+        color: 'coral'
+      });
+      setHabits((prev) => [...prev, created]);
+      setQuickTitle('');
+      addToast({ title: 'Ritual Captured', description: created.title, type: 'success' });
+    } catch {
+      addToast({ title: 'Could not capture ritual', type: 'error' });
+    } finally {
+      setIsQuickSubmitting(false);
     }
   };
 
@@ -265,14 +293,37 @@ export const HabitsPage: React.FC = () => {
           onAction={openCreateModal}
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Quick Habit Capture Row */}
+          <form onSubmit={handleQuickCreate} className="solis-habit-quick-capture">
+            <Flame size={16} color="var(--color-coral-500)" style={{ flexShrink: 0 }} />
+            <input
+              type="text"
+              value={quickTitle}
+              onChange={(e) => setQuickTitle(e.target.value)}
+              placeholder="Capture an atomic ritual... (e.g. 25m LeetCode or Morning Deep Flow, press Enter)"
+              className="solis-habit-quick-input"
+              disabled={isQuickSubmitting}
+              aria-label="Quick capture ritual"
+            />
+            <Button
+              type="submit"
+              variant="accent"
+              size="sm"
+              disabled={!quickTitle.trim() || isQuickSubmitting}
+              isLoading={isQuickSubmitting}
+            >
+              Capture
+            </Button>
+          </form>
+
           {habits.map((habit) => (
-            <Card key={habit.id}>
+            <div key={habit.id} className="solis-habit-row">
               <div
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '16px'
+                  gap: '14px'
                 }}
               >
                 {/* Top Row: Info + Streaks + Actions */}
@@ -332,7 +383,7 @@ export const HabitsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bottom Row: 7-Day Interactive Matrix */}
+                {/* Bottom Row: 14-Day Interactive Matrix */}
                 <div
                   style={{
                     display: 'flex',
@@ -347,25 +398,27 @@ export const HabitsPage: React.FC = () => {
                   }}
                 >
                   <span style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    7-Day Check-in History
+                    14-Day Consistency Horizon
                   </span>
 
                   <div className="solis-habits-week-matrix">
-                    {past7Days.map((dateStr) => {
+                    {past14Days.map((dateStr) => {
                       const isDone = habit.history[dateStr] === true;
                       const isCurrToday = isToday(dateStr);
-                      const dayLabel = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+                      const d = new Date(dateStr + 'T00:00:00');
+                      const dayLabel = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+                      const dayNum = d.getDate();
 
                       return (
                         <button
                           key={dateStr}
                           type="button"
                           onClick={() => handleToggleDay(habit.id, dateStr)}
-                          title={`${dayLabel} ${dateStr}${isCurrToday ? ' (Today)' : ''}: ${isDone ? 'Completed' : 'Missed'}`}
+                          title={`${d.toLocaleDateString('en-US', { weekday: 'short' })} ${dateStr}${isCurrToday ? ' (Today)' : ''}: ${isDone ? 'Completed' : 'Missed'}`}
                           className={`solis-habit-day-btn press-tactile ${isCurrToday ? 'solis-habit-day-btn--today' : ''} ${isDone ? 'solis-habit-day-btn--done' : ''}`}
                         >
                           <span className="solis-habit-day-label">
-                            {dayLabel}
+                            {dayLabel} {dayNum}
                           </span>
                           <span className="solis-habit-day-status">
                             {isDone ? '✓' : '—'}
@@ -376,7 +429,7 @@ export const HabitsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}

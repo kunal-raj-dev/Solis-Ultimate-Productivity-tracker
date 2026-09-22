@@ -1,4 +1,6 @@
 import React from 'react';
+import { Flame, Sparkles } from 'lucide-react';
+import { Button } from '../../components/ui/Button/Button';
 import { useToast } from '../../context/ToastContext';
 import { dataService } from '../../services/dataService';
 import { FlashcardReviewModal } from '../../components/features/Flashcards/FlashcardReviewModal';
@@ -11,10 +13,12 @@ import { useStudyPage } from './hooks/useStudyPage';
 import { SubjectListHeader } from './components/SubjectListHeader';
 import { SubjectDetailHeader } from './components/SubjectDetailHeader';
 import { SpacedReviewsSanctuary } from './components/SpacedReviewsSanctuary';
+import { AdaptiveStudySuggester } from '../../components/features/Study/AdaptiveStudySuggester';
 import { StudyPlanAgenda } from './components/StudyPlanAgenda';
 import { StudyResourceGrid } from './components/StudyResourceGrid';
 import { SyllabusTopicTree } from './components/SyllabusTopicTree';
 import { SubjectFormModals } from './components/SubjectFormModals';
+import { ExamHorizonBar } from '../../components/features/Goals/ExamHorizonBar';
 import './StudyPage.css';
 
 export const StudyPage: React.FC = () => {
@@ -178,6 +182,8 @@ export const StudyPage: React.FC = () => {
         onRetry={handleRetry}
       />
 
+      <ExamHorizonBar topics={allTopics} flashcards={flashcards} />
+
       <SubjectDetailHeader
         displayedSubjects={displayedSubjects}
         subjects={subjects}
@@ -199,6 +205,95 @@ export const StudyPage: React.FC = () => {
         onSetDeletingSubject={setDeletingSubject}
       />
 
+      {/* Living Split-Pane Master-Detail Syllabus Workspace (Zero-Modal Architecture) */}
+      {selectedSubjectForTopics && isTopicsModalOpen && (
+        <div className="solis-study-split-pane" id="study-split-pane">
+          <div className="solis-syllabus-column">
+            <SyllabusTopicTree
+              isOpen={isTopicsModalOpen}
+              onClose={() => setIsTopicsModalOpen(false)}
+              subject={selectedSubjectForTopics}
+              topicsList={topicsList}
+              newTopicTitle={newTopicTitle}
+              onNewTopicTitleChange={setNewTopicTitle}
+              onAddTopic={handleAddTopic}
+              learningSnapshot={learningSnapshot}
+              onSelectTopicForDrawer={(topicId: string) => setSelectedTopicIdForDrawer(topicId)}
+              onTopicFocus={handleTopicFocus}
+              onTopicNote={handleTopicNote}
+              onOpenCardCreator={(subId: string, topId: string) => handleOpenCardCreator(subId, topId)}
+              onOpenResourceModal={(subId: string, topId: string) => {
+                setResourceDefaultSubjectId(subId);
+                setResourceDefaultTopicId(topId);
+                setIsResourceModalOpen(true);
+              }}
+              onToggleMastery={handleToggleMastery}
+              onDeleteTopic={handleDeleteTopic}
+              inline={true}
+            />
+          </div>
+
+          <div className="solis-workspace-column">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div>
+                <h3 style={{ fontSize: 'var(--text-body)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                  {selectedSubjectForTopics.name} Companion Workspace
+                </h3>
+                <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                  Code: {selectedSubjectForTopics.code || 'CORE'}
+                </span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', margin: '0 0 14px' }}>
+              {selectedSubjectForTopics.description || 'Active syllabus roadmap, active recall flashcards, and dedicated focus triggers for this discipline.'}
+            </p>
+
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+              <Button
+                variant="accent"
+                size="sm"
+                leftIcon={<Flame size={14} />}
+                onClick={() => navigate(`/app/focus?subjectId=${selectedSubjectForTopics.id}&title=${encodeURIComponent(`Deep Focus: ${selectedSubjectForTopics.name}`)}`)}
+              >
+                Enter Focus
+              </Button>
+              <Button
+                variant="subtle"
+                size="sm"
+                leftIcon={<Sparkles size={14} />}
+                onClick={() => handleStartActiveRecall(flashcards.filter((f) => f.subjectId === selectedSubjectForTopics.id))}
+              >
+                Drill Cards ({flashcards.filter((f) => f.subjectId === selectedSubjectForTopics.id).length})
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setResourceDefaultSubjectId(selectedSubjectForTopics.id);
+                  setResourceDefaultTopicId('');
+                  setIsResourceModalOpen(true);
+                }}
+              >
+                + Resource
+              </Button>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '12px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-primary)' }}>Weekly Focus Target</span>
+                <span style={{ fontSize: 'var(--text-caption)', color: 'var(--color-coral-500)', fontWeight: 700, fontFamily: 'var(--font-mono, monospace)' }}>
+                  {selectedSubjectForTopics.completedHoursThisWeek} / {selectedSubjectForTopics.targetHoursPerWeek} hrs
+                </span>
+              </div>
+              <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                {topicsList.filter((t) => t.masteryLevel === 'mastered').length} of {topicsList.length} topics mastered
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <SpacedReviewsSanctuary
         reviews={reviews}
         flashcards={flashcards}
@@ -209,7 +304,9 @@ export const StudyPage: React.FC = () => {
 
       {/* Grid: Study Plan Queue (Left) + Recent Sessions (Right) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
-        <StudyPlanAgenda
+        <div>
+          <AdaptiveStudySuggester />
+          <StudyPlanAgenda
           studyPlan={studyPlan}
           subjects={subjects}
           isAddPlanModalOpen={isAddPlanModalOpen}
@@ -246,6 +343,7 @@ export const StudyPage: React.FC = () => {
           onConvertPlanToTask={handleConvertPlanToTask}
           onStartFocus={(item) => navigate(`/app/focus?subjectId=${item.subjectId}&planId=${item.id}&title=${encodeURIComponent(item.title)}`)}
         />
+        </div>
 
         <StudyResourceGrid
           sessions={sessions}
@@ -275,28 +373,6 @@ export const StudyPage: React.FC = () => {
           onDeleteSession={handleDeleteSession}
         />
       </div>
-
-      <SyllabusTopicTree
-        isOpen={isTopicsModalOpen}
-        onClose={() => setIsTopicsModalOpen(false)}
-        subject={selectedSubjectForTopics}
-        topicsList={topicsList}
-        newTopicTitle={newTopicTitle}
-        onNewTopicTitleChange={setNewTopicTitle}
-        onAddTopic={handleAddTopic}
-        learningSnapshot={learningSnapshot}
-        onSelectTopicForDrawer={(topicId: string) => setSelectedTopicIdForDrawer(topicId)}
-        onTopicFocus={handleTopicFocus}
-        onTopicNote={handleTopicNote}
-        onOpenCardCreator={(subId: string, topId: string) => handleOpenCardCreator(subId, topId)}
-        onOpenResourceModal={(subId: string, topId: string) => {
-          setResourceDefaultSubjectId(subId);
-          setResourceDefaultTopicId(topId);
-          setIsResourceModalOpen(true);
-        }}
-        onToggleMastery={handleToggleMastery}
-        onDeleteTopic={handleDeleteTopic}
-      />
 
       <SubjectFormModals
         isAddSubjectModalOpen={isAddSubjectModalOpen}

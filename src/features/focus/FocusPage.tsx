@@ -37,6 +37,7 @@ import { useFocus, FocusPreset } from '../../context/FocusContext';
 import { SoundscapeType } from '../../types/focus';
 import { formatSecondsToTimer } from '../../utils/formatters';
 import { SOUNDSCAPE_PRESETS } from '../../utils/focus/soundscapeEngine';
+import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 import './FocusPage.css';
 
 export const FocusPage: React.FC = () => {
@@ -77,6 +78,7 @@ export const FocusPage: React.FC = () => {
     setSelectedSubjectId,
     setSelectedPlanItemId,
     setSelectedTaskId,
+    setSelectedBlockId,
     setSoundscape,
     setSoundscapeVolume,
     toggleMute,
@@ -99,10 +101,28 @@ export const FocusPage: React.FC = () => {
   // Keyboard shortcut listener:
   // Alt+D or Ctrl+Shift+D opens Drift Pad during active flow
   // Z / z toggles Zen Immersion Mode
+  // Space starts/pauses timer
   // Escape exits Zen Mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isCustomModalOpen || isAbortConfirmOpen || isCenteringModalOpen || isReflectionModalOpen) return;
+
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      const role = target?.getAttribute('role');
+      const isInteractive =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'BUTTON' ||
+        tag === 'A' ||
+        Boolean(target?.isContentEditable) ||
+        role === 'button' ||
+        role === 'combobox' ||
+        role === 'listbox' ||
+        role === 'option' ||
+        role === 'menuitem' ||
+        role === 'switch';
 
       if (e.key === 'Escape' && isZenMode) {
         e.preventDefault();
@@ -110,13 +130,23 @@ export const FocusPage: React.FC = () => {
         return;
       }
 
-      if ((e.key === 'z' || e.key === 'Z') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        const target = e.target as HTMLElement | null;
-        const tag = target?.tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !target?.isContentEditable) {
-          e.preventDefault();
-          setIsZenMode((prev) => !prev);
+      if ((e.key === 'z' || e.key === 'Z') && !e.ctrlKey && !e.metaKey && !e.altKey && !isInteractive) {
+        e.preventDefault();
+        setIsZenMode((prev) => !prev);
+        return;
+      }
+
+      // Space to start/pause focus session (when not interacting with any button or form control)
+      if ((e.code === 'Space' || e.key === ' ') && !e.ctrlKey && !e.metaKey && !e.altKey && !isInteractive) {
+        e.preventDefault();
+        if (status === 'idle' || status === 'paused') {
+          hapticsEngine.playMechanicalTick();
+          startTimer();
+        } else if (status === 'running') {
+          hapticsEngine.playMechanicalTick();
+          pauseTimer();
         }
+        return;
       }
 
       if (status !== 'running' && status !== 'paused') return;
@@ -128,18 +158,27 @@ export const FocusPage: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [status, isCustomModalOpen, isAbortConfirmOpen, isCenteringModalOpen, isReflectionModalOpen, isZenMode]);
+  }, [status, isCustomModalOpen, isAbortConfirmOpen, isCenteringModalOpen, isReflectionModalOpen, isZenMode, startTimer, pauseTimer]);
+
+  // Audio chime / haptic bell on session completion
+  useEffect(() => {
+    if (status === 'completed') {
+      hapticsEngine.playResonantBell();
+    }
+  }, [status]);
 
   // Query params & navigation state setup on entry
   useEffect(() => {
-    const locState = location.state as { subjectId?: string; topic?: string; title?: string; taskId?: string; durationMinutes?: number } | null;
+    const locState = location.state as { subjectId?: string; topic?: string; title?: string; taskId?: string; blockId?: string; durationMinutes?: number } | null;
     const paramSubjectId = searchParams.get('subjectId') || locState?.subjectId;
     const paramPlanId = searchParams.get('planId');
     const paramTaskId = searchParams.get('taskId') || locState?.taskId;
+    const paramBlockId = searchParams.get('blockId') || locState?.blockId;
     const paramTitle = searchParams.get('title') || searchParams.get('topicTitle') || locState?.title || locState?.topic;
     const paramDuration = searchParams.get('duration') || searchParams.get('durationMinutes') || locState?.durationMinutes;
 
     if (paramTaskId) setSelectedTaskId(paramTaskId);
+    if (paramBlockId) setSelectedBlockId(paramBlockId);
     if (paramSubjectId) setSelectedSubjectId(paramSubjectId);
     if (paramPlanId) setSelectedPlanItemId(paramPlanId);
     if (paramTitle) setFocusTitle(paramTitle);
@@ -155,7 +194,22 @@ export const FocusPage: React.FC = () => {
         }
       }
     }
-  }, [searchParams, location.state, setSelectedSubjectId, setSelectedPlanItemId, setSelectedTaskId, setFocusTitle, selectPreset]);
+  }, [searchParams, location.state, setSelectedSubjectId, setSelectedPlanItemId, setSelectedTaskId, setSelectedBlockId, setFocusTitle, selectPreset]);
+
+  const handleStart = () => {
+    hapticsEngine.playMechanicalTick();
+    startTimer();
+  };
+
+  const handlePause = () => {
+    hapticsEngine.playMechanicalTick();
+    pauseTimer();
+  };
+
+  const handleComplete = () => {
+    hapticsEngine.playResonantBell();
+    completeTimer();
+  };
 
   const handleSelectPreset = (newPreset: FocusPreset) => {
     if (newPreset === 'custom') {
@@ -604,10 +658,10 @@ export const FocusPage: React.FC = () => {
                     size="lg"
                     className="tactile-press"
                     leftIcon={<Play size={18} />}
-                    onClick={startTimer}
+                    onClick={handleStart}
                     style={{ minWidth: '180px' }}
                   >
-                    Enter Focus
+                    Enter Focus (Space)
                   </Button>
                   <Button
                     variant="outline"
@@ -629,17 +683,17 @@ export const FocusPage: React.FC = () => {
                     size="lg"
                     className="tactile-press"
                     leftIcon={<Pause size={18} />}
-                    onClick={pauseTimer}
+                    onClick={handlePause}
                     style={{ minWidth: '140px', borderColor: 'rgba(255, 255, 255, 0.3)', color: '#fff' }}
                   >
-                    Pause Flow
+                    Pause (Space)
                   </Button>
                   <Button
                     variant="accent"
                     size="md"
                     className="tactile-press"
                     leftIcon={<Check size={16} />}
-                    onClick={completeTimer}
+                    onClick={handleComplete}
                     style={{ minWidth: '140px' }}
                   >
                     Complete
@@ -664,17 +718,17 @@ export const FocusPage: React.FC = () => {
                     size="lg"
                     className="tactile-press"
                     leftIcon={<Play size={18} />}
-                    onClick={startTimer}
+                    onClick={handleStart}
                     style={{ minWidth: '140px' }}
                   >
-                    Resume Flow
+                    Resume (Space)
                   </Button>
                   <Button
                     variant="outline"
                     size="md"
                     className="tactile-press"
                     leftIcon={<Check size={16} />}
-                    onClick={completeTimer}
+                    onClick={handleComplete}
                     style={{ minWidth: '140px', borderColor: 'rgba(255, 255, 255, 0.3)', color: '#fff' }}
                   >
                     Complete

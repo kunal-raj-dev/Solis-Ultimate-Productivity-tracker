@@ -55,11 +55,11 @@
 
 /* Peripheral elements dimming during deep flow */
 .solis-focus-peripheral {
-  transition: opacity 0.6s var(--ease-spatial), transform 0.6s var(--ease-spatial);
+  transition: opacity 0.8s var(--ease-spatial), transform 0.8s var(--ease-spatial);
 }
 
 .solis-focus-sanctuary--running .solis-focus-peripheral {
-  opacity: 0.28;
+  opacity: 0.12;
 }
 
 .solis-focus-sanctuary--running .solis-focus-peripheral:hover,
@@ -69,7 +69,7 @@
 
 /* Floating Time Display */
 .solis-focus-time-display {
-  font-family: var(--font-mono), var(--font-display);
+  font-family: var(--font-mono);
   font-size: clamp(3.6rem, 18vw, 10.5rem);
   font-weight: 300;
   line-height: 0.88;
@@ -77,13 +77,14 @@
   color: var(--color-ivory-50);
   margin: var(--space-xl) 0 var(--space-lg);
   font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
   text-shadow: 0 4px 36px rgba(0, 0, 0, 0.5);
   user-select: none;
-  transition: text-shadow 0.8s var(--ease-spatial);
+  transition: opacity 0.8s var(--ease-spatial);
 }
 
 .solis-focus-sanctuary--running .solis-focus-time-display {
-  text-shadow: 0 0 60px rgba(230, 90, 65, 0.35), 0 4px 36px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 4px 36px rgba(0, 0, 0, 0.65);
 }
 
 /* Intention Header */
@@ -130,7 +131,7 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 6px 14px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   margin-top: var(--space-md);
   backdrop-filter: blur(12px);
   max-width: 90vw;

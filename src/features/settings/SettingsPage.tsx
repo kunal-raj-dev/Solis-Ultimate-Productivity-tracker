@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw } from 'lucide-react';
+import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Link2 } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -14,6 +14,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
+import { calendarService } from '../../services/calendar/calendar.service';
 import { resetActivation } from '../../utils/activation';
 import './SettingsPage.css';
 import {
@@ -49,7 +50,11 @@ export const SettingsPage: React.FC = () => {
   const [breakDuration, setBreakDuration] = useState('5');
   const [dailyGoal, setDailyGoal] = useState('180');
   const [weekStart, setWeekStart] = useState(() => localStorage.getItem('solis_week_start') || 'monday');
+  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('solis_gemini_api_key') || '');
   const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(loadNotificationPreferences);
+  const [calConfig, setCalConfig] = useState(() => calendarService.getConfig());
+  const [calEmailInput, setCalEmailInput] = useState(() => calendarService.getConfig().accountEmail || 'scholar@university.edu');
+  const [isCalSyncing, setIsCalSyncing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -162,6 +167,7 @@ export const SettingsPage: React.FC = () => {
     saveNotificationPreferences(notifPrefs);
     localStorage.setItem('solis_week_start', weekStart);
     localStorage.setItem('solis_density', density);
+    localStorage.setItem('solis_gemini_api_key', geminiApiKey);
     addToast({
       title: 'Preferences Saved',
       description: 'Your study system configuration, calendar, and notification preferences are updated.',
@@ -333,6 +339,30 @@ export const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* AI Intelligence Configuration */}
+          <Card>
+            <CardHeader>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="var(--color-coral-500)" />
+                <CardTitle>Solis Intelligence</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  Provide a Gemini API Key to enable AI-powered study features (Flashcard Generation, Semantic Search, Weekly Synthesis, and "Ask Solis"). The key is stored locally in your browser.
+                </p>
+                <Input
+                  label="Gemini API Key"
+                  type="password"
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Theme Settings */}
           <Card>
             <CardHeader>
@@ -446,6 +476,105 @@ export const SettingsPage: React.FC = () => {
                     />
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Connections & External Integrations */}
+          <Card>
+            <CardHeader>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link2 size={18} color="var(--color-coral-500)" />
+                  <CardTitle>Connections & Integrations</CardTitle>
+                </div>
+                <Badge variant={calConfig.status === 'synced' ? 'sage' : 'neutral'}>
+                  {calConfig.status === 'synced' ? 'Google Calendar Linked' : 'No Active Connections'}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0 }}>
+                  Bridge your Solis study plan with your real-world calendar commitments. Solis analyzes your external classes, meetings, and obligations to calculate realistic Available Time and prevent plan collisions.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Calendar size={20} color="var(--color-lavender-500)" />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>Google Calendar</div>
+                        <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                          {calConfig.status === 'synced' ? `Connected: ${calConfig.accountEmail}` : 'Sync lectures, meetings, and exam dates'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant={calConfig.status === 'synced' ? 'subtle' : 'accent'}
+                      size="sm"
+                      isLoading={isCalSyncing}
+                      onClick={async () => {
+                        if (calConfig.status === 'synced') {
+                          await calendarService.disconnectCalendar();
+                          setCalConfig(calendarService.getConfig());
+                          addToast({ title: 'Calendar Disconnected', description: 'External schedule unlinked.', type: 'info' });
+                        } else {
+                          setIsCalSyncing(true);
+                          try {
+                            const updated = await calendarService.connectCalendar(calEmailInput);
+                            setCalConfig(updated);
+                            addToast({ title: 'Google Calendar Linked', description: `Synchronized events for ${calEmailInput}.`, type: 'success' });
+                          } finally {
+                            setIsCalSyncing(false);
+                          }
+                        }
+                      }}
+                    >
+                      {calConfig.status === 'synced' ? 'Disconnect' : 'Connect Calendar'}
+                    </Button>
+                  </div>
+
+                  {calConfig.status !== 'synced' && (
+                    <div style={{ marginTop: '8px' }}>
+                      <label style={{ display: 'block', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Google Workspace / Academic Email
+                      </label>
+                      <Input
+                        value={calEmailInput}
+                        onChange={(e) => setCalEmailInput(e.target.value)}
+                        placeholder="e.g. scholar@university.edu"
+                      />
+                    </div>
+                  )}
+
+                  {calConfig.status === 'synced' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', fontSize: 'var(--text-caption)' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        Last synced: {calConfig.lastSyncedAt ? new Date(calConfig.lastSyncedAt).toLocaleTimeString() : 'Just now'}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          setIsCalSyncing(true);
+                          try {
+                            await calendarService.syncNow();
+                            setCalConfig(calendarService.getConfig());
+                            addToast({ title: 'Calendar Refreshed', description: 'Schedule is up to date.', type: 'success' });
+                          } finally {
+                            setIsCalSyncing(false);
+                          }
+                        }}
+                      >
+                        Sync Now
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -34,11 +34,26 @@
   }
 }
 
-.solis-arrival-greeting__meta {
+.solis-today-temporal-header {
   display: flex;
   align-items: center;
-  gap: var(--space-xs);
+  gap: 8px;
   margin-bottom: var(--space-xs);
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.solis-today-temporal-separator {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.solis-today-temporal-period {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .solis-arrival-greeting__title {
@@ -138,10 +153,9 @@
 
 .solis-evening-closure-btn:hover {
   background: var(--bg-surface-hover);
-  border-color: rgba(142, 100, 240, 0.45);
+  border-color: var(--border-strong);
   color: var(--text-primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm), 0 0 16px rgba(142, 100, 240, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 .solis-evening-closure-icon {
@@ -209,7 +223,7 @@
   flex: 1;
   width: 100%;
   background: var(--bg-surface-secondary);
-  border: 1px dashed var(--border-default);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 10px 14px;
   font-family: var(--font-interface);
@@ -250,7 +264,6 @@
   background: var(--color-coral-500);
   border-color: var(--color-coral-600);
   color: #fff;
-  transform: translateY(-1px);
 }
 
 .solis-dashboard-quick-task-submit:disabled {
@@ -431,6 +444,7 @@
   color: var(--text-primary);
   display: flex;
   align-items: baseline;
+  font-variant-numeric: tabular-nums;
 }
 
 .solis-momentum-score-sculpture span {
@@ -458,12 +472,12 @@
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
   transition: border-color var(--duration-swift) var(--ease-spatial),
-              transform var(--duration-swift) var(--ease-spatial);
+              background var(--duration-swift) var(--ease-spatial);
 }
 
 .solis-momentum-quad-pill:hover {
   border-color: var(--border-default);
-  transform: translateY(-1px);
+  background: var(--bg-surface-hover);
 }
 
 /* --------------------------------------------------------------------------
@@ -534,8 +548,8 @@
 
 .solis-flow-item:hover {
   border-color: var(--border-default);
+  background: var(--bg-surface-hover);
   box-shadow: var(--shadow-subtle);
-  transform: translateY(-1px);
 }
 
 .solis-flow-item__main {
@@ -573,8 +587,8 @@
 
 .solis-subject-world-card:hover {
   border-color: var(--border-default);
+  background: var(--bg-surface-hover);
   box-shadow: var(--shadow-subtle);
-  transform: translateY(-2px);
 }
 
 /* Habit Matrix */

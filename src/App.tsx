@@ -50,6 +50,7 @@ export const App: React.FC = () => {
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="today" element={<DashboardPage />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="study" element={<StudyPage />} />
               <Route path="focus" element={<FocusPage />} />

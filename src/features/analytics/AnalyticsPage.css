@@ -139,7 +139,7 @@
 
 .solis-recommendation-card--primary {
   border-top: 3px solid var(--color-coral-500);
-  background: linear-gradient(180deg, var(--bg-surface-elevated) 0%, var(--bg-surface-primary) 100%);
+  background: var(--bg-surface-primary);
 }
 
 .solis-recommendation-card--secondary {
@@ -188,7 +188,7 @@
 .solis-rhythm-section {
   background: var(--bg-surface-primary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   padding: var(--space-xl) var(--space-2xl);
   box-shadow: var(--shadow-card);
   display: flex;
@@ -217,13 +217,39 @@
 .solis-heatmap-cell {
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
-  transition: transform var(--transition-fast);
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
   cursor: pointer;
 }
 
+.solis-heatmap-cell--l0 {
+  background-color: var(--bg-surface-secondary);
+}
+
+.solis-heatmap-cell--l1 {
+  background-color: rgba(230, 90, 65, 0.18);
+  border-color: rgba(230, 90, 65, 0.28);
+}
+
+.solis-heatmap-cell--l2 {
+  background-color: rgba(230, 90, 65, 0.42);
+  border-color: rgba(230, 90, 65, 0.55);
+}
+
+.solis-heatmap-cell--l3 {
+  background-color: rgba(230, 90, 65, 0.72);
+  border-color: rgba(230, 90, 65, 0.85);
+}
+
+.solis-heatmap-cell--l4 {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-600);
+}
+
 .solis-heatmap-cell:hover {
-  transform: scale(1.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  outline: 2px solid var(--border-strong);
+  outline-offset: 1px;
 }
 
 .solis-rhythm-breakdown-row {
@@ -307,7 +333,7 @@
 .solis-mastery-section {
   background: var(--bg-surface-primary);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   padding: var(--space-xl) var(--space-2xl);
   box-shadow: var(--shadow-card);
   display: flex;

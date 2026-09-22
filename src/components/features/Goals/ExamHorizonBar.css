@@ -1,0 +1,144 @@
+/**
+ * Solis - Exam Horizon Bar
+ * Calm editorial strip for high-stakes academic horizons & exam countdowns
+ */
+
+.solis-exam-horizon-bar {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--color-coral-500);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-exam-horizon-bar:hover {
+  border-color: var(--border-default);
+  border-left-color: var(--color-coral-500);
+  box-shadow: var(--shadow-md);
+}
+
+.solis-exam-horizon-bar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.solis-exam-horizon-bar__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.solis-exam-horizon-bar__tag {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-coral-500);
+  background: var(--color-coral-50, rgba(239, 68, 68, 0.08));
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.solis-exam-horizon-bar__title {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.solis-exam-horizon-bar__target {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-exam-horizon-bar__countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-exam-horizon-bar__countdown--urgent {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--color-coral-500);
+}
+
+.solis-exam-horizon-bar__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-md);
+}
+
+.solis-exam-horizon-bar__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-exam-horizon-bar__metric-label {
+  font-family: var(--font-interface);
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.solis-exam-horizon-bar__metric-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-exam-horizon-bar__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.solis-exam-horizon-bar__tip {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.solis-exam-horizon-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 640px) {
+  .solis-exam-horizon-bar {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .solis-exam-horizon-bar__body {
+    grid-template-columns: 1fr 1fr;
+  }
+}

@@ -195,12 +195,12 @@ export const AnalyticsPage: React.FC = () => {
     }
   };
 
-  const getHeatmapColor = (minutes: number) => {
-    if (minutes >= 120) return 'var(--color-coral-500)';
-    if (minutes >= 60) return 'var(--color-coral-400)';
-    if (minutes >= 30) return 'var(--color-amber-400)';
-    if (minutes > 0) return 'var(--color-ivory-300)';
-    return 'var(--bg-surface-secondary)';
+  const getHeatmapLevelClass = (minutes: number): string => {
+    if (minutes >= 120) return 'solis-heatmap-cell--l4';
+    if (minutes >= 60) return 'solis-heatmap-cell--l3';
+    if (minutes >= 30) return 'solis-heatmap-cell--l2';
+    if (minutes > 0) return 'solis-heatmap-cell--l1';
+    return 'solis-heatmap-cell--l0';
   };
 
   return (
@@ -442,8 +442,7 @@ export const AnalyticsPage: React.FC = () => {
               return (
                 <div
                   key={dateStr}
-                  className="solis-heatmap-cell"
-                  style={{ backgroundColor: getHeatmapColor(dayMins) }}
+                  className={`solis-heatmap-cell ${getHeatmapLevelClass(dayMins)}`}
                   title={`${dateStr}: ${dayMins} mins studied`}
                 />
               );

@@ -14,8 +14,7 @@ import {
   Compass,
   Moon,
   ChevronRight,
-  Clock,
-  Plus
+  Clock
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -28,10 +27,17 @@ import { TimeBlockGrid } from '../../components/features/Planning/TimeBlockGrid'
 import { RecurringRoutinesModal } from '../../components/features/Planning/RecurringRoutinesModal';
 import { EveningClosureModal } from '../../components/features/Reflection/EveningClosureModal';
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
+import { KnowledgeResurfacingCard } from '../../components/features/Notes/KnowledgeResurfacingCard';
+import { CalendarOverlayCard } from '../../components/features/Calendar/CalendarOverlayCard';
+import { ExamHorizonBar } from '../../components/features/Goals/ExamHorizonBar';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { dataService } from '../../services/dataService';
-import { Task } from '../../types/task';
+import { Task, TaskTimeBlock } from '../../types/task';
+import { WorkloadCapacityBar } from '../tasks/components/WorkloadCapacityBar';
+import { SmartTaskInput } from '../tasks/components/SmartTaskInput';
+import { TaskRow } from '../tasks/components/TaskRow';
+import { calculateWorkload } from '../../utils/tasks/workloadCalculator';
 import { StudyPlanItem, StudySubject, StudySession, StudyTopic } from '../../types/study';
 import { Note } from '../../types/note';
 import { Habit } from '../../types/habit';
@@ -39,7 +45,7 @@ import { FocusSession } from '../../types/focus';
 import { DailySummary } from '../../types/analytics';
 import { RecurringStudyRoutine, TimeBlock } from '../../types/planning';
 import { DailyReflection } from '../../types/reflection';
-import { getTimeOfDayGreeting, formatFriendlyDate, getISODateString } from '../../utils/date';
+import { getTimeOfDayGreeting, formatFriendlyDate, formatFullDate, getISODateString } from '../../utils/date';
 import { calculateDailySummary } from '../../utils/productivity';
 import { generateSolisIntelligenceReport } from '../../utils/intelligence';
 import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntelligence';
@@ -72,8 +78,18 @@ export const DashboardPage: React.FC = () => {
   const [recentFocus, setRecentFocus] = useState<FocusSession[]>([]);
   const [routines, setRoutines] = useState<RecurringStudyRoutine[]>([]);
   const [reflections, setReflections] = useState<DailyReflection[]>([]);
+  const [taskTimeBlocks, setTaskTimeBlocks] = useState<TaskTimeBlock[]>([]);
   const [summary, setSummary] = useState<DailySummary | null>(() => queryCache.get<DailySummary>('daily_summary'));
   const [viewMode, setViewMode] = useState<'lists' | 'timeline'>('lists');
+
+  // Workload Realism Calculation
+  const workload = useMemo(() => {
+    return calculateWorkload({
+      date: getISODateString(new Date()),
+      tasks,
+      timeBlocks: taskTimeBlocks
+    });
+  }, [tasks, taskTimeBlocks]);
 
   const { openGuide } = useGuide();
 
@@ -120,10 +136,6 @@ export const DashboardPage: React.FC = () => {
   });
   const [intentionSaved, setIntentionSaved] = useState(false);
 
-  // Quick Task inline creation state
-  const [quickTaskTitle, setQuickTaskTitle] = useState('');
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
-
   const greetingInfo = getTimeOfDayGreeting(user?.name || 'Scholar');
 
   const loadDashboardData = useCallback(async () => {
@@ -138,7 +150,8 @@ export const DashboardPage: React.FC = () => {
         focusRes,
         dailySumRes,
         rtnRes,
-        refRes
+        refRes,
+        blocksRes
       ] = await Promise.allSettled([
         dataService.tasks.getTasks(),
         dataService.study.getTodayPlan(),
@@ -149,7 +162,8 @@ export const DashboardPage: React.FC = () => {
         dataService.focus.getRecentSessions(),
         dataService.analytics.getDailySummary(),
         dataService.routines ? dataService.routines.getRoutines() : Promise.resolve([]),
-        dataService.reflections ? dataService.reflections.getReflections(5) : Promise.resolve([])
+        dataService.reflections ? dataService.reflections.getReflections(5) : Promise.resolve([]),
+        dataService.tasks.getTimeBlocks ? dataService.tasks.getTimeBlocks(getISODateString(new Date())) : Promise.resolve([])
       ]);
 
       if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
@@ -170,6 +184,7 @@ export const DashboardPage: React.FC = () => {
       if (dailySumRes.status === 'fulfilled') setSummary(dailySumRes.value);
       if (rtnRes.status === 'fulfilled') setRoutines(rtnRes.value);
       if (refRes.status === 'fulfilled') setReflections(refRes.value);
+      if (blocksRes.status === 'fulfilled') setTaskTimeBlocks(blocksRes.value);
 
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -193,35 +208,59 @@ export const DashboardPage: React.FC = () => {
     setTimeout(() => setIntentionSaved(false), 2000);
   };
 
-  const handleQuickTaskSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const trimmed = quickTaskTitle.trim();
-    if (!trimmed) {
-      addToast({ title: 'Please enter a task intention first', type: 'info' });
-      return;
-    }
-    if (isQuickAdding) return;
-    setIsQuickAdding(true);
+  const handleCreateFromNLP = async (taskPayload: Partial<Task>) => {
     try {
-      const newTask = await dataService.tasks.createTask({
-        title: trimmed,
-        category: 'study',
-        priority: 'medium',
-        dueDate: getISODateString(new Date()),
-        estimatedMinutes: 25
+      const created = await dataService.tasks.createTask({
+        title: taskPayload.title || 'Untitled Intentional Task',
+        description: taskPayload.description,
+        category: taskPayload.category || 'study',
+        priority: taskPayload.priority || 'medium',
+        subjectId: taskPayload.subjectId,
+        goalId: taskPayload.goalId,
+        dueDate: taskPayload.dueDate || getISODateString(new Date()),
+        dueTime: taskPayload.dueTime,
+        estimatedMinutes: taskPayload.estimatedMinutes || 30,
+        tags: taskPayload.tags || [],
+        recurrence: taskPayload.recurrence,
+        isRecurring: taskPayload.isRecurring,
+        naturalLanguageInput: taskPayload.naturalLanguageInput
       });
-      setTasks((prev) => [newTask, ...prev]);
-      setQuickTaskTitle('');
+      setTasks((prev) => [created, ...prev]);
       addToast({
         title: 'Task Created',
-        description: newTask.title,
+        description: created.title,
         type: 'success'
       });
-    } catch {
-      addToast({ title: 'Could not create task', type: 'error' });
-    } finally {
-      setIsQuickAdding(false);
+    } catch (err: any) {
+      addToast({
+        title: 'Could not create task',
+        description: err?.message || 'Check input details',
+        type: 'error'
+      });
     }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    const prev = tasks;
+    setTasks((current) => current.filter((t) => t.id !== id));
+    try {
+      await dataService.tasks.deleteTask(id);
+      addToast({ title: 'Task removed', type: 'info' });
+    } catch {
+      setTasks(prev);
+      addToast({ title: 'Could not delete task', type: 'error' });
+    }
+  };
+
+  const handleStartFocusOnTask = (task: Task) => {
+    const subjectParam = task.subjectId ? `&subjectId=${task.subjectId}` : '';
+    navigate(`/app/focus?taskId=${task.id}${subjectParam}&title=${encodeURIComponent(task.title)}`, {
+      state: {
+        title: task.title,
+        subjectId: task.subjectId,
+        durationMinutes: task.estimatedMinutes || 30
+      }
+    });
   };
 
   const handleToggleTask = async (id: string) => {
@@ -451,24 +490,17 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="solis-daily-flow">
-      {/* ADAPTIVE NEXT BEST ACTION GUIDANCE */}
-      {!isNextActionDismissed && nextBestAction.id !== 'action_continue_flow' && (
-        <NextBestActionCard
-          action={nextBestAction}
-          onDismiss={() => setIsNextActionDismissed(true)}
-        />
-      )}
-
-      {/* ARRIVAL HERO & FOCUS CONTINUITY */}
+      {/* TIER 1 // ARRIVAL HERO & DAILY INTENTION */}
       <SceneContainer variant="canvas">
         <div className="solis-arrival-content">
           <div>
-            <div className="solis-arrival-greeting__meta">
-              <Badge variant="coral" showDot>
+            <div className="solis-today-temporal-header">
+              <span className="solis-today-temporal-date">
+                {formatFullDate(new Date())}
+              </span>
+              <span className="solis-today-temporal-separator">•</span>
+              <span className="solis-today-temporal-period">
                 {greetingInfo.period}
-              </Badge>
-              <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>
-                Field: {user?.focusField || 'Cognitive Systems'}
               </span>
             </div>
             <h1 className="solis-arrival-greeting__title">{greetingInfo.greeting}</h1>
@@ -490,6 +522,14 @@ export const DashboardPage: React.FC = () => {
                 </span>
               )}
             </div>
+
+            {/* Realism & Capacity Tracker */}
+            <div style={{ marginTop: '16px', maxWidth: '640px' }}>
+              <WorkloadCapacityBar
+                workload={workload}
+                onAutoReplanCandidates={() => navigate('/app/tasks')}
+              />
+            </div>
           </div>
 
           <div className="solis-dashboard-hero-actions">
@@ -505,21 +545,34 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsClosureModalOpen(true)}
-              className="solis-evening-closure-btn tactile-press"
+              className={`solis-evening-closure-btn tactile-press ${new Date().getHours() >= 18 ? 'solis-evening-closure-btn--active' : ''}`}
               title="Open Evening Closure & Reflection Ritual"
               aria-label="Open Evening Closure Ritual"
+              style={new Date().getHours() >= 18 ? { borderColor: 'var(--color-lavender-500)', boxShadow: '0 0 0 1px var(--color-lavender-500)' } : undefined}
             >
-              <div className="solis-evening-closure-icon">
+              <div className="solis-evening-closure-icon" style={new Date().getHours() >= 18 ? { backgroundColor: 'var(--color-lavender-500)', color: '#fff' } : undefined}>
                 <Moon size={15} />
               </div>
               <div className="solis-evening-closure-text">
-                <span className="solis-evening-closure-title">Evening Closure</span>
+                <span className="solis-evening-closure-title">
+                  Evening Closure {new Date().getHours() >= 18 ? '• Ready' : ''}
+                </span>
                 <span className="solis-evening-closure-sub">Reflect & lock tomorrow</span>
               </div>
               <ChevronRight size={14} className="solis-evening-closure-arrow" />
             </button>
           </div>
         </div>
+
+        {/* TIER 2 // ADAPTIVE NEXT BEST ACTION GUIDANCE & ACTIVE ORBIT */}
+        {!isNextActionDismissed && nextBestAction.id !== 'action_continue_flow' && (
+          <div style={{ marginTop: 'var(--space-md)' }}>
+            <NextBestActionCard
+              action={nextBestAction}
+              onDismiss={() => setIsNextActionDismissed(true)}
+            />
+          </div>
+        )}
 
         {/* UNIFIED ACTIVE ORBIT & INTELLIGENCE CAPSULE */}
         {(nextPendingPlan || topRecommendation || lastFocus || lastStudy || latestNote) && (
@@ -633,12 +686,12 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
         <div className="solis-momentum-hero">
-          <SceneAtmosphere glowPrimary="coral" glowSecondary="amber" intensity="vibrant" />
+          <SceneAtmosphere glowPrimary="coral" glowSecondary="amber" intensity="minimal" />
           <div className="solis-momentum-hero__layout">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Sparkles size={16} color="var(--color-coral-300)" />
-                <span style={{ fontSize: 'var(--text-caption)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-charcoal-300)' }}>
+                <Sparkles size={16} color="var(--color-coral-400)" />
+                <span style={{ fontSize: 'var(--text-caption)', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>
                   State of Momentum
                 </span>
                 <ContextualHelp
@@ -650,7 +703,7 @@ export const DashboardPage: React.FC = () => {
                 />
                 <button
                   onClick={() => setIsScoreModalOpen(true)}
-                  style={{ color: 'var(--color-charcoal-300)', padding: '2px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
+                  style={{ color: 'var(--text-muted)', padding: '2px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
                   title="View deterministic formula breakdown"
                 >
                   <Info size={14} />
@@ -668,7 +721,7 @@ export const DashboardPage: React.FC = () => {
                 )}
               </div>
 
-              <div style={{ color: 'var(--color-charcoal-300)', fontSize: 'var(--text-body-md)', marginTop: '8px', lineHeight: 1.5 }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-body-md)', marginTop: '8px', lineHeight: 1.5 }}>
                 {Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0))
                   ? summary?.momentumScore && summary.momentumScore >= 80
                     ? "You're moving the important things forward with calm distinction."
@@ -679,40 +732,40 @@ export const DashboardPage: React.FC = () => {
 
             <div className="solis-momentum-quad-grid">
               <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--color-charcoal-300)', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
                   Tasks Velocity
                 </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--color-ivory-50)', marginBottom: '6px' }}>
+                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
                   {scoreDetails.taskScore}%
                 </div>
                 <Progress value={scoreDetails.taskScore} max={100} size="sm" variant="coral" />
               </div>
 
               <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--color-charcoal-300)', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
                   Study Volume
                 </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--color-ivory-50)', marginBottom: '6px' }}>
+                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
                   {summary?.totalStudyMinutes || 0}m / 180m
                 </div>
                 <Progress value={summary?.totalStudyMinutes || 0} max={180} size="sm" variant="amber" />
               </div>
 
               <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--color-charcoal-300)', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
                   Deep Focus
                 </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--color-ivory-50)', marginBottom: '6px' }}>
+                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
                   {scoreDetails.focusScore}%
                 </div>
                 <Progress value={scoreDetails.focusScore} max={100} size="sm" variant="lavender" />
               </div>
 
               <div className="solis-momentum-quad-pill">
-                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--color-charcoal-300)', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                <div style={{ fontSize: 'var(--text-micro)', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.06em', marginBottom: '4px' }}>
                   Ritual Consistency
                 </div>
-                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--color-ivory-50)', marginBottom: '6px' }}>
+                <div style={{ fontSize: 'var(--text-heading-3)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px', fontVariantNumeric: 'tabular-nums' }}>
                   {summary?.habitsCompletedRatio || '0/0'}
                 </div>
                 <Progress value={scoreDetails.habitScore} max={100} size="sm" variant="sage" />
@@ -793,6 +846,23 @@ export const DashboardPage: React.FC = () => {
         <div className="solis-flow-columns">
           {/* Left Primary Stream: Study Syllabus & Intentional Tasks */}
           <div className="solis-flow-primary-stream">
+            {/* Exam Mode / Active Academic Horizon */}
+            <ExamHorizonBar />
+
+            {/* Calendar & Available-Time Awareness Engine */}
+            <CalendarOverlayCard
+              date={getISODateString(new Date())}
+              solisBlocks={timeBlocks}
+              studyPlans={studyPlan}
+              onResolveConflict={(conflict) => {
+                if (conflict.suggestedAction.proposedStartTime) {
+                  navigate(`/app/tasks?action=replan&id=${conflict.solisPlanId}&time=${conflict.suggestedAction.proposedStartTime}`);
+                } else {
+                  navigate('/app/tasks');
+                }
+              }}
+            />
+
             {/* Study Planning Horizon */}
             <section className="solis-flow-section">
               <div className="solis-flow-section__header">
@@ -868,93 +938,48 @@ export const DashboardPage: React.FC = () => {
             <div className="solis-flow-section__header">
               <div className="solis-flow-section__title">
                 <CheckCircle2 size={20} color="var(--color-coral-500)" />
-                <span>Priority Intentions</span>
+                <span>Today's Intentions</span>
                 <Badge variant="coral">{activeTasks.length} pending</Badge>
               </div>
               <Link to="/app/tasks">
                 <Button variant="ghost" size="sm" rightIcon={<ArrowRight size={14} />}>
-                  Tasks
+                  Tasks & Grid
                 </Button>
               </Link>
             </div>
 
-            {/* Quick Task Input Bar */}
-            <form onSubmit={handleQuickTaskSubmit} className="solis-dashboard-quick-task-bar">
-              <input
-                type="text"
-                placeholder="+ Add task intention for today... (Press Enter)"
-                value={quickTaskTitle}
-                onChange={(e) => setQuickTaskTitle(e.target.value)}
-                disabled={isQuickAdding}
-                className="solis-dashboard-quick-task-input"
-                aria-label="Add task for today"
+            <div style={{ marginBottom: '14px' }}>
+              <SmartTaskInput
+                onCommit={handleCreateFromNLP}
+                subjects={subjects}
+                defaultDueDate={getISODateString(new Date())}
+                placeholder='Add intention for today... (e.g. "Review DSA at 4pm for 45m !high")'
               />
-              <button
-                type="submit"
-                disabled={isQuickAdding || !quickTaskTitle.trim()}
-                className="solis-dashboard-quick-task-submit tactile-press"
-                aria-label="Add task"
-                title="Add task intention"
-              >
-                <Plus size={15} />
-              </button>
-            </form>
+            </div>
 
             {activeTasks.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)' }}>
-                  All clear. No urgent tasks requiring attention.
+              <div style={{ padding: '24px 16px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+                <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)', margin: 0 }}>
+                  All clear. No pending tasks for today.
                 </p>
               </div>
             ) : (
-              <div className="solis-flow-list">
-                {activeTasks.slice(0, 4).map((task) => (
-                  <div
-                    key={task.id}
-                    className="solis-flow-item"
-                    onClick={() => navigate('/app/tasks')}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="solis-flow-item__main">
-                      <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center' }}>
-                        <Checkbox
-                          checked={task.status === 'completed'}
-                          onChange={() => handleToggleTask(task.id)}
-                          aria-label={`Complete task ${task.title}`}
-                        />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
-                          {task.title}
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '2px', alignItems: 'center' }}>
-                          <Badge variant={task.priority === 'urgent' ? 'coral' : task.priority === 'high' ? 'amber' : 'neutral'}>
-                            {task.priority}
-                          </Badge>
-                          <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
-                            {task.category}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="subtle"
-                      size="sm"
-                      className="tactile-press"
-                      leftIcon={<Flame size={12} color="var(--color-coral-500)" />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const subjectParam = task.subjectId ? `&subjectId=${task.subjectId}` : '';
-                        navigate(`/app/focus?taskId=${task.id}${subjectParam}&title=${encodeURIComponent(task.title)}`);
-                      }}
-                      title="Focus on this task in the sanctuary"
-                      aria-label={`Focus on task ${task.title}`}
-                    >
-                      Focus
-                    </Button>
-                  </div>
-                ))}
+              <div className="solis-flow-list" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {activeTasks.slice(0, 5).map((task) => {
+                  const linkedSub = subjects.find((s) => s.id === task.subjectId);
+                  return (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      subject={linkedSub}
+                      onToggle={handleToggleTask}
+                      onEdit={() => navigate('/app/tasks')}
+                      onDelete={handleDeleteTask}
+                      onStartFocus={handleStartFocusOnTask}
+                      showScheduleAction={false}
+                    />
+                  );
+                })}
               </div>
             )}
           </section>
@@ -1015,6 +1040,8 @@ export const DashboardPage: React.FC = () => {
                 <Button variant="ghost" size="sm">Studio</Button>
               </Link>
             </div>
+
+            <KnowledgeResurfacingCard notes={notes} />
 
             {notes.length === 0 ? (
               <div style={{ padding: '16px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>

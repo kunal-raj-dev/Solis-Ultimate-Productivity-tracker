@@ -42,9 +42,60 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    border-top: 1px dashed var(--border-subtle);
+    border-top: 1px solid var(--border-subtle);
     padding-top: 8px;
   }
+}
+
+/* De-cardified Tabular Habit Row */
+.solis-habit-row {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  gap: 14px;
+  transition: border-color var(--duration-swift) var(--ease-spatial),
+              background var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-habit-row:hover {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface-elevated);
+}
+
+.solis-habit-quick-capture {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 8px 16px;
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-subtle);
+  transition: border-color var(--duration-swift) var(--ease-spatial),
+              box-shadow var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-habit-quick-capture:focus-within {
+  border-color: var(--color-coral-500);
+  box-shadow: 0 0 0 3px rgba(230, 90, 65, 0.12);
+}
+
+.solis-habit-quick-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+}
+
+.solis-habit-quick-input::placeholder {
+  color: var(--text-muted);
 }
 
 .solis-habit-day-btn {

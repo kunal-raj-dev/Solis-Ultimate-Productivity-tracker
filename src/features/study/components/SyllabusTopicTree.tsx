@@ -22,6 +22,7 @@ export interface SyllabusTopicTreeProps {
   onOpenResourceModal: (subjectId: string, topicId: string) => void;
   onToggleMastery: (topic: StudyTopic) => void;
   onDeleteTopic: (topicId: string) => void;
+  inline?: boolean;
 }
 
 export const SyllabusTopicTree: React.FC<SyllabusTopicTreeProps> = ({
@@ -39,15 +40,11 @@ export const SyllabusTopicTree: React.FC<SyllabusTopicTreeProps> = ({
   onOpenCardCreator,
   onOpenResourceModal,
   onToggleMastery,
-  onDeleteTopic
+  onDeleteTopic,
+  inline = false
 }) => {
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`Syllabus Topics — ${subject?.name || ''}`}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+  const treeContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <form onSubmit={onAddTopic} style={{ display: 'flex', gap: '8px' }}>
           <Input
             placeholder="Add new syllabus topic..."
@@ -60,7 +57,7 @@ export const SyllabusTopicTree: React.FC<SyllabusTopicTreeProps> = ({
           </Button>
         </form>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: inline ? '540px' : '320px', overflowY: 'auto' }}>
           {topicsList.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: 'var(--text-body-sm)' }}>
               No topics defined for this subject yet.
@@ -146,7 +143,7 @@ export const SyllabusTopicTree: React.FC<SyllabusTopicTreeProps> = ({
                     </button>
                     <button
                       onClick={() => {
-                        onClose();
+                        if (!inline) onClose();
                         onOpenCardCreator(topic.subjectId, topic.id);
                       }}
                       style={{
@@ -167,7 +164,7 @@ export const SyllabusTopicTree: React.FC<SyllabusTopicTreeProps> = ({
                     </button>
                     <button
                       onClick={() => {
-                        onClose();
+                        if (!inline) onClose();
                         onOpenResourceModal(topic.subjectId, topic.id);
                       }}
                       style={{
@@ -221,6 +218,36 @@ export const SyllabusTopicTree: React.FC<SyllabusTopicTreeProps> = ({
           )}
         </div>
       </div>
+    );
+
+  if (inline) {
+    return (
+      <div className="solis-syllabus-inline">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <h3 style={{ fontSize: 'var(--text-body)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+              Syllabus Roadmap — {subject?.name || 'Selected Discipline'}
+            </h3>
+            <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>
+              {topicsList.length} defined topic(s)
+            </span>
+          </div>
+          <Button variant="subtle" size="sm" onClick={onClose}>
+            Close Roadmap
+          </Button>
+        </div>
+        {treeContent}
+      </div>
+    );
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Syllabus Topics — ${subject?.name || ''}`}
+    >
+      {treeContent}
     </Modal>
   );
 };
