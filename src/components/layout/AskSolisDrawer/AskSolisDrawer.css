@@ -221,3 +221,64 @@
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
 }
+
+/* RAG Citations & Telemetry */
+.solis-ask-citations {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-ask-citations__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.solis-ask-citation-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-elevated, var(--bg-surface-primary));
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-ask-telemetry-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-tertiary, var(--text-muted));
+  font-family: var(--font-mono, monospace);
+  align-self: flex-start;
+}
+
+.solis-ask-chat-bubble--security {
+  border: 1px solid var(--color-warning-500, #f59e0b) !important;
+  background-color: rgba(245, 158, 11, 0.06) !important;
+}
+
+.solis-ask-security-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-warning-500, #f59e0b);
+  margin-bottom: 6px;
+}
+
