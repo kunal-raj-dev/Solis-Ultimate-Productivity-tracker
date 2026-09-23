@@ -362,28 +362,15 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
               <div className="solis-hour-content">
                 {/* External Calendar Events for this hour */}
                 {externalEventsByHour.get(hour)?.map((ev) => (
-                  <div
-                    key={ev.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 12px',
-                      marginBottom: '6px',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: 'rgba(167, 139, 250, 0.08)',
-                      border: '1px dashed rgba(167, 139, 250, 0.4)',
-                      fontSize: 'var(--text-caption)'
-                    }}
-                  >
-                    <Calendar size={13} color="var(--color-lavender-500)" />
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{ev.title}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: 'var(--text-micro)' }}>
-                      ({ev.startTime.slice(11, 16)}–{ev.endTime.slice(11, 16)})
+                  <div key={ev.id} className="solis-calendar-event-row">
+                    <Calendar size={13} className="solis-calendar-event-icon" />
+                    <span className="solis-calendar-event-title">{ev.title}</span>
+                    <span className="solis-calendar-event-time">
+                      {ev.startTime.slice(11, 16)}–{ev.endTime.slice(11, 16)}
                     </span>
-                    <Badge variant="neutral" style={{ fontSize: '10px', marginLeft: 'auto' }}>
+                    <span className="solis-calendar-event-badge">
                       {ev.calendarName}
-                    </Badge>
+                    </span>
                   </div>
                 ))}
 

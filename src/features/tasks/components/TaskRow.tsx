@@ -148,36 +148,38 @@ export const TaskRow: React.FC<TaskRowProps> = ({
         {task.description && (
           <p className="solis-task-desc-snippet">{task.description}</p>
         )}
-      </div>
 
-      {/* 4. Metadata Pills (Subject, Category, Due Time, Duration) */}
-      <div className="solis-task-metadata-col">
-        {subject && (
-          <Badge variant={(subject.color as BadgeVariant) || 'coral'}>
-            {subject.name}
-          </Badge>
-        )}
-
-        {task.dueTime && (
-          <span className="solis-task-meta-item" title="Due time">
-            <Clock size={11} />
-            <span>{task.dueTime}</span>
-          </span>
-        )}
-
-        {task.estimatedMinutes !== undefined && task.estimatedMinutes > 0 && (
-          <span className="solis-task-meta-item" title="Estimated duration">
-            <span>{task.estimatedMinutes}m</span>
-            {task.completedMinutes !== undefined && task.completedMinutes > 0 && (
-              <span className="solis-task-logged-span">({task.completedMinutes}m logged)</span>
+        {/* 4. Metadata Pills (Subject, Category, Due Time, Duration) */}
+        {(subject || task.dueTime || (task.estimatedMinutes !== undefined && task.estimatedMinutes > 0) || task.priority !== 'medium') && (
+          <div className="solis-task-metadata-col">
+            {subject && (
+              <Badge variant={(subject.color as BadgeVariant) || 'coral'}>
+                {subject.name}
+              </Badge>
             )}
-          </span>
-        )}
 
-        {task.priority !== 'medium' && (
-          <Badge variant={getPriorityVariant(task.priority)}>
-            {task.priority}
-          </Badge>
+            {task.dueTime && (
+              <span className="solis-task-meta-item" title="Due time">
+                <Clock size={11} />
+                <span>{task.dueTime}</span>
+              </span>
+            )}
+
+            {task.estimatedMinutes !== undefined && task.estimatedMinutes > 0 && (
+              <span className="solis-task-meta-item" title="Estimated duration">
+                <span>{task.estimatedMinutes}m</span>
+                {task.completedMinutes !== undefined && task.completedMinutes > 0 && (
+                  <span className="solis-task-logged-span">({task.completedMinutes}m logged)</span>
+                )}
+              </span>
+            )}
+
+            {task.priority !== 'medium' && (
+              <Badge variant={getPriorityVariant(task.priority)}>
+                {task.priority}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 

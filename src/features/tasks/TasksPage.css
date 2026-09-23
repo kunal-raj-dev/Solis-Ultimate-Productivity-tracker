@@ -343,36 +343,167 @@
   }
 }
 
-/* Time Block Card in Hourly Grid */
-.solis-time-block-card {
+/* External Calendar Event Row (De-slopified hairline badge row) */
+.solis-calendar-event-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 4px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  font-size: var(--text-caption);
+  transition: background-color var(--duration-instant) ease;
+}
+
+.solis-calendar-event-row:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+.solis-calendar-event-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.solis-calendar-event-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.solis-calendar-event-time {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-calendar-event-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-surface-elevated);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hairline);
+  margin-left: auto;
+}
+
+/* Unscheduled Tasks Shelf */
+.solis-unscheduled-shelf {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  transition: all 0.2s ease;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.solis-unscheduled-shelf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solis-unscheduled-shelf-title {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+}
+
+.solis-unscheduled-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--color-coral-600);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.solis-unscheduled-toggle-btn:hover {
+  text-decoration: underline;
+}
+
+.solis-unscheduled-tasks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.solis-unscheduled-task-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: var(--text-caption);
+}
+
+.solis-unscheduled-task-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-slot-chip-btn {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs);
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-instant) ease;
+}
+
+.solis-slot-chip-btn:hover {
+  background: var(--color-coral-500);
+  color: #fff;
+  border-color: var(--color-coral-500);
+}
+
+/* Time Block Card in Hourly Grid (De-cardified Hairline Geometry) */
+.solis-time-block-card {
+  background: var(--bg-surface-elevated, var(--bg-surface-primary));
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 10px 14px;
+  transition: border-color var(--duration-instant) ease, background-color var(--duration-instant) ease;
 }
 
 .solis-time-block-card:hover {
-  box-shadow: var(--shadow-subtle);
   border-color: var(--border-focus);
 }
 
 .solis-time-block-card--active {
-  border-color: var(--color-coral-500);
-  background: linear-gradient(135deg, rgba(255, 107, 74, 0.08), transparent);
+  border-left: 3px solid var(--color-coral-500);
+  background: rgba(230, 90, 65, 0.04);
 }
 
 .solis-time-block-card--completed {
-  border-color: rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.03);
+  border-left: 2px solid var(--color-emerald-500, #10b981);
+  background: rgba(16, 185, 129, 0.02);
+  opacity: 0.85;
 }
 
 .solis-time-block-card--partial {
-  border-color: rgba(245, 158, 11, 0.3);
+  border-left: 2px solid var(--color-amber-500, #f59e0b);
 }
 
 .solis-time-block-card--missed {
-  border-color: rgba(225, 29, 72, 0.3);
+  border-left: 2px solid var(--color-rose-500, #e11d48);
+  opacity: 0.75;
 }
 
 .solis-time-block-main {
@@ -888,14 +1019,15 @@
    ========================================================================== */
 .solis-tasks-today-hybrid {
   display: grid;
-  grid-template-columns: minmax(360px, 460px) 1fr;
-  gap: 24px;
+  grid-template-columns: minmax(380px, 1.15fr) minmax(480px, 1.45fr);
+  gap: var(--space-xl);
   align-items: flex-start;
 }
 
 @media (max-width: 1100px) {
   .solis-tasks-today-hybrid {
     grid-template-columns: 1fr;
+    gap: var(--space-lg);
   }
 }
 
@@ -903,41 +1035,71 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-lg);
 }
 
 .solis-tasks-today-list-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 4px;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--border-hairline);
 }
 
 .solis-tasks-today-list-title {
+  font-family: var(--font-interface);
   font-size: var(--text-body-sm);
   font-weight: 600;
   color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: -0.01em;
 }
 
 .solis-tasks-today-list-counter {
-  font-size: var(--text-micro);
-  font-weight: 600;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.solis-tasks-inline-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 500;
   color: var(--text-secondary);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.solis-tasks-inline-add-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
 .solis-tasks-today-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 1px;
+  border-top: 1px solid var(--border-hairline);
 }
 
 .solis-tasks-today-empty {
-  padding: 28px 16px;
+  padding: 32px 16px;
   text-align: center;
   background: var(--bg-surface-secondary);
-  border: 1px dashed var(--border-subtle);
-  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
 }
 
 .solis-tasks-today-empty p {
@@ -955,6 +1117,10 @@
 
 .solis-tasks-today-grid-panel {
   min-width: 0;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-lg);
 }
 
 

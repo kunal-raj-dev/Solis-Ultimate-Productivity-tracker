@@ -23,7 +23,7 @@ export const SmartTaskInput: React.FC<SmartTaskInputProps> = ({
   subjects = [],
   defaultCategory = 'study',
   defaultDueDate,
-  placeholder = 'Add deliberate task... e.g. "Study DSA tomorrow at 4pm for 90m !high #study"',
+  placeholder = 'Add a new task... (e.g. "Read Math Chapter 3 tomorrow at 4pm for 45m")',
   autoFocus = false,
   inputRef
 }) => {
@@ -218,7 +218,7 @@ export const SmartTaskInput: React.FC<SmartTaskInputProps> = ({
           className="solis-smart-input-field"
           disabled={isSubmitting}
           autoFocus={autoFocus}
-          aria-label="Natural language task capture"
+          aria-label="Add a task"
         />
         <Button
           type="submit"
@@ -228,14 +228,14 @@ export const SmartTaskInput: React.FC<SmartTaskInputProps> = ({
           isLoading={isSubmitting}
           leftIcon={<Plus size={14} />}
         >
-          Capture
+          Add Task
         </Button>
       </form>
 
       {/* Live Natural Language Parsing Chips */}
       {activeChips.length > 0 && (
-        <div className="solis-smart-input-chips-tray" aria-label="Parsed task interpretation">
-          <span className="solis-smart-chips-label">Parsed interpretation:</span>
+        <div className="solis-smart-input-chips-tray" aria-label="Detected task details">
+          <span className="solis-smart-chips-label">Auto-detected details:</span>
           {activeChips.map((chip) => (
             <span
               key={chip.id}
