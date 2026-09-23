@@ -1,20 +1,35 @@
 .solis-card {
   background-color: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-subtle);
-  padding: var(--space-lg);
-  transition: all var(--transition-fast);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  padding: var(--space-md);
+  transition: border-color var(--duration-swift) ease,
+              background-color var(--duration-swift) ease;
   position: relative;
 }
 
+@media (min-width: 768px) {
+  .solis-card {
+    padding: var(--space-lg);
+  }
+}
+
+.solis-card--flat {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
 .solis-card--elevated {
-  box-shadow: var(--shadow-card);
-  border-color: var(--border-default);
+  box-shadow: none;
+  border-color: var(--border-subtle);
 }
 
 .solis-card--subtle {
-  background-color: var(--bg-surface-subtle);
+  background-color: var(--bg-surface-secondary);
+  border-color: transparent;
   box-shadow: none;
 }
 
@@ -22,7 +37,7 @@
   background-color: var(--bg-dark-surface);
   color: var(--text-dark-primary);
   border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: var(--shadow-elevated);
+  box-shadow: var(--border-chamfer);
 }
 
 .solis-card--interactive {
@@ -30,25 +45,36 @@
 }
 
 .solis-card--interactive:hover {
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-card);
+  border-color: var(--border-default);
 }
 
 .solis-card--interactive:active {
   transform: scale(0.995);
 }
 
+/* De-cardification: Clean nested containment */
+.solis-card .solis-card,
+.depth-1 .solis-card,
+.solis-card .depth-1 {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-hairline);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--space-sm) 0;
+}
+
 .solis-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-sm);
 }
 
 .solis-card-title {
   font-family: var(--font-interface);
-  font-size: var(--text-heading-3);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-body);
+  font-weight: 600;
   letter-spacing: var(--tracking-tight);
   color: inherit;
 }
@@ -69,8 +95,8 @@
 
 .solis-card-footer {
   margin-top: var(--space-md);
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--border-hairline);
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -2,13 +2,15 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-family: var(--font-interface);
-  font-size: var(--text-caption);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--tracking-wide);
-  line-height: 1.4;
+  padding: 2px 6px;
+  border-radius: var(--radius-tag, 2px);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
   border: 1px solid transparent;
 }
 

@@ -4,9 +4,9 @@
   justify-content: center;
   gap: var(--space-xs);
   font-family: var(--font-interface);
-  font-weight: var(--font-weight-medium);
-  letter-spacing: var(--tracking-normal);
-  border-radius: var(--radius-sm);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  border-radius: var(--radius-btn);
   border: 1px solid transparent;
   text-decoration: none;
   white-space: nowrap;
@@ -17,6 +17,7 @@
               transform var(--duration-instant) var(--spring-tactile);
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .solis-btn:active:not(:disabled) {
@@ -25,40 +26,43 @@
 
 .solis-btn:disabled,
 .solis-btn--loading {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-/* Sizes */
+/* Sizes (Ergonomic & High-Density) */
 .solis-btn--sm {
-  height: 32px;
-  padding: 0 var(--space-sm);
+  height: 30px;
+  padding: 0 10px;
   font-size: var(--text-caption);
+  border-radius: var(--radius-xs);
 }
 
 .solis-btn--md {
-  height: 38px;
-  padding: 0 var(--space-md);
+  height: 36px;
+  padding: 0 14px;
   font-size: var(--text-body-sm);
+  border-radius: var(--radius-btn);
 }
 
 .solis-btn--lg {
-  height: 44px;
-  padding: 0 var(--space-lg);
+  height: 42px;
+  padding: 0 18px;
   font-size: var(--text-body);
+  border-radius: var(--radius-btn);
 }
 
 .solis-btn--full {
   width: 100%;
 }
 
-/* Variants */
+/* Variants — Handcrafted Authority */
 .solis-btn--primary {
   background-color: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   box-shadow: var(--shadow-subtle);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .solis-btn--primary:hover:not(:disabled) {
@@ -70,6 +74,7 @@
   background-color: var(--bg-surface-secondary);
   color: var(--text-primary);
   border-color: var(--border-subtle);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .solis-btn--secondary:hover:not(:disabled) {
@@ -81,12 +86,12 @@
   background-color: var(--color-coral-500);
   color: #FFFFFF;
   border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: var(--shadow-subtle);
+  box-shadow: 0 1px 2px rgba(200, 75, 49, 0.2);
 }
 
 .solis-btn--accent:hover:not(:disabled) {
   background-color: var(--color-coral-600);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 2px 5px rgba(200, 75, 49, 0.25);
 }
 
 .solis-btn--outline {
@@ -113,7 +118,7 @@
 .solis-btn--subtle {
   background-color: var(--bg-surface-subtle);
   color: var(--text-secondary);
-  border-color: var(--border-subtle);
+  border-color: var(--border-hairline);
 }
 
 .solis-btn--subtle:hover:not(:disabled) {
@@ -128,13 +133,13 @@
 }
 
 .solis-btn--destructive:hover:not(:disabled) {
-  background-color: #C02C2E;
+  background-color: #B5282A;
   box-shadow: var(--shadow-subtle);
 }
 
 .solis-btn__spinner {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;

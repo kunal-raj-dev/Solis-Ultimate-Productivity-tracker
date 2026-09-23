@@ -1,82 +1,82 @@
 /* ==========================================================================
-   SOLIS — DESIGN SYSTEM 2.0 TOKENS (International-Grade Theme System)
-   Semantic Token Architecture for Warm Ivory (Day) & Deep Charcoal (Night)
+   SOLIS — DESIGN SYSTEM 3.0 TOKENS (Chrono-Basalt & Alabaster Parchment)
+   Handcrafted Semantic Architecture for High-Craft Academic & Study Focus
    ========================================================================== */
 
 :root {
   color-scheme: light;
-  accent-color: #E65A41;
+  accent-color: #C84B31;
 
   /* ------------------------------------------------------------------------
      1. RAW PALETTE FOUNDATIONS (Primitives)
      ------------------------------------------------------------------------ */
-  /* Warm Ivory Scale */
-  --color-ivory-50: #FCFAF7;
-  --color-ivory-100: #FAF8F5; /* Day Canvas Ground */
-  --color-ivory-200: #F4F0EA; /* Day Surface Secondary */
-  --color-ivory-300: #ECE6DC; /* Day Subtle Dividers */
-  --color-ivory-400: #DFD7CA;
-  --color-ivory-500: #C4B9A7;
+  /* Alabaster Parchment Scale (Light Ground) */
+  --color-ivory-50: #FAF8F5;
+  --color-ivory-100: #FAF8F5; /* Warm Ivory day canvas ground */
+  --color-ivory-200: #EFECE6; /* Day Surface Secondary */
+  --color-ivory-300: #E3DDD3; /* Day Dividers */
+  --color-ivory-400: #D4CBC0;
+  --color-ivory-500: #B8ADA0;
 
-  /* Deep Charcoal & Obsidian Scale */
-  --color-charcoal-950: #100E0D;
-  --color-charcoal-900: #0E0C0B; /* Night Canvas Ground (Deep Obsidian) */
-  --color-charcoal-850: #1A1816; /* Day Primary Text / Night Surface Primary Base */
+  /* Volcanic Basalt & Obsidian Scale (Dark Ground & Text) */
+  --color-charcoal-950: #0B0A09;
+  --color-charcoal-900: #0E0C0B; /* Deep Obsidian night canvas ground */
+  --color-charcoal-850: #181614; /* Day Primary Ink / Night Surface Primary Base */
   --color-charcoal-800: #1E1B18; /* Night Surface Primary */
-  --color-charcoal-750: #25221F; /* Night Surface Elevated */
-  --color-charcoal-700: #282420; /* Night Surface Secondary */
+  --color-charcoal-750: #23201D; /* Night Surface Elevated */
+  --color-charcoal-700: #2A2622; /* Night Surface Secondary */
   --color-charcoal-650: #332E29; /* Night Surface Tertiary */
-  --color-charcoal-600: #5C5650; /* Day Secondary Text */
-  --color-charcoal-500: #7A726A;
-  --color-charcoal-400: #9B938A; /* Day Muted Text */
-  --color-charcoal-300: #ABA398; /* Night Secondary Text */
-  --color-charcoal-200: #DDD8D1;
-  --color-charcoal-100: #EFECE8;
+  --color-charcoal-600: #55504A; /* Day Secondary Text */
+  --color-charcoal-500: #68625B;
+  --color-charcoal-400: #78726A; /* Day Muted Text (WCAG AA 4.8:1) */
+  --color-charcoal-300: #A8A196; /* Night Secondary Text */
+  --color-charcoal-200: #CBC5BA;
+  --color-charcoal-100: #EAE6DF;
 
-  /* Accent: Coral (Energy / Action / Focus) */
-  --color-coral-50: #FFF5F2;
-  --color-coral-100: #FFE6DF;
-  --color-coral-200: #FFCDC2;
-  --color-coral-300: #FFA894;
-  --color-coral-400: #FF6B52; /* High-contrast dark mode coral */
-  --color-coral-500: #E65A41; /* Core Coral Accent */
-  --color-coral-600: #CF442C;
-  --color-coral-700: #A8311D;
+  /* Primary Accent: Solar Cinnabar / Ember (Grounded & Non-Fluorescent) */
+  --color-coral-50: #FDF6F4;
+  --color-coral-100: #F9EBE7;
+  --color-coral-200: #F2D3CC;
+  --color-coral-300: #EFA291;
+  --color-coral-400: #E05A3E; /* High-contrast dark mode ember */
+  --color-coral-500: #E65A41; /* Core coral deliberate accent */
+  --color-coral-600: #B03E26;
+  --color-coral-700: #8F2F1B;
 
-  /* Accent: Golden Amber (Momentum / Active / Progress) */
-  --color-amber-50: #FFF9ED;
-  --color-amber-100: #FEF0D2;
-  --color-amber-200: #FDE0A4;
-  --color-amber-300: #FBCF7D;
-  --color-amber-400: #F5A23D; /* High-contrast dark mode amber */
-  --color-amber-500: #E58E26; /* Core Amber Accent */
-  --color-amber-600: #C77516;
+  /* Secondary Accent: Ochre Amber (Cadence & Momentum) */
+  --color-amber-50: #FDF8EE;
+  --color-amber-100: #F8EED6;
+  --color-amber-200: #F0DEB0;
+  --color-amber-300: #E5C784;
+  --color-amber-400: #D9A042;
+  --color-amber-500: #C28224; /* Grounded Ochre */
+  --color-amber-600: #A86D1A;
 
-  /* Accent: Morning Rose / Pink (Reflection / Highlights) */
-  --color-rose-50: #FFF1F3;
-  --color-rose-100: #FFE0E6;
-  --color-rose-300: #FA9EB3;
-  --color-rose-500: #D64562;
-  --color-rose-600: #B72B47;
+  /* Tertiary Accent: Morning Rose (Reflective Horizon) */
+  --color-rose-50: #FCF4F5;
+  --color-rose-100: #F7E4E7;
+  --color-rose-300: #E6A5B2;
+  --color-rose-500: #C4435F;
+  --color-rose-600: #A8324C;
 
-  /* Accent: Twilight Lavender (Quiet / Notes / Theory) */
-  --color-lavender-50: #F8F6FD;
-  --color-lavender-100: #EEE9FB;
-  --color-lavender-300: #C2B3F0;
-  --color-lavender-400: #9B87CC; /* High-contrast dark mode lavender */
-  --color-lavender-500: #7E69AB;
-  --color-lavender-600: #644F91;
+  /* Intellectual Accent: Slate Delft / Indigo (Theory & Knowledge) */
+  --color-lavender-50: #F4F5F9;
+  --color-lavender-100: #E7EAF3;
+  --color-lavender-300: #B2BBD8;
+  --color-lavender-400: #7F8BB4;
+  --color-lavender-500: #5E688E;
+  --color-lavender-600: #4B5476;
 
-  /* Accent: Calm Sage (Habits / Rituals / Clarity) */
-  --color-sage-50: #F2F8F4;
-  --color-sage-100: #E1F0E6;
-  --color-sage-300: #9DCBA9;
-  --color-sage-400: #62A375; /* High-contrast dark mode sage */
-  --color-sage-500: #4A7C59;
-  --color-sage-600: #396446;
+  /* Growth Accent: Juniper Leaf (Habits & Syllabus Mastery) */
+  --color-sage-50: #F3F7F4;
+  --color-sage-100: #E2ECE5;
+  --color-sage-300: #9FBFAB;
+  --color-sage-400: #5D9570;
+  --color-sage-500: #3E7250;
+  --color-sage-600: #325C40;
 
   /* ------------------------------------------------------------------------
-     2. SPACING SCALE
+     2. SPACING SCALE (Strict 4px/8px Geometric Progression)
      ------------------------------------------------------------------------ */
   --space-3xs: 0.125rem; /* 2px */
   --space-2xs: 0.25rem;  /* 4px */
@@ -90,33 +90,36 @@
   --space-4xl: 6rem;     /* 96px */
 
   /* ------------------------------------------------------------------------
-     3. BORDER RADIUS
+     3. ARCHITECTURAL BORDER RADII (De-cardified Precision Geometry)
      ------------------------------------------------------------------------ */
-  --radius-xs: 4px;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 16px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 8px;
   --radius-full: 9999px;
-  --radius-btn: 6px;
-  --radius-card: 10px;
-  --radius-row: 6px;
+  --radius-btn: 4px;
+  --radius-card: 4px;
+  --radius-row: 2px;
+  --radius-tag: 2px;
 
   /* ------------------------------------------------------------------------
-     4. MOTION & TACTILE TRANSITIONS (Disciplined Spatial Transitions)
+     4. MOTION & TACTILE TRANSITIONS (Disciplined Spring Micro-Physics)
      ------------------------------------------------------------------------ */
-  --duration-instant: 80ms;
-  --duration-swift: 150ms;
-  --duration-moderate: 200ms;
-  --duration-deliberate: 180ms;
-  --duration-cinematic: 200ms;
+  --duration-instant: 60ms;
+  --duration-swift: 120ms;
+  --duration-moderate: 180ms;
+  --duration-deliberate: 240ms;
+  --duration-cinematic: 280ms;
 
-  --ease-tactile: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-tactile: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spatial: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --spring-tactile: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-tactile: cubic-bezier(0.16, 1, 0.3, 1);
   --spring-spatial: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-snappy: cubic-bezier(0.16, 1, 0.3, 1);
 
   --transition-fast: var(--duration-swift) var(--ease-tactile);
   --transition-base: var(--duration-moderate) var(--ease-spatial);
@@ -124,16 +127,16 @@
   --transition-spring: var(--duration-swift) var(--ease-spatial);
 
   /* ------------------------------------------------------------------------
-     5. LAYOUT & Z-INDEX
+     5. LAYOUT & DIMENSIONS
      ------------------------------------------------------------------------ */
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 68px;
-  --header-height: 60px;
-  --mobile-nav-height: 60px;
-  --max-content-width: 1280px;
+  --header-height: 56px;
+  --mobile-nav-height: 56px;
+  --max-content-width: 1320px;
   --max-readable-width: 760px;
 
-  /* Device Safe Areas & Accessibility Touch Tokens */
+  /* Device Safe Areas & Touch Target Floor */
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
@@ -150,218 +153,230 @@
   --z-tooltip: 700;
 
   /* ------------------------------------------------------------------------
-     6. DEFAULT / DAY THEME SEMANTIC MAPPINGS (Warm Ivory)
+     6. DEFAULT / DAY THEME SEMANTIC MAPPINGS (Nordic Alabaster Parchment)
      ------------------------------------------------------------------------ */
   --bg-canvas: #FAF8F5;
-  --bg-canvas-glass: rgba(250, 248, 245, 0.85);
+  --bg-canvas-glass: rgba(250, 248, 245, 0.88);
   --bg-surface-primary: #FFFFFF;
-  --bg-surface-secondary: #F4F0EA;
-  --bg-surface-tertiary: #ECE6DC;
+  --bg-surface-secondary: #EFECE6;
+  --bg-surface-tertiary: #E3DDD3;
   --bg-surface-elevated: #FFFFFF;
   --bg-surface-floating: #FFFFFF;
-  --bg-surface-subtle: rgba(244, 240, 234, 0.65);
-  --bg-surface-hover: rgba(26, 24, 22, 0.035);
-  --bg-surface-active: rgba(26, 24, 22, 0.06);
+  --bg-surface-subtle: rgba(239, 236, 230, 0.65);
+  --bg-surface-hover: rgba(24, 22, 20, 0.035);
+  --bg-surface-active: rgba(24, 22, 20, 0.07);
 
-  /* Depths in Day Mode */
+  /* Depth Layers in Day Mode (Surface-less Architectural Hairlines) */
   --depth-0-bg: #FAF8F5;
   --depth-0-border: transparent;
   --depth-1-bg: #FFFFFF;
-  --depth-1-border: rgba(26, 24, 22, 0.06);
-  --depth-1-shadow: 0 1px 2px rgba(26, 24, 22, 0.03);
+  --depth-1-border: rgba(26, 24, 22, 0.08);
+  --depth-1-shadow: none;
   --depth-2-bg: #FFFFFF;
-  --depth-2-border: rgba(26, 24, 22, 0.08);
-  --depth-2-shadow: 0 2px 6px rgba(26, 24, 22, 0.04);
+  --depth-2-border: rgba(26, 24, 22, 0.12);
+  --depth-2-shadow: none;
   --depth-3-bg: #FFFFFF;
-  --depth-3-border: rgba(26, 24, 22, 0.10);
-  --depth-3-shadow: 0 4px 12px rgba(26, 24, 22, 0.05);
+  --depth-3-border: rgba(26, 24, 22, 0.18);
+  --depth-3-shadow: 0 1px 3px rgba(26, 24, 22, 0.04);
   --depth-4-bg: #FFFFFF;
-  --depth-4-border: rgba(26, 24, 22, 0.12);
-  --depth-4-shadow: 0 8px 20px rgba(26, 24, 22, 0.06);
+  --depth-4-border: rgba(26, 24, 22, 0.24);
+  --depth-4-shadow: 0 4px 16px rgba(26, 24, 22, 0.06);
 
-  /* Inverted / Dark Card Surfaces (For focus pods) */
-  --bg-dark-surface: #141211;
+  /* Inverted / Dark Card Surfaces (Focus Sanctuary) */
+  --bg-dark-surface: #141210;
   --bg-dark-surface-elevated: #1E1B18;
-  --text-dark-primary: #FCFAF7;
-  --text-dark-secondary: #ABA398;
-  --text-dark-muted: #7A726A;
+  --text-dark-primary: #F6F4F0;
+  --text-dark-secondary: #A8A196;
+  --text-dark-muted: #78726A;
 
   /* Typography / Text Semantics */
-  --text-primary: #1A1816;
-  --text-secondary: #5C5650;
-  --text-muted: #6E665E; /* WCAG AA 4.7:1 against #FAF8F5 */
-  --text-inverse: #FAF8F5;
-  --text-accent: #E65A41;
+  --text-primary: #181614;
+  --text-secondary: #55504A;
+  --text-muted: #6B655D; /* WCAG AA 5.1:1 against #FAF8F5 */
+  --text-inverse: #F6F4F0;
+  --text-accent: #C84B31;
 
-  /* Primary Button Semantics */
-  --btn-primary-bg: #1A1816;
-  --btn-primary-text: #FAF8F5;
-  --btn-primary-hover: #100E0D;
+  /* Primary Button Semantics: High Authority Basalt Ink */
+  --btn-primary-bg: #181614;
+  --btn-primary-text: #F6F4F0;
+  --btn-primary-hover: #2D2825;
 
   /* Navigation Semantic Tokens (Day Mode) */
   --nav-bg-transparent: transparent;
-  --nav-bg-scrolled: rgba(250, 248, 245, 0.85);
-  --nav-text: #1A1816;
-  --nav-text-muted: #5C5650;
-  --nav-text-active: #E65A41;
-  --nav-border: rgba(26, 24, 22, 0.08);
-  --nav-hover: rgba(26, 24, 22, 0.04);
-  --nav-focus: #E65A41;
-  --nav-shadow: 0 2px 8px rgba(26, 24, 22, 0.03);
+  --nav-bg-scrolled: rgba(246, 244, 240, 0.90);
+  --nav-text: #181614;
+  --nav-text-muted: #55504A;
+  --nav-text-active: #C84B31;
+  --nav-border: rgba(24, 22, 20, 0.07);
+  --nav-hover: rgba(24, 22, 20, 0.04);
+  --nav-focus: #C84B31;
+  --nav-shadow: 0 1px 4px rgba(24, 22, 20, 0.03);
 
-  /* Border Semantics */
+  /* Hairline Border Semantics */
   --border-hairline: rgba(26, 24, 22, 0.06);
-  --border-subtle: rgba(26, 24, 22, 0.08);
-  --border-default: rgba(26, 24, 22, 0.13);
-  --border-strong: rgba(26, 24, 22, 0.24);
-  --border-focus: #E65A41;
+  --border-subtle: rgba(24, 22, 20, 0.12);
+  --border-default: rgba(24, 22, 20, 0.18);
+  --border-strong: rgba(24, 22, 20, 0.28);
+  --border-focus: #C84B31;
+  --border-chamfer: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+
+  /* Horological & Material Accents */
+  --accent-brass: #B58942;
+  --accent-brass-subtle: rgba(181, 137, 66, 0.12);
+  --accent-terracotta: #C84B31;
 
   /* Skeletons */
-  --skeleton-base: #F4F0EA;
-  --skeleton-shimmer: #ECE6DC;
+  --skeleton-base: #EFECE6;
+  --skeleton-shimmer: #E3DDD3;
 
   /* Functional Status */
-  --status-success: #4A7C59;
-  --status-success-bg: #F2F8F4;
-  --status-warning: #E58E26;
-  --status-warning-bg: #FFF9ED;
-  --status-error: #D9383A;
-  --status-error-bg: #FFF2F2;
-  --status-info: #7E69AB;
-  --status-info-bg: #F8F6FD;
+  --status-success: #3E7250;
+  --status-success-bg: #F3F7F4;
+  --status-warning: #C28224;
+  --status-warning-bg: #FDF8EE;
+  --status-error: #C83234;
+  --status-error-bg: #FDF3F3;
+  --status-info: #5E688E;
+  --status-info-bg: #F4F5F9;
 
   /* Subject Identity Accents (Day Mode) */
-  --subject-coral-accent: #E65A41;
-  --subject-coral-subtle: rgba(230, 90, 65, 0.08);
-  --subject-amber-accent: #E58E26;
-  --subject-amber-subtle: rgba(229, 142, 38, 0.08);
-  --subject-lavender-accent: #7E69AB;
-  --subject-lavender-subtle: rgba(126, 105, 171, 0.08);
-  --subject-sage-accent: #4A7C59;
-  --subject-sage-subtle: rgba(74, 124, 89, 0.08);
+  --subject-coral-accent: #C84B31;
+  --subject-coral-subtle: rgba(200, 75, 49, 0.08);
+  --subject-amber-accent: #C28224;
+  --subject-amber-subtle: rgba(194, 130, 36, 0.08);
+  --subject-lavender-accent: #5E688E;
+  --subject-lavender-subtle: rgba(94, 104, 142, 0.08);
+  --subject-sage-accent: #3E7250;
+  --subject-sage-subtle: rgba(62, 114, 80, 0.08);
 
-  /* Atmospheric Gradients (Day Mode) */
-  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(244, 240, 234, 0.6) 0%, rgba(250, 248, 245, 0) 70%);
-  --gradient-focus: linear-gradient(135deg, #1A1816 0%, #2A231F 100%);
-  --gradient-momentum: linear-gradient(135deg, #E65A41 0%, #CF442C 100%);
-  --gradient-achievement: linear-gradient(135deg, #E58E26 0%, #E65A41 100%);
-  --gradient-reflection: linear-gradient(135deg, #7E69AB 0%, #644F91 100%);
+  /* Atmospheric Gradients */
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(239, 236, 230, 0.5) 0%, rgba(246, 244, 240, 0) 70%);
+  --gradient-focus: linear-gradient(135deg, #181614 0%, #26211E 100%);
+  --gradient-momentum: linear-gradient(135deg, #C84B31 0%, #B03E26 100%);
+  --gradient-achievement: linear-gradient(135deg, #C28224 0%, #C84B31 100%);
+  --gradient-reflection: linear-gradient(135deg, #5E688E 0%, #4B5476 100%);
   --gradient-subtle-glow: none;
 
-  /* Ambient Shadows — Contact Physics */
-  --shadow-subtle: 0 1px 2px rgba(26, 24, 22, 0.03);
-  --shadow-card: 0 1px 3px rgba(26, 24, 22, 0.04);
-  --shadow-elevated: 0 3px 8px rgba(26, 24, 22, 0.05);
-  --shadow-floating: 0 6px 16px rgba(26, 24, 22, 0.06);
-  --shadow-inner: inset 0 1px 2px rgba(26, 24, 22, 0.03);
+  /* Contact Shadows (No Radioactive Glows) */
+  --shadow-subtle: 0 1px 2px rgba(24, 22, 20, 0.03);
+  --shadow-card: 0 1px 3px rgba(24, 22, 20, 0.04);
+  --shadow-elevated: 0 3px 8px rgba(24, 22, 20, 0.05);
+  --shadow-floating: 0 6px 18px rgba(24, 22, 20, 0.06);
+  --shadow-inner: inset 0 1px 2px rgba(24, 22, 20, 0.03);
 }
 
 /* ==========================================================================
-   NIGHT THEME SEMANTIC MAPPINGS (Deep Charcoal / Obsidian)
+   NIGHT THEME SEMANTIC MAPPINGS (Volcanic Basalt / Deep Obsidian)
    Activated via [data-theme="dark"] or .dark on root
    ========================================================================== */
 [data-theme="dark"],
 .dark {
   color-scheme: dark;
-  accent-color: #FF6B52;
+  accent-color: #E8684A;
 
   --bg-canvas: #0E0C0B;
-  --bg-canvas-glass: rgba(14, 12, 11, 0.88);
-  --bg-surface-primary: #171413;
-  --bg-surface-secondary: #201C1A;
-  --bg-surface-tertiary: #2A2522;
-  --bg-surface-elevated: #201C1A;
-  --bg-surface-floating: #2A2522;
-  --bg-surface-subtle: rgba(32, 28, 26, 0.65);
-  --bg-surface-hover: rgba(247, 244, 238, 0.05);
-  --bg-surface-active: rgba(247, 244, 238, 0.09);
+  --bg-canvas-glass: rgba(14, 12, 11, 0.90);
+  --bg-surface-primary: #1A1715;
+  --bg-surface-secondary: #23201D;
+  --bg-surface-tertiary: #2D2824;
+  --bg-surface-elevated: #23201D;
+  --bg-surface-floating: #2D2824;
+  --bg-surface-subtle: rgba(35, 32, 29, 0.65);
+  --bg-surface-hover: rgba(255, 255, 255, 0.04);
+  --bg-surface-active: rgba(255, 255, 255, 0.07);
 
-  /* Depths in Night Mode (Calibrated Obsidian Depth) */
+  /* Depths in Night Mode (Milled Basalt Plates & Hairline Seams) */
   --depth-0-bg: #0E0C0B;
   --depth-0-border: transparent;
-  --depth-1-bg: #171413;
-  --depth-1-border: rgba(255, 255, 255, 0.06);
-  --depth-1-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --depth-2-bg: #201C1A;
-  --depth-2-border: rgba(255, 255, 255, 0.08);
-  --depth-2-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --depth-3-bg: #25201D;
-  --depth-3-border: rgba(255, 255, 255, 0.10);
-  --depth-3-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-  --depth-4-bg: #2A2522;
-  --depth-4-border: rgba(255, 255, 255, 0.14);
-  --depth-4-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --depth-1-bg: #141210;
+  --depth-1-border: rgba(255, 255, 255, 0.07);
+  --depth-1-shadow: none;
+  --depth-2-bg: #1A1715;
+  --depth-2-border: rgba(255, 255, 255, 0.09);
+  --depth-2-shadow: none;
+  --depth-3-bg: #201C19;
+  --depth-3-border: rgba(255, 255, 255, 0.13);
+  --depth-3-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  --depth-4-bg: #282420;
+  --depth-4-border: rgba(255, 255, 255, 0.18);
+  --depth-4-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
 
   /* Inverted / Dark Card Surfaces */
-  --bg-dark-surface: #0A0807;
-  --bg-dark-surface-elevated: #141110;
-  --text-dark-primary: #FAF7F2;
-  --text-dark-secondary: #AEA69B;
-  --text-dark-muted: #7C7368;
+  --bg-dark-surface: #0E0C0B;
+  --bg-dark-surface-elevated: #181514;
+  --text-dark-primary: #F6F4F0;
+  --text-dark-secondary: #A8A196;
+  --text-dark-muted: #7E776D;
 
   /* Typography / Text Semantics (Night Mode) */
-  --text-primary: #FAF7F2;
-  --text-secondary: #AEA69B;
-  --text-muted: #8E857B; /* WCAG AA 4.6:1 against #0E0C0B */
-  --text-inverse: #0E0C0B;
-  --text-accent: #FF6B52;
+  --text-primary: #F6F4F0;
+  --text-secondary: #A8A196;
+  --text-muted: #7E776D; /* WCAG AA 4.7:1 against #12100E */
+  --text-inverse: #12100E;
+  --text-accent: #E8684A;
 
   /* Primary Button Semantics (Night Mode) */
-  --btn-primary-bg: #FAF7F2;
-  --btn-primary-text: #0E0C0B;
+  --btn-primary-bg: #F6F4F0;
+  --btn-primary-text: #12100E;
   --btn-primary-hover: #FFFFFF;
 
   /* Navigation Semantic Tokens (Night Mode) */
   --nav-bg-transparent: transparent;
-  --nav-bg-scrolled: rgba(14, 12, 11, 0.88);
-  --nav-text: #FAF7F2;
-  --nav-text-muted: #AEA69B;
-  --nav-text-active: #FF6B52;
-  --nav-border: rgba(247, 244, 238, 0.08);
-  --nav-hover: rgba(247, 244, 238, 0.05);
-  --nav-focus: #FF6B52;
-  --nav-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --nav-bg-scrolled: rgba(18, 16, 14, 0.90);
+  --nav-text: #F6F4F0;
+  --nav-text-muted: #A8A196;
+  --nav-text-active: #E8684A;
+  --nav-border: rgba(255, 255, 255, 0.07);
+  --nav-hover: rgba(255, 255, 255, 0.04);
+  --nav-focus: #E8684A;
+  --nav-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 
   /* Border Semantics (Night Mode) */
   --border-hairline: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(247, 244, 238, 0.10);
-  --border-default: rgba(247, 244, 238, 0.15);
-  --border-strong: rgba(247, 244, 238, 0.25);
-  --border-focus: #FF6B52;
+  --border-subtle: rgba(255, 255, 255, 0.11);
+  --border-default: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --border-focus: #E05A3E;
+  --border-chamfer: inset 0 1px 0 rgba(232, 226, 216, 0.04);
+
+  /* Horological & Material Accents (Night Mode) */
+  --accent-brass: #B58942;
+  --accent-brass-subtle: rgba(181, 137, 66, 0.18);
+  --accent-terracotta: #E05A3E;
 
   /* Skeletons (Night Mode) */
-  --skeleton-base: #201C1A;
-  --skeleton-shimmer: #2A2522;
+  --skeleton-base: #23201D;
+  --skeleton-shimmer: #2D2824;
 
   /* Functional Status (Night Mode) */
-  --status-success: #62A375;
-  --status-success-bg: rgba(98, 163, 117, 0.15);
-  --status-warning: #F5A23D;
-  --status-warning-bg: rgba(245, 162, 61, 0.15);
-  --status-error: #FF6B6B;
-  --status-error-bg: rgba(255, 107, 107, 0.15);
-  --status-info: #9B87CC;
-  --status-info-bg: rgba(155, 135, 204, 0.15);
+  --status-success: #5D9570;
+  --status-success-bg: rgba(93, 149, 112, 0.14);
+  --status-warning: #D9A042;
+  --status-warning-bg: rgba(217, 160, 66, 0.14);
+  --status-error: #E85555;
+  --status-error-bg: rgba(232, 85, 85, 0.14);
+  --status-info: #7F8BB4;
+  --status-info-bg: rgba(127, 139, 180, 0.14);
 
   /* Subject Identity Accents (Night Mode: High-contrast legible variants) */
-  --subject-coral-accent: #FF6B52;
-  --subject-coral-subtle: rgba(255, 107, 82, 0.14);
-  --subject-amber-accent: #F5A23D;
-  --subject-amber-subtle: rgba(245, 162, 61, 0.14);
-  --subject-lavender-accent: #9B87CC;
-  --subject-lavender-subtle: rgba(155, 135, 204, 0.14);
-  --subject-sage-accent: #62A375;
-  --subject-sage-subtle: rgba(98, 163, 117, 0.14);
+  --subject-coral-accent: #E8684A;
+  --subject-coral-subtle: rgba(232, 104, 74, 0.14);
+  --subject-amber-accent: #D9A042;
+  --subject-amber-subtle: rgba(217, 160, 66, 0.14);
+  --subject-lavender-accent: #7F8BB4;
+  --subject-lavender-subtle: rgba(127, 139, 180, 0.14);
+  --subject-sage-accent: #5D9570;
+  --subject-sage-subtle: rgba(93, 149, 112, 0.14);
 
   /* Atmospheric Gradients (Night Mode) */
-  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(32, 28, 26, 0.5) 0%, rgba(14, 12, 11, 0) 70%);
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(35, 32, 29, 0.5) 0%, rgba(18, 16, 14, 0) 70%);
   --gradient-subtle-glow: none;
 
   /* Ambient Shadows (Night Mode) */
   --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.4);
   --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.45);
-  --shadow-floating: 0 8px 20px rgba(0, 0, 0, 0.5);
+  --shadow-floating: 0 8px 24px rgba(0, 0, 0, 0.55);
   --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
@@ -370,16 +385,16 @@
    Smooth temporal shifts without layout jumps
    ========================================================================== */
 html[data-circadian="dawn"]:not([data-theme="dark"]) {
-  --bg-canvas: #FAF9F6;
-  --bg-surface-secondary: #F6F2EB;
+  --bg-canvas: #F8F6F2;
+  --bg-surface-secondary: #F2EFE8;
 }
 
 html[data-circadian="twilight"]:not([data-theme="dark"]) {
-  --bg-canvas: #F8F5F0;
-  --bg-surface-secondary: #F0EAE0;
+  --bg-canvas: #F4F0E8;
+  --bg-surface-secondary: #EBE4D8;
 }
 
 html[data-circadian="night"][data-theme="dark"] {
-  --bg-canvas: #0B0A09;
-  --bg-surface-primary: #141211;
+  --bg-canvas: #0E0C0B;
+  --bg-surface-primary: #171412;
 }
