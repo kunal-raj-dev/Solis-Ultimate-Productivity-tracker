@@ -318,9 +318,9 @@ export const GoalsPage: React.FC = () => {
     <div>
       {/* 1. Header with CTA */}
       <SectionHeader
-        tag={<Badge variant="lavender">Strategic Horizons</Badge>}
-        title="Goal Horizons & Milestones"
-        subtitle="Connect semester milestones and multi-year vision to daily actionable momentum."
+        tag={<Badge variant="lavender">Study Targets</Badge>}
+        title="Goals & Targets"
+        subtitle="Set exam targets, projects, and long-term study goals."
         guideId="goal-horizons"
         onOpenGuide={openGuide}
         actions={

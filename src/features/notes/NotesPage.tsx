@@ -518,11 +518,11 @@ export const NotesPage: React.FC = () => {
       <aside className="solis-notes-index">
         <div className="solis-notes-index__header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <h2 className="solis-notes-index__title">Knowledge Index</h2>
+            <h2 className="solis-notes-index__title">Study Notes</h2>
             <ContextualHelp
-              title="What is Knowledge Studio?"
-              content="Knowledge Studio is your distraction-free external memory for organizing notes, formulas, summaries, and lecture takeaways."
-              example="Drafting a concept note and generating active recall cards ensures permanent mastery."
+              title="What are Study Notes?"
+              content="Your clean place to write class notes, formulas, lecture summaries, and revision ideas."
+              example="Write down key formulas or concepts, then generate quick flashcards to review later."
               guideId="knowledge-studio"
               onOpenGuide={openGuide}
             />

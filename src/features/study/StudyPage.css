@@ -32,48 +32,37 @@
 
 .solis-subject-world-tile {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: 16px 18px;
+  box-shadow: none;
+  transition: border-color var(--duration-swift) ease, background-color var(--duration-swift) ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: var(--space-md);
   position: relative;
-  overflow: hidden;
-}
-
-.solis-subject-world-tile::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--border-subtle);
-  transition: opacity var(--transition-fast);
 }
 
 .solis-subject-world-tile:hover {
-  border-color: var(--border-default);
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.25);
+  border-color: var(--border-subtle);
+  background-color: var(--bg-surface-secondary);
 }
 
-.solis-subject-world-tile--coral::before {
-  background: linear-gradient(90deg, var(--color-coral-500), rgba(230, 90, 65, 0.3));
+.solis-subject-world-tile--coral {
+  border-left: 3px solid var(--color-coral-500);
 }
 
-.solis-subject-world-tile--amber::before {
-  background: linear-gradient(90deg, var(--color-amber-500), rgba(217, 119, 6, 0.3));
+.solis-subject-world-tile--amber {
+  border-left: 3px solid var(--color-amber-500);
 }
 
-.solis-subject-world-tile--lavender::before {
-  background: linear-gradient(90deg, var(--color-lavender-500), rgba(167, 139, 250, 0.3));
+.solis-subject-world-tile--lavender {
+  border-left: 3px solid var(--color-lavender-500);
 }
 
-.solis-subject-world-tile--sage::before {
-  background: linear-gradient(90deg, var(--color-sage-500), rgba(16, 185, 129, 0.3));
+.solis-subject-world-tile--sage {
+  border-left: 3px solid var(--color-emerald-500, #10b981);
 }
 
 .solis-subject-world-header {
@@ -84,28 +73,28 @@
 }
 
 .solis-subject-world-title {
-  font-family: var(--font-display);
-  font-size: var(--text-heading-3);
-  font-weight: 500;
-  letter-spacing: -0.015em;
+  font-family: var(--font-interface);
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .solis-subject-world-desc {
   font-size: var(--text-caption);
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.45;
   margin-top: 4px;
 }
 
 /* Subject Learning Health Summary Breakdown */
 .solis-subject-learning-health {
-  margin: 12px 0 8px;
-  padding: 10px 12px;
+  margin: 10px 0 8px;
+  padding: 8px 12px;
   background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
 }
 
 .solis-subject-learning-health__header {
@@ -113,7 +102,7 @@
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-sm);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .solis-subject-learning-health__title {
@@ -125,56 +114,58 @@
 
 .solis-subject-learning-health__topics-count {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .solis-subject-learning-health__pills {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .solis-health-pill {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
   display: inline-flex;
   align-items: center;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .solis-health-pill--strong {
-  background: rgba(76, 175, 80, 0.15);
-  color: #4CAF50;
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--color-emerald-600, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .solis-health-pill--stable {
-  background: rgba(33, 150, 243, 0.15);
-  color: #2196F3;
-  border: 1px solid rgba(33, 150, 243, 0.3);
+  background: rgba(59, 130, 246, 0.08);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .solis-health-pill--developing {
-  background: rgba(255, 152, 0, 0.15);
-  color: #FF9800;
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--color-amber-600, #d97706);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .solis-health-pill--review {
-  background: rgba(230, 90, 65, 0.15);
-  color: var(--color-coral-500);
-  border: 1px solid rgba(230, 90, 65, 0.3);
+  background: rgba(230, 90, 65, 0.08);
+  color: var(--color-coral-600);
+  border: 1px solid rgba(230, 90, 65, 0.2);
 }
 
 .solis-health-pill--unassessed {
-  background: var(--bg-surface-subtle);
+  background: var(--bg-surface-elevated);
   color: var(--text-muted);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-hairline);
 }
 
 /* --------------------------------------------------------------------------
@@ -223,8 +214,8 @@
    03 // TOPIC MASTERY PROGRESSION
    -------------------------------------------------------------------------- */
 .solis-mastery-chip {
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
   font-size: var(--text-micro);
   font-weight: 600;
   border: none;
@@ -308,13 +299,13 @@
 .solis-study-split-pane {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
-  box-shadow: var(--shadow-subtle);
-  transition: all var(--duration-normal) var(--ease-spatial);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: 18px 20px;
+  box-shadow: none;
+  transition: all var(--duration-swift) ease;
 }
 
 @media (max-width: 960px) {
@@ -333,16 +324,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
-  border-left: 1px solid var(--border-subtle);
-  padding-left: var(--space-xl);
+  border-left: 1px solid var(--border-hairline);
+  padding-left: var(--space-lg);
 }
 
 @media (max-width: 960px) {
   .solis-workspace-column {
     border-left: none;
-    border-top: 1px solid var(--border-subtle);
+    border-top: 1px solid var(--border-hairline);
     padding-left: 0;
-    padding-top: var(--space-lg);
+    padding-top: var(--space-md);
   }
 }
 

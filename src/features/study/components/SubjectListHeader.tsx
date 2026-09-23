@@ -48,9 +48,9 @@ export const SubjectListHeader: React.FC<SubjectListHeaderProps> = ({
         </ParallaxLayer>
         <ParallaxLayer speed={0}>
           <SectionHeader
-            tag={<Badge variant="amber">Study Architecture</Badge>}
-            title="Study Sessions & Planning"
-            subtitle="Manage subject syllabi, log focused cognitive blocks, and track weekly hour targets."
+            tag={<Badge variant="amber">Syllabus & Classes</Badge>}
+            title="Subjects & Study Plan"
+            subtitle="Organize your courses, exam topics, and weekly study time targets."
             guideId="study-studio"
             onOpenGuide={onOpenGuide}
             actions={

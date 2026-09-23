@@ -384,20 +384,8 @@ export const HabitsPage: React.FC = () => {
                 </div>
 
                 {/* Bottom Row: 14-Day Interactive Matrix */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 14px',
-                    backgroundColor: 'var(--bg-surface-secondary)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    flexWrap: 'wrap',
-                    gap: '8px'
-                  }}
-                >
-                  <span style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                <div className="solis-habits-matrix-container">
+                  <span className="solis-habits-matrix-title">
                     14-Day Consistency Horizon
                   </span>
 

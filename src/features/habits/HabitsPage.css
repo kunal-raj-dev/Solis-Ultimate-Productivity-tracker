@@ -52,17 +52,34 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg);
-  padding: 16px 20px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
   gap: 14px;
-  transition: border-color var(--duration-swift) var(--ease-spatial),
-              background var(--duration-swift) var(--ease-spatial);
+  transition: border-color var(--duration-instant) ease, background-color var(--duration-instant) ease;
 }
 
 .solis-habit-row:hover {
-  border-color: var(--border-subtle);
-  background: var(--bg-surface-elevated);
+  border-color: var(--border-focus);
+}
+
+.solis-habits-matrix-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.solis-habits-matrix-title {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
 }
 
 .solis-habit-quick-capture {

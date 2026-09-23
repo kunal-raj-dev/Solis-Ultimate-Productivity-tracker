@@ -123,43 +123,36 @@ export const GoalCard: React.FC<GoalCardProps> = ({
       {/* 1. Header Section */}
       <div className="solis-goal-card__header">
         <div className="solis-goal-card__meta">
-          {/* Experience Badge */}
+          {/* Primary Experience Badge */}
           {goal.experienceType === 'exam' ? (
             <Badge variant="coral" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <GraduationCap size={13} />
-              <span>Exam Workspace</span>
+              <span>Exam</span>
             </Badge>
           ) : goal.experienceType === 'project' ? (
             <Badge variant="amber" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <FolderGit2 size={13} />
-              <span>Project Workspace</span>
+              <span>Project</span>
             </Badge>
           ) : (
             <Badge variant="neutral" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
               <Target size={13} />
-              <span>Standard Horizon</span>
+              <span>Horizon</span>
             </Badge>
           )}
 
-          {/* Horizon & Category */}
-          <Badge variant="neutral">{goal.horizon.replace('_', ' ')}</Badge>
-          <Badge variant="neutral">{goal.category}</Badge>
-          {goal.subjectName && <Badge variant="neutral">{goal.subjectName}</Badge>}
+          {/* Editorial Marginalia */}
+          <span className="solis-goal-card__marginalia">
+            {goal.subjectName && <strong className="solis-goal-card__subject">{goal.subjectName}</strong>}
+            {goal.subjectName && ' · '}
+            <span>{goal.category}</span>
+            {' · '}
+            <span>{goal.horizon.replace('_', ' ')}</span>
+          </span>
 
-          {/* Priority */}
-          <Badge
-            variant={
-              goal.priority === 'urgent'
-                ? 'coral'
-                : goal.priority === 'high'
-                ? 'amber'
-                : 'neutral'
-            }
-          >
-            {goal.priority}
-          </Badge>
-
-          {/* Status */}
+          {/* Priority / Status Tag */}
+          {goal.priority === 'urgent' && <Badge variant="coral">Urgent</Badge>}
+          {goal.priority === 'high' && <Badge variant="amber">High</Badge>}
           {goal.status === 'completed' && <Badge variant="sage">Completed</Badge>}
           {goal.status === 'paused' && <Badge variant="neutral">Paused</Badge>}
         </div>

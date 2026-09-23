@@ -17,22 +17,20 @@
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   background-color: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  transition: border-color var(--duration-instant) ease;
 }
 
 .solis-goals-stat-card:hover {
-  border-color: var(--border-medium);
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-focus);
 }
 
 .solis-goals-stat-card--highlight {
   background: var(--bg-surface-secondary);
-  border-color: var(--color-lavender-300, rgba(147, 112, 219, 0.2));
+  border-color: var(--border-hairline);
 }
 
 .solis-goals-stat-card__icon {
@@ -81,9 +79,10 @@
 }
 
 .solis-goals-stat-card__value {
-  font-family: var(--font-display);
-  font-size: var(--text-heading-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-h2);
   font-weight: 700;
+  letter-spacing: -0.025em;
   color: var(--text-primary);
   line-height: 1.1;
   display: flex;
@@ -302,19 +301,18 @@
    -------------------------------------------------------------------------- */
 .solis-goal-card {
   background-color: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: 18px 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  gap: 14px;
+  box-shadow: none;
+  transition: border-color var(--duration-swift) ease;
 }
 
 .solis-goal-card:hover {
-  border-color: var(--border-medium);
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-subtle);
 }
 
 .solis-goal-card--completed {
@@ -324,7 +322,7 @@
 
 .solis-goal-card__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
@@ -333,8 +331,23 @@
 .solis-goal-card__meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   flex-wrap: wrap;
+}
+
+.solis-goal-card__marginalia {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.solis-goal-card__subject {
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .solis-goal-card__header-right {
@@ -348,11 +361,12 @@
   align-items: center;
   gap: 6px;
   font-size: var(--text-caption);
+  font-family: var(--font-mono, monospace);
   color: var(--text-secondary);
   background-color: var(--bg-surface-secondary);
-  padding: 4px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs, 2px);
+  border: 1px solid var(--border-hairline);
   font-weight: 500;
 }
 
@@ -388,9 +402,10 @@
 }
 
 .solis-goal-card__title {
-  font-family: var(--font-display);
-  font-size: var(--text-heading-2);
+  font-family: var(--font-interface);
+  font-size: var(--text-h3);
   font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin: 0;
   line-height: 1.3;

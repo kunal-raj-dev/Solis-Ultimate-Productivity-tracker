@@ -110,12 +110,12 @@
 }
 
 .solis-note-card {
-  padding: 14px 16px;
-  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm, 4px);
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-hairline);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all var(--duration-swift) ease;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -123,15 +123,15 @@
 }
 
 .solis-note-card:hover {
-  border-color: var(--border-default);
-  background-color: var(--bg-surface-hover);
-  box-shadow: var(--shadow-subtle);
+  border-color: var(--border-subtle);
+  background-color: var(--bg-surface-secondary);
 }
 
 .solis-note-card--active {
-  border-color: var(--color-coral-500) !important;
-  background: var(--bg-surface-elevated) !important;
-  box-shadow: 0 4px 16px rgba(230, 90, 65, 0.08) !important;
+  border-color: var(--border-subtle) !important;
+  border-left: 3px solid var(--accent-terracotta) !important;
+  background: var(--bg-surface-secondary) !important;
+  box-shadow: none !important;
 }
 
 .solis-note-card__title {
@@ -147,7 +147,7 @@
 .solis-note-card__snippet {
   font-size: var(--text-caption);
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -160,6 +160,7 @@
   justify-content: space-between;
   margin-top: 4px;
   font-size: var(--text-micro);
+  font-family: var(--font-mono, monospace);
   color: var(--text-muted);
 }
 
@@ -168,21 +169,21 @@
    -------------------------------------------------------------------------- */
 .solis-notes-canvas {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-2xl);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-xl);
+  box-shadow: none;
   min-height: calc(100vh - 200px);
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
   position: relative;
   min-width: 0;
 }
 
 @media (min-width: 1200px) {
   .solis-notes-canvas {
-    padding: var(--space-3xl);
+    padding: var(--space-2xl);
   }
 }
 
@@ -259,19 +260,20 @@
 
 .solis-notes-canvas__title-input {
   width: 100%;
-  font-family: var(--font-display);
-  font-size: clamp(1.6rem, 3.2vw, 2.5rem);
+  font-family: var(--font-display, 'Newsreader', serif);
+  font-size: clamp(1.8rem, 3.2vw, 2.6rem);
   font-weight: 500;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
   color: var(--text-primary);
   border: none;
   background: transparent;
   outline: none;
-  padding: 0;
+  padding: 4px 0;
   resize: none;
   field-sizing: content;
-  min-height: 1.3em;
+  min-height: 1.4em;
+  overflow: visible;
 }
 
 .solis-notes-canvas__title-input::placeholder {
