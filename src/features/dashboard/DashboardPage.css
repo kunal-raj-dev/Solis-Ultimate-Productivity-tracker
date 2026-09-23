@@ -1,804 +1,516 @@
 /* ==========================================================================
-   SOLIS — DASHBOARD: DAILY FLOW EXPERIENCE (Design System 2.0)
-   Vertical spatial composition, sculptural momentum, editorial progression
+   SOLIS — DASHBOARD: THE CIRCADIAN SCHOLAR COCKPIT
+   Handcrafted, Asymmetric Editorial Architecture (Design System 3.0)
+   Zero AI Slop • Things 3 Whitespace • Amie Warmth • Teenage Engineering Precision
    ========================================================================== */
 
-.solis-daily-flow {
+.solis-cockpit-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3xl);
-  padding-bottom: var(--space-4xl);
+  gap: var(--space-2xl);
+  max-width: var(--max-content-width, 1320px);
+  margin: 0 auto;
+  padding: 0 var(--space-md) var(--space-4xl);
+}
+
+/* Quick Start Checklist Banner for Students */
+.solis-quick-start-banner {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--color-coral-500);
+  border-radius: var(--radius-sm, 4px);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.solis-quick-start-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-quick-start-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .solis-quick-start-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.solis-quick-step-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm, 4px);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.solis-quick-step-card:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.solis-quick-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-coral-500);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.solis-quick-step-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-quick-step-info strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-quick-step-info span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (min-width: 768px) {
+  .solis-cockpit-layout {
+    padding: 0 var(--space-xl) var(--space-4xl);
+  }
 }
 
 /* --------------------------------------------------------------------------
-   01 // ARRIVAL SCENE & CONTINUITY
+   01. THE SOLAR HORIZON (Arrival Hero & Living Sky)
    -------------------------------------------------------------------------- */
-.solis-arrival-scene {
+.solis-solar-hero {
   position: relative;
-  padding: var(--space-2xl) 0 var(--space-xl);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-xl) var(--space-xl);
+  box-shadow: none;
+  overflow: hidden;
+  transition: border-color var(--duration-swift) ease;
 }
 
-.solis-arrival-content {
+.solis-solar-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-terracotta), var(--accent-brass), transparent);
+  opacity: 0.9;
+}
+
+.solis-solar-hero__main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   position: relative;
   z-index: 2;
 }
 
 @media (min-width: 1024px) {
-  .solis-arrival-content {
-    flex-direction: row;
-    align-items: flex-end;
+  .solis-solar-hero__top {
+    display: flex;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: var(--space-2xl);
   }
 }
 
-.solis-today-temporal-header {
+.solis-solar-hero__greeting {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: 640px;
+}
+
+.solis-solar-date-badge {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: var(--space-xs);
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--text-secondary);
-  letter-spacing: 0.01em;
-}
-
-.solis-today-temporal-separator {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  opacity: 0.5;
+  margin-bottom: 2px;
 }
 
-.solis-today-temporal-period {
-  color: var(--text-primary);
-  font-weight: var(--font-weight-semibold);
+.solis-solar-date-badge__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--accent-terracotta);
 }
 
-.solis-arrival-greeting__title {
-  font-family: var(--font-display);
-  font-size: clamp(2.25rem, 4vw, 3.25rem);
-  font-weight: 300;
+.solis-solar-heading {
+  font-family: var(--font-display, 'Newsreader', serif);
+  font-size: clamp(2.2rem, 3.8vw, 3.2rem);
+  font-weight: 400;
   line-height: 1.1;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.03em;
   color: var(--text-primary);
+  margin: 0;
 }
 
-.solis-arrival-greeting__suggestion {
-  font-family: var(--font-display);
+.solis-solar-quote {
+  font-family: var(--font-display, 'Newsreader', serif);
   font-style: italic;
-  font-size: var(--text-body-lg);
+  font-size: var(--text-body-md);
+  line-height: 1.55;
   color: var(--text-secondary);
-  max-width: 640px;
-  line-height: 1.5;
-  margin-top: var(--space-2xs);
+  margin: var(--space-2xs) 0 0;
 }
 
-/* Daily Intention Line */
-.solis-daily-intention-bar {
+/* Solar Hero Right: Living Arc & Focus Action */
+.solis-solar-hero__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-md);
+  min-width: 290px;
+  margin-top: var(--space-md);
+}
+
+@media (min-width: 1024px) {
+  .solis-solar-hero__controls {
+    align-items: flex-end;
+    margin-top: 0;
+  }
+}
+
+.solis-focus-primary-btn {
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(200, 75, 49, 0.25);
+}
+
+/* Daily Intention Anchor Bar */
+.solis-intention-strip {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  background: var(--bg-surface-primary);
+  background: var(--bg-surface-secondary);
   border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  padding: 8px 16px;
-  max-width: 580px;
-  margin-top: var(--space-sm);
+  border-radius: var(--radius-sm, 4px);
+  padding: 10px 16px;
+  width: 100%;
+  max-width: 720px;
+  transition: all var(--duration-swift) ease;
 }
 
-.solis-daily-intention-input {
+.solis-intention-strip:focus-within {
+  background: var(--bg-surface-primary);
+  border-color: var(--accent-terracotta);
+  box-shadow: 0 0 0 2px rgba(200, 75, 49, 0.12);
+}
+
+.solis-intention-icon {
+  color: var(--accent-brass);
+  flex-shrink: 0;
+}
+
+.solis-intention-input {
   flex: 1;
   border: none;
   background: transparent;
   outline: none;
-  font-family: var(--font-display);
+  font-family: var(--font-display, 'Newsreader', serif);
   font-style: italic;
   font-size: var(--text-body-md);
   color: var(--text-primary);
 }
 
-.solis-daily-intention-input::placeholder {
+.solis-intention-input::placeholder {
   color: var(--text-muted);
+  font-style: italic;
 }
 
-/* Hero Right Actions Group */
-.solis-dashboard-hero-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: stretch;
-  width: 230px;
-  flex-shrink: 0;
+.solis-intention-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--status-success);
+  background: var(--status-success-bg);
+  padding: 2px 7px;
+  border-radius: var(--radius-xs, 2px);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  letter-spacing: 0.04em;
 }
 
-@media (max-width: 1023px) {
-  .solis-dashboard-hero-actions {
-    width: 100%;
-    max-width: 380px;
+/* --------------------------------------------------------------------------
+   02. ASYMMETRIC MASTER GRID (Stage 62% / Vault 38%)
+   -------------------------------------------------------------------------- */
+.solis-cockpit-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .solis-cockpit-grid {
+    grid-template-columns: minmax(0, 1.58fr) minmax(0, 1fr);
+    gap: var(--space-2xl);
   }
 }
 
-.solis-dashboard-hero-actions .solis-btn {
-  width: 100%;
-  justify-content: center;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 600;
+.solis-cockpit-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
 }
 
-/* Evening Closure Ritual Action Button */
-.solis-evening-closure-btn {
+.solis-cockpit-vault {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* --------------------------------------------------------------------------
+   03. CRAFTED EDITORIAL PANELS (Stage & Vault)
+   -------------------------------------------------------------------------- */
+.solis-panel {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-lg);
+  box-shadow: none;
+  position: relative;
+  transition: border-color var(--duration-swift) ease;
+}
+
+.solis-panel:hover {
+  border-color: var(--border-subtle);
+}
+
+.solis-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.solis-panel__title-group {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  width: 100%;
-  min-height: 44px;
-  padding: 6px 14px 6px 12px;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  text-align: left;
-  user-select: none;
-  box-sizing: border-box;
 }
 
-.solis-evening-closure-btn:hover {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
+.solis-panel__icon {
+  color: var(--accent-terracotta);
 }
 
-.solis-evening-closure-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(142, 100, 240, 0.15);
-  color: var(--color-lavender-500);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.solis-evening-closure-text {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.solis-evening-closure-title {
+.solis-panel__title {
   font-family: var(--font-interface);
-  font-size: 12.5px;
+  font-size: var(--text-body-md);
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin: 0;
 }
 
-.solis-evening-closure-sub {
-  font-size: 10.5px;
+.solis-panel__badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
   color: var(--text-muted);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.solis-evening-closure-arrow {
-  color: var(--text-muted);
-  transition: transform var(--transition-fast);
-  margin-left: 2px;
-  flex-shrink: 0;
-}
-
-.solis-evening-closure-btn:hover .solis-evening-closure-arrow {
-  transform: translateX(2px);
-  color: var(--color-lavender-400);
-}
-
-/* Quick Task Input Bar */
-.solis-dashboard-quick-task-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: var(--space-xs);
-}
-
-.solis-dashboard-quick-task-input {
-  flex: 1;
-  width: 100%;
   background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  color: var(--text-primary);
-  outline: none;
-  transition: all var(--duration-swift) var(--ease-spatial);
-  box-sizing: border-box;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs, 2px);
+  border: 1px solid var(--border-hairline);
 }
 
-.solis-dashboard-quick-task-input:focus {
+/* --------------------------------------------------------------------------
+   04. ACTIVE ORBIT / SANCTUARY HORIZON
+   -------------------------------------------------------------------------- */
+.solis-orbit-stage {
   background: var(--bg-surface-primary);
-  border-style: solid;
-  border-color: var(--color-coral-500);
-  box-shadow: 0 0 0 3px var(--subject-coral-subtle);
-}
-
-.solis-dashboard-quick-task-input::placeholder {
-  color: var(--text-muted);
-}
-
-.solis-dashboard-quick-task-submit {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-md);
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all var(--duration-swift) var(--ease-spatial);
-}
-
-.solis-dashboard-quick-task-submit:not(:disabled):hover {
-  background: var(--color-coral-500);
-  border-color: var(--color-coral-600);
-  color: #fff;
-}
-
-.solis-dashboard-quick-task-submit:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* Active Orbit Unified Card */
-.solis-active-orbit-card {
-  margin-top: var(--space-lg);
-  padding: 18px 22px;
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-left: 4px solid var(--color-coral-500);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--accent-terracotta);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: all var(--duration-swift) var(--ease-spatial);
+  gap: var(--space-sm);
+  box-shadow: none;
 }
 
-.solis-active-orbit-card:hover {
-  border-color: var(--border-default);
-  border-left-color: var(--color-coral-400);
-  box-shadow: var(--shadow-card);
+@media (min-width: 640px) {
+  .solis-orbit-stage {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
-.solis-active-orbit-header {
+.solis-orbit-stage__content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.solis-active-orbit-tag {
-  display: flex;
+.solis-orbit-stage__tag {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--text-micro);
-  font-weight: 700;
+  gap: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-coral-500);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+  letter-spacing: 0.05em;
 }
 
-.solis-active-orbit-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.solis-active-orbit-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 260px;
-}
-
-.solis-active-orbit-title {
+.solis-orbit-stage__title {
   font-family: var(--font-interface);
-  font-size: var(--text-body);
+  font-size: var(--text-body-lg);
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.3;
 }
 
-.solis-active-orbit-sub {
-  font-size: var(--text-caption);
+.solis-orbit-stage__reason {
+  font-size: var(--text-body-sm);
   color: var(--text-secondary);
   line-height: 1.4;
 }
 
-.solis-active-orbit-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.solis-orbit-stage__actions {
   flex-shrink: 0;
+  margin-top: var(--space-xs);
 }
 
-/* Continuity Focus Horizon Strip */
-.solis-continuity-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--color-coral-500);
-  border-radius: var(--radius-lg);
-  padding: 14px 20px;
-  box-shadow: var(--shadow-subtle);
-  flex-wrap: wrap;
-  transition: all var(--duration-swift) var(--ease-spatial);
-}
-
-.solis-continuity-strip:hover {
-  border-color: var(--border-default);
-  border-left-color: var(--color-coral-400);
-  box-shadow: var(--shadow-card);
-}
-
-.solis-continuity-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.solis-continuity-title {
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.solis-continuity-subtitle {
-  font-size: var(--text-caption);
-  color: var(--text-secondary);
+@media (min-width: 640px) {
+  .solis-orbit-stage__actions {
+    margin-top: 0;
+  }
 }
 
 /* --------------------------------------------------------------------------
-   02 // COGNITIVE VELOCITY & MOMENTUM PULSE (Sculptural & Adaptive)
+   05. LIVING 24H SCHEDULE RIBBON
    -------------------------------------------------------------------------- */
-.solis-momentum-hero {
-  background: var(--bg-surface-primary);
-  color: var(--text-primary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-2xl);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
+.solis-ribbon-track {
   position: relative;
-  overflow: hidden;
-  transition: border-color var(--duration-swift) var(--ease-spatial);
-}
-
-@media (max-width: 640px) {
-  .solis-momentum-hero {
-    padding: var(--space-lg) var(--space-md);
-    border-radius: var(--radius-lg);
-  }
-  .solis-momentum-hero__layout {
-    gap: var(--space-lg);
-  }
-}
-
-@media (min-width: 1024px) {
-  .solis-momentum-hero {
-    padding: var(--space-2xl) var(--space-3xl);
-  }
-}
-
-.solis-momentum-hero__layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2xl);
-  align-items: center;
-  position: relative;
-  z-index: 2;
-}
-
-@media (min-width: 960px) {
-  .solis-momentum-hero__layout {
-    grid-template-columns: 1.15fr 1fr;
-    gap: var(--space-3xl);
-  }
-}
-
-.solis-momentum-score-sculpture {
-  font-family: var(--font-display);
-  font-size: clamp(3.5rem, 7vw, 5.75rem);
-  font-weight: 300;
-  line-height: 0.95;
-  letter-spacing: -0.04em;
-  color: var(--text-primary);
-  display: flex;
-  align-items: baseline;
-  font-variant-numeric: tabular-nums;
-}
-
-.solis-momentum-score-sculpture span {
-  font-size: 1.75rem;
-  color: var(--color-coral-500);
-  margin-left: 4px;
-}
-
-.solis-momentum-quad-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-sm);
-}
-
-@media (max-width: 420px) {
-  .solis-momentum-quad-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-}
-
-.solis-momentum-quad-pill {
   background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: var(--space-sm) var(--space-md);
-  transition: border-color var(--duration-swift) var(--ease-spatial),
-              background var(--duration-swift) var(--ease-spatial);
-}
-
-.solis-momentum-quad-pill:hover {
-  border-color: var(--border-default);
-  background: var(--bg-surface-hover);
-}
-
-/* --------------------------------------------------------------------------
-   03 // ASYMMETRIC DAILY FLOW GRID
-   -------------------------------------------------------------------------- */
-.solis-flow-columns {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-2xl);
-}
-
-@media (min-width: 1080px) {
-  .solis-flow-columns {
-    grid-template-columns: 1.6fr 1fr;
-    gap: var(--space-3xl);
-  }
-}
-
-.solis-flow-primary-stream,
-.solis-flow-secondary-stream {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xl);
-}
-
-.solis-flow-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.solis-flow-section__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: var(--space-2xs);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.solis-flow-section__title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-  font-family: var(--font-display);
-  font-size: var(--text-heading-3);
-  font-weight: 400;
-  color: var(--text-primary);
-}
-
-.solis-flow-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.solis-flow-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  transition: all var(--transition-fast);
-  gap: 12px;
-  min-width: 0;
-}
-
-.solis-flow-item:hover {
-  border-color: var(--border-default);
-  background: var(--bg-surface-hover);
-  box-shadow: var(--shadow-subtle);
-}
-
-.solis-flow-item__main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-
-@media (max-width: 480px) {
-  .solis-flow-item {
-    padding: 10px 12px;
-  }
-}
-
-/* Subject Horizon Cards */
-.solis-subject-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 12px;
-}
-
-.solis-subject-world-card {
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  transition: all var(--transition-fast);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.solis-subject-world-card:hover {
-  border-color: var(--border-default);
-  background: var(--bg-surface-hover);
-  box-shadow: var(--shadow-subtle);
-}
-
-/* Habit Matrix */
-.solis-habit-dot-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
   padding: 10px 14px;
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  min-width: 0;
+  margin-bottom: var(--space-md);
 }
 
-.solis-habit-dots {
+.solis-ribbon-hours {
   display: flex;
-  gap: 6px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  color: var(--text-muted);
+  user-select: none;
 }
 
-.solis-habit-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
-
-.solis-habit-dot--active {
+.solis-ribbon-needle {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
   background: var(--color-coral-500);
-  border-color: var(--color-coral-600);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(200, 75, 49, 0.7);
+  pointer-events: none;
+  transition: left 0.3s ease;
 }
 
-@media (max-width: 480px) {
-  .solis-habit-dot-row {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-  .solis-habit-dot {
-    width: 12px;
-    height: 12px;
-  }
-  .solis-habit-dots {
-    gap: 4px;
-  }
+.solis-ribbon-needle::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-coral-500);
 }
 
-/* --------------------------------------------------------------------------
-   04 // TODAY COCKPIT 5-TIER SERENITY STYLES
-   -------------------------------------------------------------------------- */
-.solis-cockpit-tier {
+.solis-ribbon-blocks {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 8px;
 }
 
-.solis-cockpit-tier--1 {
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--border-hairline);
-}
-
-.solis-intention-icon {
-  color: var(--color-coral-500);
-  flex-shrink: 0;
-}
-
-.solis-intention-anchored {
-  font-size: var(--text-micro);
-  color: var(--status-success);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Tier 3: 24h Timeline */
-.solis-timeline-header {
+.solis-ribbon-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-}
-
-.solis-timeline-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.solis-timeline-clock-icon {
-  color: var(--color-coral-500);
-}
-
-.solis-timeline-title {
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.solis-timeline-badge {
-  font-family: var(--font-mono);
-  font-size: var(--text-micro);
-  color: var(--text-muted);
-  padding: 2px 8px;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-}
-
-.solis-timeline-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.solis-timeline-mode-toggle {
-  padding: 4px 10px;
-  font-size: var(--text-caption);
-  font-family: var(--font-interface);
-  font-weight: 500;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--duration-swift) var(--ease-spatial);
-}
-
-.solis-timeline-mode-toggle:hover {
-  background: var(--bg-surface-hover);
-  color: var(--text-primary);
-}
-
-.solis-timeline-mode-toggle--active {
-  background: var(--bg-surface-tertiary);
-  border-color: var(--color-coral-500);
-  color: var(--color-coral-500);
-}
-
-.solis-cockpit-timeline-strip {
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-}
-
-.solis-timeline-track {
-  position: relative;
-  padding: var(--space-xs) 0;
-  border-bottom: 1px solid var(--border-hairline);
-}
-
-.solis-timeline-hours-bar {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--font-mono);
-  font-size: var(--text-micro);
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
-}
-
-.solis-cockpit-blocks-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.solis-cockpit-block-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
   padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
   background: var(--bg-surface-secondary);
-  transition: all var(--duration-swift) var(--ease-spatial);
+  border: 1px solid var(--border-hairline);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
-.solis-cockpit-block-row:hover {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-default);
+.solis-ribbon-item:hover {
+  background: var(--bg-surface-subtle);
+  border-color: var(--border-subtle);
 }
 
-.solis-cockpit-block-row--completed {
-  opacity: 0.6;
+.solis-ribbon-item--completed {
+  opacity: 0.65;
 }
 
-.solis-cockpit-block-time {
-  font-family: var(--font-mono);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--text-primary);
-  min-width: 100px;
-  flex-shrink: 0;
+.solis-ribbon-item__time {
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 90px;
+  font-weight: 500;
 }
 
-.solis-cockpit-block-main {
+.solis-ribbon-item__main {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  flex: 1;
+  gap: 8px;
   min-width: 0;
+  padding: 0 8px;
 }
 
-.solis-cockpit-block-title {
-  font-family: var(--font-interface);
+.solis-ribbon-item__title {
   font-size: var(--text-body-sm);
   font-weight: 500;
   color: var(--text-primary);
@@ -807,243 +519,257 @@
   text-overflow: ellipsis;
 }
 
-.solis-cockpit-block-subject {
+.solis-ribbon-item__sub {
   font-size: var(--text-micro);
+  font-family: var(--font-mono, monospace);
   color: var(--text-muted);
   background: var(--bg-surface-primary);
-  padding: 1px 6px;
+  padding: 2px 6px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--border-hairline);
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.solis-cockpit-block-actions {
-  flex-shrink: 0;
+/* --------------------------------------------------------------------------
+   06. TODAY'S DELIBERATE ACTIONS & INTENTIONS
+   -------------------------------------------------------------------------- */
+.solis-actions-capacity {
+  margin-bottom: var(--space-md);
 }
 
-/* Tier 4: Capacity Signal */
-.solis-capacity-container {
-  max-width: 720px;
+.solis-actions-input-wrap {
+  margin-bottom: var(--space-md);
 }
 
-/* Tier 5: Today Priority Queue */
-.solis-queue-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-xs);
-}
-
-.solis-queue-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.solis-queue-icon {
-  color: var(--color-coral-500);
-}
-
-.solis-queue-title {
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.solis-queue-badge {
-  font-family: var(--font-mono);
-  font-size: var(--text-micro);
-  color: var(--text-muted);
-  padding: 2px 8px;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-}
-
-.solis-queue-input-wrap {
-  margin-bottom: var(--space-xs);
-}
-
-.solis-queue-list {
+.solis-actions-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-
-/* Single-Sentence Actionable Empty Stub */
-.solis-cockpit-empty-stub {
-  padding: var(--space-md) var(--space-lg);
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  font-size: var(--text-body-sm);
-  color: var(--text-secondary);
-  font-family: var(--font-interface);
-}
-
-/* Restrained Momentum Strip & Telemetry */
-.solis-cockpit-momentum {
-  margin-top: var(--space-sm);
-}
-
-.solis-momentum-strip {
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
-  padding: var(--space-md) var(--space-lg);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
-}
-
-.solis-momentum-strip__main {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-md);
-}
-
-.solis-momentum-strip__lead {
-  display: flex;
-  align-items: center;
   gap: 6px;
 }
 
-.solis-momentum-strip__tag {
-  font-family: var(--font-interface);
-  font-size: var(--text-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.solis-momentum-info-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-xs);
-}
-
-.solis-momentum-info-btn:hover {
-  color: var(--text-primary);
-}
-
-.solis-momentum-strip__score {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.solis-momentum-score-num {
-  font-family: var(--font-display);
-  font-size: 2.25rem;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--text-primary);
-}
-
-.solis-momentum-score-unit {
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--color-coral-500);
-}
-
-.solis-momentum-telemetry {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  flex-wrap: wrap;
-}
-
-.solis-momentum-telemetry__col {
+/* Empty Stubs */
+.solis-empty-stub {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.solis-momentum-telemetry__label {
-  font-family: var(--font-interface);
-  font-size: var(--text-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.solis-momentum-telemetry__val {
-  font-family: var(--font-mono);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl) var(--space-md);
+  background: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  gap: var(--space-sm);
+  color: var(--text-secondary);
   font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
-.solis-momentum-telemetry__sep {
-  width: 1px;
-  height: 24px;
-  background: var(--border-hairline);
+/* --------------------------------------------------------------------------
+   07. VAULT: MOMENTUM TELEMETRY & DETERMINISTIC HORIZON
+   -------------------------------------------------------------------------- */
+.solis-momentum-vault {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
-/* Smooth Evening Closure Banner */
-.solis-cockpit-evening {
-  margin-top: var(--space-md);
-}
-
-.solis-evening-banner {
+.solis-momentum-gauge-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-  background: var(--bg-surface-secondary);
-  border: 1px solid rgba(142, 100, 240, 0.35);
-  border-radius: var(--radius-md);
-  flex-wrap: wrap;
+  padding-bottom: var(--space-sm);
 }
 
-.solis-evening-banner__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
-  background: rgba(142, 100, 240, 0.15);
-  color: var(--color-lavender-500);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.solis-evening-banner__text {
+.solis-momentum-telemetry-stack {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
   flex: 1;
-  min-width: 240px;
 }
 
-.solis-evening-banner__title {
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
+.solis-telemetry-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.solis-telemetry-row__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.solis-telemetry-row__metric {
+  font-family: var(--font-mono, monospace);
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.solis-evening-banner__sub {
-  font-size: var(--text-caption);
-  color: var(--text-secondary);
+.solis-telemetry-row__bar {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-surface-secondary);
+  border-radius: var(--radius-xs, 2px);
+  overflow: hidden;
 }
 
+.solis-telemetry-row__fill {
+  height: 100%;
+  border-radius: var(--radius-xs, 2px);
+  background: var(--accent-terracotta);
+  transition: width 0.4s var(--ease-spatial);
+}
+
+.solis-telemetry-row__fill--amber {
+  background: var(--accent-brass);
+}
+
+.solis-telemetry-row__fill--lavender {
+  background: var(--color-lavender-400);
+}
+
+.solis-telemetry-row__fill--sage {
+  background: var(--status-success);
+}
+
+/* --------------------------------------------------------------------------
+   08. VAULT: DAILY RITUALS & HABITS
+   -------------------------------------------------------------------------- */
+.solis-habit-pulse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-habit-pulse-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-surface-primary);
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--border-hairline);
+  transition: border-color var(--duration-swift) ease, background-color var(--duration-swift) ease;
+}
+
+.solis-habit-pulse-item:hover {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface-secondary);
+}
+
+.solis-habit-pulse-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.solis-habit-pulse-item__title {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.solis-habit-pulse-item__streak {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   09. VAULT: SUBJECT WORLDS MINI-GRID
+   -------------------------------------------------------------------------- */
+.solis-subject-vault-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.solis-subject-vault-chip {
+  padding: 10px 12px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all var(--duration-swift) ease;
+}
+
+.solis-subject-vault-chip:hover {
+  background: var(--bg-surface-secondary);
+  border-color: var(--border-subtle);
+}
+
+.solis-subject-vault-chip__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.solis-subject-vault-chip__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   10. EVENING CLOSURE BANNER (Circadian conditional >= 18:00)
+   -------------------------------------------------------------------------- */
+.solis-evening-closure-banner {
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--accent-terracotta);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-md) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: flex-start;
+  box-shadow: none;
+}
+
+@media (min-width: 768px) {
+  .solis-evening-closure-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.solis-evening-closure-banner__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.solis-evening-closure-banner__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-amber-500);
+  box-shadow: var(--shadow-subtle);
+  flex-shrink: 0;
+}
+
+.solis-evening-closure-banner__title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+}
+
+.solis-evening-closure-banner__desc {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  display: block;
+}

@@ -86,19 +86,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px 12px;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  padding: 16px 14px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
   text-align: center;
+  box-shadow: none;
 }
 
 .solis-review-stat-num {
-  font-family: var(--font-display);
-  font-size: var(--text-heading-3);
-  font-weight: 700;
-  color: var(--color-coral-500);
+  font-family: var(--font-display, 'Newsreader', serif);
+  font-size: clamp(2rem, 3.2vw, 2.5rem);
+  font-weight: 400;
+  color: var(--accent-terracotta);
   line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .solis-review-stat-lbl {

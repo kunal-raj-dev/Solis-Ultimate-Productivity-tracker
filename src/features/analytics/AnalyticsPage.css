@@ -56,19 +56,18 @@
 
 .solis-metric-card {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
-  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  padding: 16px 18px;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  transition: all var(--transition-fast);
+  transition: border-color var(--duration-swift) ease;
 }
 
 .solis-metric-card:hover {
-  border-color: var(--border-default);
-  box-shadow: var(--shadow-card);
+  border-color: var(--border-subtle);
 }
 
 .solis-metric-card__header {
@@ -88,9 +87,9 @@
 }
 
 .solis-metric-card__value {
-  font-family: var(--font-interface);
-  font-size: var(--text-heading-1);
-  font-weight: 600;
+  font-family: var(--font-display, 'Newsreader', serif);
+  font-size: clamp(2rem, 3.2vw, 2.6rem);
+  font-weight: 400;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -124,32 +123,31 @@
 
 .solis-recommendation-card {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: var(--space-md);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-subtle);
   position: relative;
-  overflow: hidden;
-  transition: all var(--transition-fast);
+  transition: border-color var(--duration-instant) ease;
 }
 
 .solis-recommendation-card--primary {
-  border-top: 3px solid var(--color-coral-500);
-  background: var(--bg-surface-primary);
+  border-left: 3px solid var(--color-coral-500);
 }
 
 .solis-recommendation-card--secondary {
-  border-top: 3px solid var(--border-strong);
+  border-left: 3px solid var(--border-strong);
 }
 
 .solis-recommendation-card__title {
-  font-family: var(--font-display);
-  font-size: var(--text-heading-3);
-  font-weight: 500;
+  font-family: var(--font-interface);
+  font-size: var(--text-h3);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin: var(--space-xs) 0 var(--space-2xs);
 }
@@ -187,13 +185,13 @@
    -------------------------------------------------------------------------- */
 .solis-rhythm-section {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl) var(--space-2xl);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg) var(--space-xl);
+  box-shadow: var(--shadow-subtle);
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
 .solis-heatmap-grid {
@@ -205,8 +203,8 @@
 
 @media (max-width: 600px) {
   .solis-rhythm-section {
-    padding: var(--space-lg) var(--space-md);
-    border-radius: var(--radius-xl);
+    padding: var(--space-md);
+    border-radius: var(--radius-card);
   }
   .solis-heatmap-grid {
     grid-template-columns: repeat(7, 1fr);
@@ -216,10 +214,10 @@
 
 .solis-heatmap-cell {
   aspect-ratio: 1;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   background-color: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  transition: all var(--transition-fast);
+  border: 1px solid var(--border-hairline);
+  transition: all var(--duration-instant) ease;
   cursor: pointer;
 }
 
@@ -307,10 +305,10 @@
 
 .solis-effort-card {
   background: var(--bg-surface-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-xl);
-  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);

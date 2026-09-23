@@ -558,7 +558,7 @@ export const FocusPage: React.FC = () => {
                         value={selectedSubjectId}
                         onChange={setSelectedSubjectId}
                         options={subjectOptions}
-                        placeholder="Choose Knowledge Discipline..."
+                        placeholder="Select Subject..."
                       />
                     </div>
                     {pendingTasks.length > 0 && (
@@ -568,7 +568,7 @@ export const FocusPage: React.FC = () => {
                           value={selectedTaskId}
                           onChange={(val) => setSelectedTaskId(val)}
                           options={taskOptions}
-                          placeholder="Link Task..."
+                          placeholder="Link a To-Do Task..."
                         />
                       </div>
                     )}
@@ -592,14 +592,14 @@ export const FocusPage: React.FC = () => {
                   type="text"
                   value={focusTitle}
                   onChange={(e) => setFocusTitle(e.target.value)}
-                  placeholder="What is your singular intention for this block?"
+                  placeholder="What are you studying right now? (e.g. Math homework)"
                   className="solis-focus-intention-input"
                 />
                 <input
                   type="text"
                   value={targetOutcome}
                   onChange={(e) => setTargetOutcome(e.target.value)}
-                  placeholder="Specific output target (e.g. Prove Raft leader election)"
+                  placeholder="Specific target (e.g. Solve 5 practice problems)"
                   style={{
                     background: 'transparent',
                     border: 'none',
@@ -661,7 +661,7 @@ export const FocusPage: React.FC = () => {
                     onClick={handleStart}
                     style={{ minWidth: '180px' }}
                   >
-                    Enter Focus (Space)
+                    Start Focus (Space)
                   </Button>
                   <Button
                     variant="outline"

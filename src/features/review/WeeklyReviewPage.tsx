@@ -272,9 +272,9 @@ ${frictionPoints.trim() || '_No major friction reported._'}
   return (
     <div className="solis-review-page">
       <SectionHeader
-        tag={<Badge variant="coral">Weekly Ritual</Badge>}
-        title="Weekly Review & Strategic Calibration"
-        subtitle="Step back, synthesize your momentum, calibrate attention, and set clear intentions for the upcoming week."
+        tag={<Badge variant="coral">Weekly Check-in</Badge>}
+        title="Weekly Progress Check-in"
+        subtitle="Step back, review what you accomplished this week, and plan your targets for next week."
         guideId="weekly-review"
         onOpenGuide={openGuide}
       />
@@ -282,11 +282,11 @@ ${frictionPoints.trim() || '_No major friction reported._'}
       {/* Step Indicators */}
       <div className="solis-review-steps">
         {[
-          { num: 1, label: 'Momentum' },
-          { num: 2, label: 'Knowledge' },
-          { num: 3, label: 'Friction' },
-          { num: 4, label: 'Attention' },
-          { num: 5, label: 'Intentions' }
+          { num: 1, label: 'Study & Tasks' },
+          { num: 2, label: 'Notes & Ideas' },
+          { num: 3, label: 'What was difficult?' },
+          { num: 4, label: 'Focus & Attention' },
+          { num: 5, label: 'Next Week Goals' }
         ].map((s) => (
           <button
             key={s.num}
@@ -307,7 +307,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             <CardHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={18} color="var(--color-coral-500)" />
-                <CardTitle>Pillar 1: Momentum & Accomplished Hours</CardTitle>
+                <CardTitle>1. Study Time & Completed Tasks</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -318,7 +318,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                 </div>
                 <div className="solis-review-stat-box">
                   <span className="solis-review-stat-num">{focusSessions.length}</span>
-                  <span className="solis-review-stat-lbl">Focus Blocks</span>
+                  <span className="solis-review-stat-lbl">Focus Sessions</span>
                 </div>
                 <div className="solis-review-stat-box">
                   <span className="solis-review-stat-num">{completedTasks.length}</span>
@@ -326,17 +326,17 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                 </div>
                 <div className="solis-review-stat-box">
                   <span className="solis-review-stat-num">{notes.length}</span>
-                  <span className="solis-review-stat-lbl">Thoughts Synthesized</span>
+                  <span className="solis-review-stat-lbl">Notes Created</span>
                 </div>
               </div>
 
               <div className="solis-review-intel-banner">
-                <strong>Mastery Signal:</strong> {intelReport.rhythm.hasSufficientData ? 'Study momentum active and measured.' : 'Initial study calibration cycle in progress.'}
+                <strong>Study Status:</strong> {intelReport.rhythm.hasSufficientData ? 'Study momentum active and measured.' : 'Initial study calibration cycle in progress.'}
               </div>
 
               <div className="solis-review-actions">
                 <Button type="button" variant="accent" size="md" rightIcon={<ArrowRight size={16} />} onClick={() => setStep(2)}>
-                  Continue to Knowledge Synthesis
+                  Next: What did you learn?
                 </Button>
               </div>
             </CardContent>
@@ -349,16 +349,16 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             <CardHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BookOpen size={18} color="var(--color-lavender-500)" />
-                <CardTitle>Pillar 2: Knowledge Synthesis & Breakthroughs</CardTitle>
+                <CardTitle>2. What did you learn this week?</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                Reflect on your primary conceptual takeaways. What models, theorems, or skills clicked this week?
+                Write down key formulas, concepts, or topics that you understood well this week.
               </p>
               <Textarea
-                label="Key Breakthroughs & Insights"
-                placeholder="e.g. Mastered Raft consensus election timeouts and state machine safety..."
+                label="Key Learnings & Breakthroughs"
+                placeholder="e.g. Understood Quadratic Equations and solved 10 practice problems..."
                 value={breakthroughs}
                 onChange={(e) => setBreakthroughs(e.target.value)}
                 rows={5}
@@ -370,7 +370,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                   Back
                 </Button>
                 <Button type="button" variant="accent" size="md" rightIcon={<ArrowRight size={16} />} onClick={() => setStep(3)}>
-                  Continue to Friction Calibration
+                  Next: What was difficult?
                 </Button>
               </div>
             </CardContent>
@@ -383,22 +383,22 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             <CardHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <AlertCircle size={18} color="var(--color-amber-500)" />
-                <CardTitle>Pillar 3: Friction, Postponements & Calibration</CardTitle>
+                <CardTitle>3. What was difficult or delayed?</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--surface-secondary)', borderRadius: 'var(--radius-md)' }}>
                 <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                  Pending / Postponed Items ({pendingTasks.length})
+                  Pending / Unfinished Tasks ({pendingTasks.length})
                 </span>
                 <span style={{ fontSize: 'var(--text-body-sm)', fontWeight: 500 }}>
-                  Planning Realism Ratio: <strong>{intelReport.execution.planningRealismRatio.toFixed(2)}x</strong>
+                  Pacing Rating: <strong>{intelReport.execution.planningRealismRatio.toFixed(2)}x</strong>
                 </span>
               </div>
 
               <Textarea
                 label="What caused friction or delay this week?"
-                placeholder="e.g. Underestimated difficulty of GPU compiler optimizations; need shorter daily milestones..."
+                placeholder="e.g. Science lab report took longer than expected; need to break down tasks into smaller steps..."
                 value={frictionPoints}
                 onChange={(e) => setFrictionPoints(e.target.value)}
                 rows={4}
@@ -410,7 +410,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                   Back
                 </Button>
                 <Button type="button" variant="accent" size="md" rightIcon={<ArrowRight size={16} />} onClick={() => setStep(4)}>
-                  Continue to Attention Analysis
+                  Next: Focus & Attention
                 </Button>
               </div>
             </CardContent>
@@ -423,7 +423,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             <CardHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Clock size={18} color="var(--color-coral-500)" />
-                <CardTitle>Pillar 4: Attention Calibration & Rhythm</CardTitle>
+                <CardTitle>4. Focus & Attention Quality</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -451,7 +451,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                   Back
                 </Button>
                 <Button type="button" variant="accent" size="md" rightIcon={<ArrowRight size={16} />} onClick={() => setStep(5)}>
-                  Set Next Week&apos;s Intentions
+                  Next: Plan Next Week
                 </Button>
               </div>
             </CardContent>
@@ -464,7 +464,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             <CardHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle2 size={20} color="var(--color-sage-500)" />
-                <CardTitle>Weekly Review Completed & Synthesized</CardTitle>
+                <CardTitle>Weekly Review Completed!</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -537,7 +537,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
             <CardHeader>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Compass size={18} color="var(--color-coral-500)" />
-                <CardTitle>Pillar 5: Next Week&apos;s Intentions & Commitments</CardTitle>
+                <CardTitle>5. Next Week&apos;s Study Goals & Commitments</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
@@ -557,7 +557,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                     onClick={handleGenerateAiSynthesis}
                     isLoading={isGeneratingAi}
                   >
-                    AI Synthesis
+                    AI Summary
                   </Button>
                 </div>
                 
@@ -565,7 +565,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                   <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-surface-secondary)', border: '1px solid var(--color-coral-500)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <Sparkles size={16} color="var(--color-coral-500)" />
-                      <span style={{ fontWeight: 600, fontSize: 'var(--text-body-md)' }}>Solis Synthesis</span>
+                      <span style={{ fontWeight: 600, fontSize: 'var(--text-body-md)' }}>Solis Summary</span>
                     </div>
                     <p style={{ fontSize: 'var(--text-body-sm)', lineHeight: 1.5, marginBottom: '12px' }}>{aiSynthesis.summary}</p>
                     
@@ -586,8 +586,8 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                 )}
 
                 <Textarea
-                  label="Primary Academic / Engineering Commitment"
-                  placeholder="e.g. Finalize Raft state machine replication engine and deploy 3-node cluster..."
+                  label="Main Study Goal for Next Week"
+                  placeholder="e.g. Finish Math Chapter 4 and review Physics formulas..."
                   value={nextWeekCommitment}
                   onChange={(e) => setNextWeekCommitment(e.target.value)}
                   rows={4}

@@ -67,24 +67,24 @@
   opacity: 1;
 }
 
-/* Floating Time Display */
+/* Floating Time Display (Monumental Horological Instrument) */
 .solis-focus-time-display {
-  font-family: var(--font-mono);
-  font-size: clamp(3.6rem, 18vw, 10.5rem);
+  font-family: var(--font-display, 'Newsreader', serif);
+  font-size: clamp(4rem, 18vw, 11rem);
   font-weight: 300;
   line-height: 0.88;
-  letter-spacing: -0.04em;
-  color: var(--color-ivory-50);
+  letter-spacing: -0.03em;
+  color: #F6F4F0;
   margin: var(--space-xl) 0 var(--space-lg);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
-  text-shadow: 0 4px 36px rgba(0, 0, 0, 0.5);
+  text-shadow: none;
   user-select: none;
   transition: opacity 0.8s var(--ease-spatial);
 }
 
 .solis-focus-sanctuary--running .solis-focus-time-display {
-  text-shadow: 0 4px 36px rgba(0, 0, 0, 0.65);
+  text-shadow: none;
 }
 
 /* Intention Header */
@@ -94,22 +94,22 @@
   text-align: center;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--color-ivory-50);
-  font-family: var(--font-display);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #F6F4F0;
+  font-family: var(--font-display, 'Newsreader', serif);
   font-style: italic;
   font-size: var(--text-heading-3);
   padding: 8px 0;
   outline: none;
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--duration-swift) ease;
 }
 
 .solis-focus-intention-input:focus {
-  border-color: var(--color-coral-300);
+  border-color: var(--accent-terracotta);
 }
 
 .solis-focus-intention-input::placeholder {
-  color: var(--color-charcoal-400);
+  color: rgba(255, 255, 255, 0.35);
 }
 
 /* Sanctuary Controls */
@@ -121,19 +121,20 @@
   margin-top: var(--space-xl);
 }
 
-/* Soundscape Bar */
+/* Soundscape Bar (Milled Tactile Enclosure) */
 .solis-soundscape-bar {
   position: relative;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 6px 14px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm, 4px);
   margin-top: var(--space-md);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   max-width: 90vw;
 }
 
@@ -267,7 +268,7 @@
 .solis-focus-sanctuary--zen .solis-focus-time-display {
   font-size: clamp(4.5rem, 24vw, 13rem);
   margin: var(--space-lg) 0;
-  text-shadow: 0 0 80px rgba(230, 90, 65, 0.45), 0 8px 40px rgba(0, 0, 0, 0.8);
+  text-shadow: none;
 }
 
 /* Floating Zen Exit Bar */

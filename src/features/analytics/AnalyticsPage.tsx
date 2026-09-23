@@ -209,7 +209,7 @@ export const AnalyticsPage: React.FC = () => {
       <header className="solis-analytics-header">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <Badge variant="coral">Mastery Intelligence & Cognitive Analytics</Badge>
+            <Badge variant="coral">Study Progress & Stats</Badge>
             <ContextualHelp
               title="What is Cognitive Rhythm?"
               content="Cognitive Rhythm computes velocity, subject allocation balance, and retention decay across all your logged focus and study blocks."
@@ -222,10 +222,10 @@ export const AnalyticsPage: React.FC = () => {
             </span>
           </div>
           <h1 className="solis-analytics-title">
-            Where your intellectual effort concentrated.
+            Where your study effort went.
           </h1>
           <p className="solis-analytics-subtitle">
-            Understand your deep flow cycles, planning realism, topic mastery signals, and spaced review queues.
+            Track your study hours, focus sessions, topic progress, and review reminders.
           </p>
         </div>
 
