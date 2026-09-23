@@ -139,3 +139,116 @@
   line-height: 1.5;
   margin: 0;
 }
+/* Enhanced Footer Layout */
+.solis-marketing-footer__top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  justify-content: space-between;
+  padding-bottom: var(--space-2xl);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@media (min-width: 860px) {
+  .solis-marketing-footer__top {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.solis-footer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  margin-top: var(--space-md);
+  width: fit-content;
+}
+
+.solis-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-sage-500);
+  box-shadow: 0 0 8px var(--color-sage-400);
+  animation: svgNodePulse 2s infinite;
+}
+
+.solis-marketing-footer__nav-cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xl);
+}
+
+@media (min-width: 640px) {
+  .solis-marketing-footer__nav-cols {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xl);
+  }
+}
+
+.solis-footer-col-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-md);
+}
+
+.solis-footer-col-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.solis-footer-col-list a {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.solis-footer-col-list a:hover {
+  color: var(--color-coral-500);
+}
+
+.solis-marketing-footer__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-top: var(--space-xl);
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .solis-marketing-footer__bottom {
+    flex-direction: row;
+  }
+}
+
+.solis-footer-bottom-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-badge-tiny {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}

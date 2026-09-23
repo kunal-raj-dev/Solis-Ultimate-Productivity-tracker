@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 
 export interface ShortcutHandlers {
   onOpenCommandPalette: () => void;
+  onOpenAskSolis?: () => void;
   onToggleSidebar?: () => void;
   onNewNote?: () => void;
   onNewTask?: () => void;
@@ -41,7 +42,14 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         return;
       }
 
-      // 2. Cmd+\ / Ctrl+\: Toggle Sidebar Collapse
+      // 2. Cmd+J / Ctrl+J: Open Ask Solis
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j' && handlers.onOpenAskSolis) {
+        e.preventDefault();
+        handlers.onOpenAskSolis();
+        return;
+      }
+
+      // 3. Cmd+\ / Ctrl+\: Toggle Sidebar Collapse
       if ((e.metaKey || e.ctrlKey) && (e.key === '\\' || e.code === 'Backslash')) {
         e.preventDefault();
         handlers.onToggleSidebar?.();

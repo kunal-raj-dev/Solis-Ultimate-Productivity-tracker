@@ -3,102 +3,102 @@ import { NavSectionConfig, NavItemConfig } from '../types/navigation';
 export const APP_NAVIGATION: NavSectionConfig[] = [
   {
     id: 'today',
-    title: 'Today',
+    title: 'Daily Dashboard',
     items: [
       {
         id: 'dashboard',
         label: 'Today',
         path: '/app/dashboard',
         iconName: 'Compass',
-        description: 'Daily operating system & intentional schedule'
+        description: 'Your daily study plan & schedule at a glance'
       },
       {
         id: 'tasks',
         label: 'Tasks',
         path: '/app/tasks',
         iconName: 'CheckCircle2',
-        description: 'Focused execution & task management'
+        description: 'Your to-do list & study tasks for today'
       },
       {
         id: 'study',
         label: 'Study & Syllabus',
         path: '/app/study',
         iconName: 'BookOpen',
-        description: 'Living syllabus & topic roadmap'
+        description: 'Your subjects, exam goals & topic checklists'
       },
       {
         id: 'focus',
         label: 'Focus Room',
         path: '/app/focus',
         iconName: 'Flame',
-        description: 'Immersive distraction-free deep work timer'
+        description: 'Distraction-free 25m or 50m study timer'
       },
       {
         id: 'rooms',
         label: 'Study Rooms',
         path: '/app/rooms',
         iconName: 'Users',
-        description: 'Synchronized collaborative focus pods'
+        description: 'Study together with friends in quiet rooms'
       }
     ]
   },
   {
     id: 'knowledge',
-    title: 'Knowledge',
+    title: 'Notes & Learning',
     items: [
       {
         id: 'notes',
         label: 'Knowledge & Notes',
         path: '/app/notes',
         iconName: 'FileText',
-        description: 'External memory & intellectual synthesis'
+        description: 'Save your study notes, summaries & ideas'
       }
     ]
   },
   {
     id: 'horizons',
-    title: 'Horizons',
+    title: 'Progress & Goals',
     items: [
       {
         id: 'habits',
         label: 'Habits & Rituals',
         path: '/app/habits',
         iconName: 'Repeat',
-        description: 'Daily consistency matrix & streak tracking'
+        description: 'Build daily study habits & track your streaks'
       },
       {
         id: 'goals',
         label: 'Goals',
         path: '/app/goals',
         iconName: 'Target',
-        description: 'Milestone progression trajectories'
+        description: 'Set exam targets & long-term study goals'
       },
       {
         id: 'analytics',
         label: 'Analytics',
         path: '/app/analytics',
         iconName: 'BarChart3',
-        description: 'Study velocity, trends & time distribution'
+        description: 'See how much time you studied & your brain balance'
       },
       {
         id: 'review',
         label: 'Weekly Review',
         path: '/app/review',
         iconName: 'Sparkles',
-        description: '5-pillar reflection & calibration ritual'
+        description: '5-minute weekly reflection on your progress'
       }
     ]
   },
   {
     id: 'system',
-    title: 'System',
+    title: 'Account & Settings',
     items: [
       {
         id: 'settings',
         label: 'Settings',
         path: '/app/settings',
         iconName: 'Sliders',
-        description: 'Study parameters & learner profile'
+        description: 'Customize theme, notifications & preferences'
       }
     ]
   }

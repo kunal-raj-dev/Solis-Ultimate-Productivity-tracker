@@ -174,6 +174,42 @@
   background-color: var(--bg-surface-secondary);
 }
 
+.solis-app-header__ask-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 6px 12px;
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  cursor: pointer;
+  transition: background-color var(--duration-swift) var(--ease-spatial),
+              border-color var(--duration-swift) var(--ease-spatial),
+              color var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-app-header__ask-btn:hover {
+  background-color: var(--bg-surface-tertiary);
+  border-color: var(--border-default);
+  color: var(--color-coral-500);
+}
+
+.solis-app-header__ask-btn:active {
+  background-color: var(--bg-surface-secondary);
+}
+
+.solis-ask-icon {
+  color: var(--color-coral-500);
+  transition: transform var(--duration-swift) var(--spring-tactile);
+}
+
+.solis-app-header__ask-btn:hover .solis-ask-icon {
+  transform: rotate(15deg) scale(1.1);
+}
+
 .solis-app-header__kbd {
   font-family: var(--font-mono);
   font-size: var(--text-micro);
@@ -243,13 +279,15 @@
   .solis-app-header {
     padding: 0 var(--space-md);
   }
-  .solis-app-header__search-label {
+  .solis-app-header__search-label,
+  .solis-app-header__ask-label {
     display: none;
   }
   .solis-app-header__kbd {
     display: none;
   }
-  .solis-app-header__search-btn {
+  .solis-app-header__search-btn,
+  .solis-app-header__ask-btn {
     width: 38px;
     height: 38px;
     padding: 0;
@@ -263,25 +301,16 @@
 
 @media (max-width: 480px) {
   .solis-app-header {
-    padding: 0 var(--space-sm);
+    padding: 0 var(--space-md);
   }
   .solis-app-header__guide-btn {
     display: none;
   }
-  .solis-app-header__date-day {
-    display: none;
-  }
-  .solis-app-header__time-dot {
-    display: none;
-  }
   .solis-app-header__date {
-    max-width: none;
+    display: none;
   }
-  .solis-app-header__time {
-    font-size: var(--text-caption);
-    font-weight: 600;
-  }
-  .solis-app-header__search-btn {
+  .solis-app-header__search-btn,
+  .solis-app-header__ask-btn {
     width: 34px;
     height: 34px;
   }

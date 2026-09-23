@@ -1,8 +1,9 @@
 .solis-section-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-xl);
+  gap: var(--space-2xs);
+  margin-bottom: var(--space-lg);
+  padding-top: 2px;
 }
 
 @media (min-width: 768px) {
@@ -17,25 +18,29 @@
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  margin-bottom: var(--space-3xs);
+  margin-bottom: 3px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-muted);
 }
 
 .solis-section-header__title {
   font-family: var(--font-interface);
   font-size: var(--text-heading-1);
   color: var(--text-primary);
-  font-weight: var(--font-weight-semibold);
+  font-weight: 600;
   letter-spacing: var(--tracking-tight);
   line-height: 1.25;
-  padding-left: 2px;
+  overflow: visible;
 }
 
 .solis-section-header__subtitle {
   font-family: var(--font-interface);
   font-size: var(--text-body-sm);
   color: var(--text-secondary);
-  max-width: 600px;
-  line-height: var(--leading-normal);
+  max-width: 680px;
+  line-height: 1.45;
+  margin-top: 3px;
 }
 
 .solis-section-header__actions {

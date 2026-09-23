@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, BookOpen, Sun, Moon, Bell } from 'lucide-react';
+import { Search, BookOpen, Sun, Moon, Bell, Sparkles } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AccountMenu } from '../AccountMenu/AccountMenu';
 import { useGuide } from '../../../context/GuideContext';
@@ -11,9 +11,10 @@ import './AppHeader.css';
 
 export interface AppHeaderProps {
   onOpenSearch?: () => void;
+  onOpenAskSolis?: () => void;
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch }) => {
+export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSolis }) => {
   const location = useLocation();
   const { openGuide } = useGuide();
   const { isDark, toggleTheme } = useTheme();
@@ -95,6 +96,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch }) => {
           <span className="solis-app-header__search-label">Search workspace</span>
           <kbd className="solis-app-header__kbd">⌘K</kbd>
         </button>
+
+        {onOpenAskSolis && (
+          <button
+            type="button"
+            className="solis-app-header__ask-btn tactile-press"
+            onClick={onOpenAskSolis}
+            title="Ask Solis Intelligence (Cmd + J)"
+            aria-label="Ask Solis Intelligence"
+          >
+            <Sparkles size={13} className="solis-ask-icon" />
+            <span className="solis-app-header__ask-label">Ask Solis</span>
+            <kbd className="solis-app-header__kbd">⌘J</kbd>
+          </button>
+        )}
 
         <div className="solis-app-header__icon-btn-wrap">
           <button

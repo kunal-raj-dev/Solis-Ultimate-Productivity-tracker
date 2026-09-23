@@ -84,19 +84,62 @@ export const MarketingLayout: React.FC = () => {
         <Outlet />
       </main>
 
-      {/* Editorial Calm Footer */}
+      {/* Editorial Calm Multi-Column Footer */}
       <footer className="solis-marketing-footer">
         <Container>
-          <div className="solis-marketing-footer__grid">
+          <div className="solis-marketing-footer__top">
             <div className="solis-marketing-footer__brand">
               <Logo variant="auto" size="md" />
-              <p className="solis-marketing-footer__copy">
-                The Personal Study & Productivity Operating System.
+              <p className="solis-marketing-footer__copy" style={{ maxWidth: '300px', marginTop: '8px' }}>
+                The Personal Study & Productivity Operating System for lifelong scholars, researchers, and builders.
               </p>
+              <div className="solis-footer-status">
+                <span className="solis-status-dot" />
+                <span>Local Subsystems Active • Sub-ms IndexedDB</span>
+              </div>
             </div>
 
-            <div className="solis-marketing-footer__copy">
-              Built with deliberate precision for calm cognition. {APP_CONFIG.name} Architecture.
+            <div className="solis-marketing-footer__nav-cols">
+              <div className="solis-footer-col">
+                <h4 className="solis-footer-col-title">Engines</h4>
+                <ul className="solis-footer-col-list">
+                  <li><a href="/#experience">Curriculum Architecture</a></li>
+                  <li><a href="/#experience">SM-2 Spaced Retrieval</a></li>
+                  <li><a href="/#experience">Focus Sanctuary Pods</a></li>
+                  <li><a href="/#experience">Deterministic Realism</a></li>
+                </ul>
+              </div>
+
+              <div className="solis-footer-col">
+                <h4 className="solis-footer-col-title">Principles</h4>
+                <ul className="solis-footer-col-list">
+                  <li><a href="/#philosophy">Circadian Chronobiology</a></li>
+                  <li><a href="/#philosophy">Ebbinghaus Retention</a></li>
+                  <li><a href="/#manifesto">Calm Cognition Manifesto</a></li>
+                  <li><a href="/#sanctuary">Local-First Sovereignty</a></li>
+                </ul>
+              </div>
+
+              <div className="solis-footer-col">
+                <h4 className="solis-footer-col-title">Workspace</h4>
+                <ul className="solis-footer-col-list">
+                  <li><Link to="/app/dashboard">Enter Dashboard</Link></li>
+                  <li><Link to="/auth/login">Scholar Sign In</Link></li>
+                  <li><Link to="/auth/signup">Create Sanctuary</Link></li>
+                  <li><a href="/#sanctuary">Technical FAQ</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="solis-marketing-footer__bottom">
+            <p className="solis-marketing-footer__copy">
+              © {new Date().getFullYear()} {APP_CONFIG.name}. Built with deliberate precision for calm cognition.
+            </p>
+            <div className="solis-footer-bottom-badges">
+              <span className="solis-badge-tiny">Zero Trackers</span>
+              <span className="solis-badge-tiny">Local-First</span>
+              <span className="solis-badge-tiny">MIT/Apache</span>
             </div>
           </div>
         </Container>
