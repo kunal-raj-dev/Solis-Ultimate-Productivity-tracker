@@ -109,6 +109,7 @@ export const Modal: React.FC<ModalProps> = ({
               onClick={onClose}
               className="solis-modal-close"
               aria-label="Close dialog"
+              data-cursor="action"
             >
               <X size={18} />
             </button>

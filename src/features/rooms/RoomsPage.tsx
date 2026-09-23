@@ -15,7 +15,8 @@ import {
   Brain,
   Star,
   Lock,
-  Sparkles
+  Sparkles,
+  Target
 } from 'lucide-react';
 import dataService from '../../services/dataService';
 import { useAuth } from '../../context/AuthContext';
@@ -370,8 +371,9 @@ export const RoomsPage: React.FC = () => {
 
                       {/* Shared Objective */}
                       {room.sharedObjective && (
-                        <div className="solis-room-card__objective">
-                          🎯 "{room.sharedObjective}"
+                        <div className="solis-room-card__objective" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Target size={13} color="var(--accent-terracotta)" style={{ flexShrink: 0 }} aria-hidden="true" />
+                          <span>"{room.sharedObjective}"</span>
                         </div>
                       )}
 

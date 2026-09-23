@@ -91,6 +91,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
           onClick={onOpenSearch}
           title="Search workspace (Cmd + K)"
           aria-label="Search workspace"
+          data-cursor="action"
         >
           <Search size={13} />
           <span className="solis-app-header__search-label">Search workspace</span>
@@ -104,6 +105,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
             onClick={onOpenAskSolis}
             title="Ask Solis Intelligence (Cmd + J)"
             aria-label="Ask Solis Intelligence"
+            data-cursor="action"
           >
             <Sparkles size={13} className="solis-ask-icon" />
             <span className="solis-app-header__ask-label">Ask Solis</span>
@@ -118,6 +120,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
             onClick={() => setIsNotifDrawerOpen(true)}
             title="Notifications & Alerts"
             aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+            data-cursor="action"
           >
             <Bell size={15} />
           </button>
@@ -130,25 +133,29 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
 
         <button
           type="button"
-          className="solis-app-header__icon-btn tactile-press"
+          className="solis-app-header__icon-btn solis-app-header__guide-btn tactile-press"
           onClick={() => openGuide()}
           title="Guides & Operating Philosophy"
           aria-label="Open Guides"
+          data-cursor="action"
         >
           <BookOpen size={15} />
         </button>
 
         <button
           type="button"
-          className="solis-app-header__icon-btn tactile-press"
+          className="solis-app-header__icon-btn solis-app-header__theme-btn tactile-press"
           onClick={toggleTheme}
           title={isDark ? 'Switch to Warm Ivory (Day Flow)' : 'Switch to Deep Charcoal (Night Sanctuary)'}
           aria-label={isDark ? 'Switch to Warm Ivory theme' : 'Switch to Deep Charcoal theme'}
+          data-cursor="action"
         >
           {isDark ? <Sun size={15} className="solis-theme-icon solis-theme-icon--sun" /> : <Moon size={15} className="solis-theme-icon solis-theme-icon--moon" />}
         </button>
 
-        <AccountMenu />
+        <div data-cursor="action">
+          <AccountMenu />
+        </div>
       </div>
 
       <NotificationCenterDrawer

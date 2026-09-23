@@ -8,7 +8,9 @@ import {
   Award,
   ChevronLeft,
   ChevronRight,
-  Flame
+  Flame,
+  Target,
+  Zap
 } from 'lucide-react';
 import { TaskTimeBlock, Task } from '../../types/task';
 import { StudySubject } from '../../types/study';
@@ -168,8 +170,18 @@ export const TaskReviewSummary: React.FC<TaskReviewSummaryProps> = ({
                   </span>
                   <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>accuracy</span>
                 </div>
-                <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                  {estimationAccuracy && estimationAccuracy >= 80 ? '🎯 Calibrated estimation' : '⚡ Refine block durations'}
+                <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-secondary)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {estimationAccuracy && estimationAccuracy >= 80 ? (
+                    <>
+                      <Target size={11} color="var(--accent-terracotta)" aria-hidden="true" />
+                      <span>Calibrated estimation</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={11} color="var(--accent-brass)" aria-hidden="true" />
+                      <span>Refine block durations</span>
+                    </>
+                  )}
                 </div>
               </div>
             </Card>

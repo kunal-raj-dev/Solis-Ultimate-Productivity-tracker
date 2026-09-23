@@ -1,0 +1,87 @@
+/* ==========================================================================
+   SOLIS — CONTEXTUAL DESKTOP DRAFTING CURSOR
+   ========================================================================== */
+
+.solis-custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate3d(-100px, -100px, 0);
+  transition: opacity 180ms ease;
+  will-change: transform;
+}
+
+/* Default precision drafting dot */
+.solis-cursor-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--accent-primary, #E65A41);
+  transform: translate(-50%, -50%);
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1), background-color 140ms ease;
+}
+
+.solis-cursor-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-hairline, rgba(255, 255, 255, 0.2));
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease, border-color 180ms ease;
+}
+
+/* Action hover state on buttons / links */
+.solis-cursor-action .solis-cursor-dot {
+  transform: translate(-50%, -50%) scale(1.4);
+  background-color: var(--accent-primary, #E65A41);
+}
+
+.solis-cursor-action .solis-cursor-ring {
+  transform: translate(-50%, -50%) scale(1.1);
+  opacity: 1;
+  border-color: var(--accent-primary, #E65A41);
+}
+
+/* Examine state on study roadmaps, flashcard decks, monograph cards */
+.solis-cursor-examine .solis-cursor-dot {
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+.solis-cursor-examine .solis-cursor-ring {
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  border-color: var(--text-secondary, #A8A196);
+  background-color: rgba(230, 90, 65, 0.05);
+}
+
+.solis-cursor-label {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  transform: translateX(-50%);
+  font-family: var(--font-mono, monospace);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary, #A8A196);
+  pointer-events: none;
+}
+
+/* Zen state in Focus Sanctuary: drops opacity to 0 */
+.solis-cursor-zen {
+  opacity: 0 !important;
+}
+
+/* Automatically disable completely on mobile touch screens */
+@media (pointer: coarse) or (hover: none) {
+  .solis-custom-cursor {
+    display: none !important;
+  }
+}

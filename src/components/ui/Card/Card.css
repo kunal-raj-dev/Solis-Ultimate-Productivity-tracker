@@ -7,11 +7,24 @@
   transition: border-color var(--duration-swift) ease,
               background-color var(--duration-swift) ease;
   position: relative;
+  container-type: inline-size;
 }
 
 @media (min-width: 768px) {
   .solis-card {
     padding: var(--space-lg);
+  }
+}
+
+@container (min-width: 560px) {
+  .solis-card {
+    padding: var(--space-lg);
+  }
+}
+
+@container (max-width: 320px) {
+  .solis-card {
+    padding: var(--space-sm);
   }
 }
 
@@ -77,12 +90,14 @@
   font-weight: 600;
   letter-spacing: var(--tracking-tight);
   color: inherit;
+  text-wrap: balance;
 }
 
 .solis-card-subtitle {
   font-family: var(--font-interface);
   font-size: var(--text-caption);
   color: var(--text-secondary);
+  text-wrap: pretty;
 }
 
 .solis-card--dark .solis-card-subtitle {

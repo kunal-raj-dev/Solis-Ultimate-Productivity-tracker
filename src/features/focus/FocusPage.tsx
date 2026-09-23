@@ -17,7 +17,8 @@ import {
   Maximize2,
   Minimize2,
   Target,
-  X
+  X,
+  Wind
 } from 'lucide-react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -247,10 +248,10 @@ export const FocusPage: React.FC = () => {
   ];
 
   const soundscapeOptions = [
-    { value: 'none', label: '🔇 Silent Sanctuary', sublabel: 'Mute ambient audio' },
+    { value: 'none', label: 'Silent Sanctuary', sublabel: 'Mute ambient audio' },
     ...SOUNDSCAPE_PRESETS.map((p) => ({
       value: p.id,
-      label: `🎵 ${p.label}`,
+      label: p.label,
       sublabel: p.description.split('.')[0]
     }))
   ];
@@ -645,7 +646,11 @@ export const FocusPage: React.FC = () => {
             </div>
 
             {/* Floating Time Typography */}
-            <div className="solis-focus-time-display" aria-label={`Time remaining: ${formatSecondsToTimer(secondsRemaining)}`}>
+            <div
+              className="solis-focus-time-display"
+              data-cursor="zen"
+              aria-label={`Time remaining: ${formatSecondsToTimer(secondsRemaining)}`}
+            >
               {formatSecondsToTimer(secondsRemaining)}
             </div>
 
@@ -659,6 +664,7 @@ export const FocusPage: React.FC = () => {
                     className="tactile-press"
                     leftIcon={<Play size={18} />}
                     onClick={handleStart}
+                    data-cursor="action"
                     style={{ minWidth: '180px' }}
                   >
                     Start Focus (Space)
@@ -667,8 +673,9 @@ export const FocusPage: React.FC = () => {
                     variant="outline"
                     size="lg"
                     className="tactile-press"
-                    leftIcon={<span style={{ fontSize: '15px' }}>🌿</span>}
+                    leftIcon={<Wind size={15} />}
                     onClick={() => setIsCenteringModalOpen(true)}
+                    data-cursor="action"
                     style={{ minWidth: '160px', borderColor: 'rgba(255, 255, 255, 0.25)', color: '#FAF8F5' }}
                   >
                     Center Mind (2m)

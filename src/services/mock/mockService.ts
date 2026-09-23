@@ -68,6 +68,8 @@ import {
   validateStudySessionInput,
   validateHabitInput,
   validateGoalInput,
+  validateFlashcardInput,
+  validateTimeBlockInput,
   ValidationError
 } from '../../utils/validation';
 import { validateNoteInput, normalizeTag, normalizeTagList, filterNotes } from '../../utils/notes';
@@ -625,6 +627,15 @@ export class MockDataService implements IDataService {
       await delay(25);
       if (!block.taskTitle || !block.taskTitle.trim()) {
         throw new ValidationError('Task title is required for a time block.', 'taskTitle');
+      }
+
+      const validation = validateTimeBlockInput({
+        date: block.date,
+        startHour: block.startHour,
+        durationMinutes: block.durationMinutes
+      });
+      if (!validation.success) {
+        throw new ValidationError(validation.error, validation.field);
       }
 
       const newBlock: TaskTimeBlock = {
@@ -1562,8 +1573,16 @@ export class MockDataService implements IDataService {
 
     createFlashcard: async (cardData: Partial<Flashcard>): Promise<Flashcard> => {
       await delay(20);
-      if (!cardData.frontPrompt || !cardData.backAnswer || !cardData.subjectId) {
-        throw new ValidationError('Flashcard requires front prompt, back answer, and subject.');
+      const validation = validateFlashcardInput({
+        front: cardData.frontPrompt,
+        back: cardData.backAnswer,
+        topic: cardData.topicId
+      });
+      if (!validation.success) {
+        throw new ValidationError(validation.error, validation.field);
+      }
+      if (!cardData.subjectId) {
+        throw new ValidationError('Flashcard requires subject.', 'subjectId');
       }
 
       const subject = this._subjects.find((s) => s.id === cardData.subjectId);
@@ -1576,8 +1595,8 @@ export class MockDataService implements IDataService {
         topicId: cardData.topicId,
         topicTitle: topic?.title,
         noteId: cardData.noteId,
-        frontPrompt: cardData.frontPrompt,
-        backAnswer: cardData.backAnswer,
+        frontPrompt: cardData.frontPrompt!.trim(),
+        backAnswer: cardData.backAnswer!.trim(),
         cardType: cardData.cardType || 'standard',
         difficultyRating: cardData.difficultyRating || 'good',
         repetitionCount: 0,

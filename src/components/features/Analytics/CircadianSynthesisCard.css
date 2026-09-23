@@ -1,0 +1,271 @@
+/* ==========================================================================
+   SOLIS — CIRCADIAN CREATIVE SYNTHESIS CARD
+   The Archival Circadian Monograph • Broadsheet Precision Instrument
+   ========================================================================== */
+
+.solis-circadian-synthesis-card {
+  position: relative;
+  background-color: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-left: 3px solid var(--accent-terracotta);
+  border-radius: var(--radius-sm, 4px);
+  padding: var(--space-lg) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  box-shadow: var(--shadow-subtle);
+  transition: border-color var(--duration-swift) ease,
+              box-shadow var(--duration-swift) ease;
+  container-type: inline-size;
+}
+
+.solis-circadian-synthesis-card:hover {
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+/* Header Telemetry */
+.solis-synthesis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.solis-synthesis-header__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.solis-synthesis-solar-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-synthesis-solar-indicator__orbit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-brass);
+}
+
+.solis-synthesis-divider {
+  color: var(--text-muted);
+}
+
+.solis-synthesis-elevation {
+  font-family: var(--font-mono);
+  color: var(--accent-terracotta);
+  font-weight: 600;
+}
+
+/* Capacity Budget Bar */
+.solis-synthesis-capacity-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.solis-synthesis-capacity-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-synthesis-capacity-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.solis-synthesis-capacity-val {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Main Body */
+.solis-synthesis-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-synthesis-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+.solis-synthesis-advice {
+  font-family: var(--font-interface);
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+.solis-synthesis-context {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+  margin: 0;
+}
+
+/* Action Panel */
+.solis-synthesis-action-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm, 4px);
+  margin-top: var(--space-xs);
+}
+
+.solis-synthesis-action-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 300px;
+}
+
+.solis-synthesis-action-badge-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.solis-synthesis-action-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent-terracotta);
+  display: inline-flex;
+  align-items: center;
+}
+
+.solis-synthesis-resonance-score {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-synthesis-action-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-3);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.solis-synthesis-action-evidence {
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.solis-synthesis-evidence-tag {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+}
+
+.solis-synthesis-action-cta {
+  flex-shrink: 0;
+}
+
+/* Ceiling Alert */
+.solis-synthesis-ceiling-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 14px;
+  background-color: rgba(200, 75, 49, 0.08);
+  border: 1px solid rgba(200, 75, 49, 0.25);
+  border-radius: var(--radius-sm, 4px);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--accent-terracotta);
+}
+
+@container (max-width: 520px) {
+  .solis-circadian-synthesis-card {
+    padding: var(--space-md);
+  }
+
+  .solis-synthesis-capacity-meter {
+    width: 100%;
+  }
+
+  .solis-synthesis-action-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .solis-synthesis-action-cta {
+    width: 100%;
+  }
+
+  .solis-synthesis-action-cta button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .solis-circadian-synthesis-card {
+    padding: var(--space-md);
+  }
+
+  .solis-synthesis-capacity-meter {
+    width: 100%;
+  }
+
+  .solis-synthesis-action-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .solis-synthesis-action-cta {
+    width: 100%;
+  }
+
+  .solis-synthesis-action-cta button {
+    width: 100%;
+  }
+}

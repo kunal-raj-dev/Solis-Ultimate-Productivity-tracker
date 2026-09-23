@@ -26,7 +26,9 @@ import { TimeBlockGrid } from '../../components/features/Planning/TimeBlockGrid'
 import { RecurringRoutinesModal } from '../../components/features/Planning/RecurringRoutinesModal';
 import { EveningClosureModal } from '../../components/features/Reflection/EveningClosureModal';
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
+import { CircadianSynthesisCard } from '../../components/features/Analytics/CircadianSynthesisCard';
 import { KnowledgeResurfacingCard } from '../../components/features/Notes/KnowledgeResurfacingCard';
+import { synthesizeCircadianResonance } from '../../utils/intelligence/circadianSynthesis';
 import { CalendarOverlayCard } from '../../components/features/Calendar/CalendarOverlayCard';
 import { ExamHorizonBar } from '../../components/features/Goals/ExamHorizonBar';
 import { SolarArc, SolarDial } from '../../components/illustrations';
@@ -513,6 +515,16 @@ export const DashboardPage: React.FC = () => {
 
   const topRecommendation = intelligenceReport.recommendations[0];
 
+  const circadianResonance = useMemo(() => {
+    return synthesizeCircadianResonance({
+      currentDate: currentTime,
+      workload,
+      tasks,
+      studyPlan,
+      subjects
+    });
+  }, [currentTime, workload, tasks, studyPlan, subjects]);
+
   if (isLoading) {
     return (
       <div className="solis-cockpit-layout">
@@ -567,13 +579,16 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             <div className="solis-solar-hero__controls">
-              <SolarArc currentDate={currentTime} />
+              <div data-cursor="examine">
+                <SolarArc currentDate={currentTime} />
+              </div>
               <Button
                 variant="primary"
                 size="md"
                 className="solis-focus-primary-btn tactile-press"
                 leftIcon={<Flame size={16} />}
                 onClick={() => navigate('/app/focus')}
+                data-cursor="action"
               >
                 Start Focus Session
               </Button>
@@ -591,6 +606,7 @@ export const DashboardPage: React.FC = () => {
                 type="button"
                 className="solis-quick-step-card tactile-press"
                 onClick={() => navigate('/app/study')}
+                data-cursor="action"
               >
                 <span className="solis-quick-step-num">1</span>
                 <div className="solis-quick-step-info">
@@ -602,6 +618,7 @@ export const DashboardPage: React.FC = () => {
                 type="button"
                 className="solis-quick-step-card tactile-press"
                 onClick={() => navigate('/app/tasks')}
+                data-cursor="action"
               >
                 <span className="solis-quick-step-num">2</span>
                 <div className="solis-quick-step-info">
@@ -613,6 +630,7 @@ export const DashboardPage: React.FC = () => {
                 type="button"
                 className="solis-quick-step-card tactile-press"
                 onClick={() => navigate('/app/focus')}
+                data-cursor="action"
               >
                 <span className="solis-quick-step-num">3</span>
                 <div className="solis-quick-step-info">
@@ -632,6 +650,9 @@ export const DashboardPage: React.FC = () => {
           )}
         </div>
       </header>
+ 
+      {/* 01.5 // CIRCADIAN CREATIVE SYNTHESIS & KNOWLEDGE RESONANCE */}
+      <CircadianSynthesisCard synthesis={circadianResonance} />
 
       {/* Cognitive Load Alert if needed */}
       {cognitiveReport.status !== 'optimal' && (
@@ -1067,8 +1088,9 @@ export const DashboardPage: React.FC = () => {
                       >
                         {h.title}
                       </span>
-                      <span className="solis-habit-pulse-item__streak">
-                        🔥 {h.currentStreak}d streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}
+                      <span className="solis-habit-pulse-item__streak" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Flame size={12} color="var(--accent-terracotta)" aria-hidden="true" />
+                        <span>{h.currentStreak}d streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}</span>
                       </span>
                     </div>
                     <Checkbox

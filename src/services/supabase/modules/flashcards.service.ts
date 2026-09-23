@@ -2,7 +2,7 @@ import { IFlashcardService } from '../../api.interface';
 import { Flashcard, CardRating } from '../../../types/learning';
 import { mapFlashcard } from '../supabaseMappers';
 import { getISODateString } from '../../../utils/date';
-import { ValidationError } from '../../../utils/validation';
+import { ValidationError, validateFlashcardInput } from '../../../utils/validation';
 import { calculateNextCardReview } from '../../../utils/learning/spacedRepetition';
 import { SupabaseServiceContext } from './types';
 
@@ -57,8 +57,16 @@ export class SupabaseFlashcardService implements IFlashcardService {
 
   createFlashcard = async (cardData: Partial<Flashcard>): Promise<Flashcard> => {
     const userId = await this.ctx.getUserId();
-    if (!cardData.frontPrompt || !cardData.backAnswer || !cardData.subjectId) {
-      throw new ValidationError('Flashcard requires front prompt, back answer, and subject.');
+    const validation = validateFlashcardInput({
+      front: cardData.frontPrompt,
+      back: cardData.backAnswer,
+      topic: cardData.topicId
+    });
+    if (!validation.success) {
+      throw new ValidationError(validation.error, validation.field);
+    }
+    if (!cardData.subjectId) {
+      throw new ValidationError('Flashcard requires subject.', 'subjectId');
     }
 
     const { data, error } = await this.ctx.client

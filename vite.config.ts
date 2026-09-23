@@ -97,8 +97,22 @@ export default defineConfig({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-              return 'vendor-react';
+            if (
+              id.includes('/react/') ||
+              id.includes('\\react\\') ||
+              id.includes('/react-dom/') ||
+              id.includes('\\react-dom\\') ||
+              id.includes('/react-router/') ||
+              id.includes('\\react-router\\') ||
+              id.includes('/react-router-dom/') ||
+              id.includes('\\react-router-dom\\') ||
+              id.includes('/framer-motion/') ||
+              id.includes('\\framer-motion\\')
+            ) {
+              return 'vendor-framework';
+            }
+            if (id.includes('remotion') || id.includes('@remotion')) {
+              return 'vendor-remotion';
             }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
@@ -106,7 +120,7 @@ export default defineConfig({
             if (id.includes('@supabase')) {
               return 'vendor-supabase';
             }
-            return 'vendor-core';
+            return 'vendor-libs';
           }
         }
       }

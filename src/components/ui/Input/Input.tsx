@@ -47,13 +47,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={(error || helperText) ? `${inputId}-desc` : undefined}
             className="solis-input"
             {...props}
           />
           {rightIcon && <span className="solis-input-icon">{rightIcon}</span>}
         </div>
         {(error || helperText) && (
-          <span className={cn('solis-input-helper', error && 'solis-input-helper--error')}>
+          <span
+            id={`${inputId}-desc`}
+            role={error ? 'alert' : undefined}
+            aria-live={error ? 'polite' : undefined}
+            className={cn('solis-input-helper', error && 'solis-input-helper--error')}
+          >
             {error || helperText}
           </span>
         )}

@@ -86,6 +86,24 @@
   z-index: 0;
 }
 
+.solis-hero-badge-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+}
+
+.solis-hero-brandmark {
+  color: var(--accent-primary);
+  opacity: 0.85;
+  transition: transform var(--duration-swift) var(--ease-tactile), opacity var(--duration-swift);
+}
+
+.solis-hero-badge-wrap:hover .solis-hero-brandmark {
+  transform: rotate(15deg) scale(1.05);
+  opacity: 1;
+}
+
 .solis-hero-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -951,6 +969,203 @@
   text-wrap: balance;
 }
 
+/* Living Circadian Instrument & Solar Scrubber */
+.solis-circadian-live-instrument {
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2xl);
+  margin-bottom: var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-circadian-live-instrument::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-coral-400), var(--color-amber-400), var(--color-lavender-400));
+  opacity: 0.6;
+}
+
+.solis-circadian-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: var(--space-md);
+}
+
+.solis-circadian-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.solis-circadian-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-coral-400);
+}
+
+.solis-circadian-active-phase {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.solis-circadian-time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.solis-circadian-clock-val {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  letter-spacing: 0.04em;
+}
+
+.solis-circadian-coord-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.solis-circadian-viz-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+@media (min-width: 860px) {
+  .solis-circadian-viz-split {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2xl);
+  }
+}
+
+.solis-circadian-arc-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.solis-circadian-gauge-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.solis-circadian-advice-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.solis-advice-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.solis-advice-text {
+  font-family: var(--font-interface);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.solis-circadian-slider-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.solis-slider-bound {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.solis-solar-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border-hairline);
+  border-radius: 2px;
+  outline: none;
+  cursor: grab;
+  transition: background var(--duration-swift);
+}
+
+.solis-solar-slider:active {
+  cursor: grabbing;
+}
+
+.solis-solar-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid var(--bg-surface-primary);
+  box-shadow: 0 0 10px rgba(230, 90, 65, 0.4);
+  cursor: pointer;
+  transition: transform var(--duration-instant) var(--ease-tactile);
+}
+
+.solis-solar-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+.solis-solar-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  border: 2px solid var(--bg-surface-primary);
+  box-shadow: 0 0 10px rgba(230, 90, 65, 0.4);
+  cursor: pointer;
+}
+
 .solis-ritual-timeline {
   display: grid;
   grid-template-columns: 1fr;
@@ -1034,6 +1249,8 @@
 .solis-contrast-section {
   padding: var(--space-4xl) 0;
   position: relative;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 750px;
 }
 
 .solis-dossier-wrapper {
@@ -1168,6 +1385,8 @@
    -------------------------------------------------------------------------- */
 .solis-bento-section {
   padding: var(--space-4xl) 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 650px;
 }
 
 .solis-console-grid {
@@ -1364,6 +1583,8 @@
   border-top: 1px solid var(--border-hairline);
   border-bottom: 1px solid var(--border-hairline);
   background: rgba(255, 255, 255, 0.008);
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 500px;
 }
 
 .solis-fieldnotes-grid {
@@ -1449,6 +1670,34 @@
 .solis-manifesto-section {
   padding: var(--space-4xl) 0;
   text-align: center;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 550px;
+}
+
+.solis-manifesto-engraving-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-2xl);
+  padding: var(--space-xl) var(--space-md);
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-surface-primary);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.solis-engraving-caption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-wrap: wrap;
 }
 
 .solis-manifesto-quote {
@@ -1520,6 +1769,8 @@
    -------------------------------------------------------------------------- */
 .solis-faq-section {
   padding: var(--space-4xl) 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 500px;
 }
 
 .solis-faq-list {
@@ -1571,6 +1822,8 @@
 .solis-launch-sanctuary {
   padding: var(--space-4xl) 0 var(--space-2xl);
   text-align: center;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 400px;
 }
 
 .solis-launch-box {

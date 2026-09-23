@@ -505,4 +505,35 @@
   box-shadow: var(--border-chamfer);
 }
 
+/* --------------------------------------------------------------------------
+   MODERN WEB GUIDANCE: SOFT EDGE CONTENT FADE (Masking with Fallback)
+   -------------------------------------------------------------------------- */
+.scroll-fade-y {
+  overflow-y: auto;
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+}
+
+.scroll-fade-both-y {
+  overflow-y: auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* --------------------------------------------------------------------------
+   MODERN WEB GUIDANCE: OFFSCREEN RENDERING DEFERRAL (CWV & INP Optimization)
+   -------------------------------------------------------------------------- */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 500px;
+}
+
+/* --------------------------------------------------------------------------
+   MODERN WEB GUIDANCE: SIZE-AWARE CONTAINER QUERY WRAPPERS
+   -------------------------------------------------------------------------- */
+.container-query-box {
+  container-type: inline-size;
+}
+
+
 

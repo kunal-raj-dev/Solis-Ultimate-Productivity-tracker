@@ -71,6 +71,7 @@
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tighter);
   font-weight: var(--font-weight-normal);
+  text-wrap: balance;
 }
 
 .text-display-lg {
@@ -79,11 +80,13 @@
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-normal);
+  text-wrap: balance;
 }
 
 .text-editorial-display {
   font-family: var(--font-display);
   font-feature-settings: 'kern' 1, 'liga' 1;
+  text-wrap: balance;
 }
 
 .text-heading-editorial {
@@ -92,6 +95,7 @@
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tighter);
   font-weight: var(--font-weight-medium);
+  text-wrap: balance;
 }
 
 .text-heading-1 {
@@ -100,6 +104,7 @@
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
 }
 
 .text-heading-op {
@@ -108,6 +113,7 @@
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
 }
 
 .text-heading-2 {
@@ -116,6 +122,7 @@
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
 }
 
 .text-heading-3 {
@@ -124,6 +131,7 @@
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tight);
   font-weight: var(--font-weight-semibold);
+  text-wrap: balance;
 }
 
 /* Body and Interface labels */
@@ -131,18 +139,21 @@
   font-family: var(--font-interface);
   font-size: var(--text-body-lg);
   line-height: var(--leading-relaxed);
+  text-wrap: pretty;
 }
 
 .text-body {
   font-family: var(--font-interface);
   font-size: var(--text-body);
   line-height: var(--leading-normal);
+  text-wrap: pretty;
 }
 
 .text-body-sm {
   font-family: var(--font-interface);
   font-size: var(--text-body-sm);
   line-height: var(--leading-normal);
+  text-wrap: pretty;
 }
 
 .text-caption {

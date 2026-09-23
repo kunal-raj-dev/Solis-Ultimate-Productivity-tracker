@@ -336,7 +336,10 @@ export const InteractiveCockpitPreview: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
                     <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)' }}>Morning Deep Study</span>
-                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--color-amber-400)' }}>🔥 14d streak</span>
+                    <span style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--color-amber-400)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Flame size={12} color="var(--accent-terracotta)" aria-hidden="true" />
+                      <span>14d streak</span>
+                    </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
                     <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)' }}>Evening Review</span>

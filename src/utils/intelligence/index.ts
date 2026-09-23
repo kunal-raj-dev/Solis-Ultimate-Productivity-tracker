@@ -33,6 +33,7 @@ export * from './sufficiencyModel';
 export * from './masteryEngine';
 export * from './retentionEngine';
 export * from './subjectHealthEngine';
+export * from './circadianSynthesis';
 
 /**
  * Creates a complete memoized learning intelligence snapshot.

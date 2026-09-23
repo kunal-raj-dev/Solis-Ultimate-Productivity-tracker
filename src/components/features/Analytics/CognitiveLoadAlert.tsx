@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '../../ui/Badge/Badge';
 import { CognitiveLoadReport } from '../../../utils/intelligence/masteryIntelligence';
-import { Activity, AlertOctagon, AlertTriangle, Info } from 'lucide-react';
+import { Activity, AlertOctagon, AlertTriangle, Info, Lightbulb, ArrowRight } from 'lucide-react';
 
 export interface CognitiveLoadAlertProps {
   report: CognitiveLoadReport;
@@ -47,8 +47,9 @@ export const CognitiveLoadAlert: React.FC<CognitiveLoadAlertProps> = ({ report }
         </span>
       </div>
 
-      <p style={{ margin: 0, fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-        💡 <strong>Recommended Move:</strong> {report.recommendedAction}
+      <p style={{ margin: 0, fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', lineHeight: 1.5, display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <Lightbulb size={14} style={{ color: 'var(--accent-brass)', flexShrink: 0 }} aria-hidden="true" />
+        <span><strong>Recommended Move:</strong> {report.recommendedAction}</span>
       </p>
 
       {/* Alerts if any */}
@@ -80,8 +81,9 @@ export const CognitiveLoadAlert: React.FC<CognitiveLoadAlertProps> = ({ report }
                   {alert.title}
                 </span>
                 <span style={{ color: 'var(--text-secondary)' }}>{alert.message}</span>
-                <span style={{ display: 'block', color: 'var(--color-coral-500)', marginTop: '2px', fontWeight: 500 }}>
-                  👉 {alert.suggestion}
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-coral-500)', marginTop: '4px', fontWeight: 500 }}>
+                  <ArrowRight size={12} style={{ flexShrink: 0 }} aria-hidden="true" />
+                  <span>{alert.suggestion}</span>
                 </span>
               </div>
             </div>

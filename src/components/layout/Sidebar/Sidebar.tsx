@@ -94,6 +94,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expand sidebar (⌘\\)' : 'Collapse sidebar to rail (⌘\\)'}
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            data-cursor="action"
           >
             {isCollapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
           </button>
@@ -118,6 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
                     aria-label={isCollapsed ? item.label : undefined}
                     onMouseEnter={() => prefetchRoute(item.id)}
                     onFocus={() => prefetchRoute(item.id)}
+                    data-cursor="action"
                     className={({ isActive }) =>
                       cn(
                         'solis-sidebar__link',
@@ -150,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
 
       {/* Momentum summary pod */}
       {!isCollapsed ? (
-        <div className="solis-sidebar__momentum-pod">
+        <div className="solis-sidebar__momentum-pod" data-cursor="examine">
           <div className="solis-sidebar__momentum-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Flame size={14} color="var(--color-coral-500)" />
@@ -170,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
           </div>
         </div>
       ) : (
-        <div className="solis-sidebar__momentum-mini" title={`Momentum: ${hasMomentumData ? `${momentumScore}%` : 'Forming'}`}>
+        <div className="solis-sidebar__momentum-mini" title={`Momentum: ${hasMomentumData ? `${momentumScore}%` : 'Forming'}`} data-cursor="examine">
           <div
             className="solis-sidebar__momentum-mini-fill"
             style={{ height: hasMomentumData ? `${Math.max(10, momentumScore)}%` : '15%' }}
@@ -180,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
 
       {/* Footer Profile & Logout */}
       <div className="solis-sidebar__footer">
-        <div className="solis-sidebar__user">
+        <div className="solis-sidebar__user" data-cursor="examine">
           <Avatar name={displayName} size="sm" />
           {!isCollapsed && (
             <div className="solis-sidebar__user-info">
@@ -197,6 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
               onClick={toggleTheme}
               title={isDark ? 'Switch to Warm Ivory (Day Flow)' : 'Switch to Deep Charcoal (Night Sanctuary)'}
               aria-label={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+              data-cursor="action"
             >
               {isDark ? <Sun size={15} style={{ color: 'var(--color-amber-400)' }} /> : <Moon size={15} style={{ color: 'var(--color-lavender-400)' }} />}
             </button>
@@ -207,6 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
               disabled={isLoggingOut}
               title="Sign out of Solis"
               aria-label="Sign out"
+              data-cursor="action"
             >
               {isLoggingOut ? <Loader2 size={16} className="solis-spin" /> : <LogOut size={16} />}
             </button>
@@ -218,6 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
               onClick={toggleTheme}
               title={isDark ? 'Switch to Warm Ivory' : 'Switch to Deep Charcoal'}
               aria-label={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+              data-cursor="action"
             >
               {isDark ? <Sun size={14} style={{ color: 'var(--color-amber-400)' }} /> : <Moon size={14} style={{ color: 'var(--color-lavender-400)' }} />}
             </button>
@@ -228,6 +233,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
               disabled={isLoggingOut}
               title="Sign out"
               aria-label="Sign out"
+              data-cursor="action"
             >
               {isLoggingOut ? <Loader2 size={14} className="solis-spin" /> : <LogOut size={14} />}
             </button>

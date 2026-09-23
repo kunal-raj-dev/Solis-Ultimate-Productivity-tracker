@@ -5,6 +5,7 @@ import './Card.css';
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'primary' | 'elevated' | 'subtle' | 'dark';
   isInteractive?: boolean;
+  'data-cursor'?: string;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -12,8 +13,20 @@ export const Card: React.FC<CardProps> = ({
   className,
   variant = 'primary',
   isInteractive = false,
+  'data-cursor': dataCursor,
+  role,
+  tabIndex,
+  onKeyDown,
   ...props
 }) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isInteractive && props.onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      props.onClick(e as any);
+    }
+    onKeyDown?.(e);
+  };
+
   return (
     <div
       className={cn(
@@ -22,6 +35,10 @@ export const Card: React.FC<CardProps> = ({
         isInteractive && 'solis-card--interactive',
         className
       )}
+      data-cursor={isInteractive ? (dataCursor || 'examine') : dataCursor}
+      role={role || (isInteractive ? 'button' : undefined)}
+      tabIndex={tabIndex !== undefined ? tabIndex : (isInteractive ? 0 : undefined)}
+      onKeyDown={handleKeyDown}
       {...props}
     >
       {children}

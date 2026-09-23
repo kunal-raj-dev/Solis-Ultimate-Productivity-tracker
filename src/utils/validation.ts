@@ -102,3 +102,48 @@ export function validateGoalInput(data: {
 
   return { success: true, data: true };
 }
+
+export function validateFlashcardInput(data: {
+  front?: string;
+  back?: string;
+  topic?: string;
+}): Result<boolean> {
+  if (!data.front || data.front.trim().length === 0) {
+    return { success: false, error: 'Flashcard question/front is required.', field: 'front' };
+  }
+
+  if (data.front.trim().length > 1000) {
+    return { success: false, error: 'Flashcard question must be 1000 characters or fewer.', field: 'front' };
+  }
+
+  if (!data.back || data.back.trim().length === 0) {
+    return { success: false, error: 'Flashcard answer/back is required.', field: 'back' };
+  }
+
+  if (data.back.trim().length > 2000) {
+    return { success: false, error: 'Flashcard answer must be 2000 characters or fewer.', field: 'back' };
+  }
+
+  return { success: true, data: true };
+}
+
+export function validateTimeBlockInput(data: {
+  date?: string;
+  startHour?: number;
+  durationMinutes?: number;
+}): Result<boolean> {
+  if (data.date && isNaN(Date.parse(data.date))) {
+    return { success: false, error: 'Date must be a valid ISO date string.', field: 'date' };
+  }
+
+  if (data.startHour !== undefined && (data.startHour < 0 || data.startHour > 23)) {
+    return { success: false, error: 'Start hour must be between 0 and 23.', field: 'startHour' };
+  }
+
+  if (data.durationMinutes !== undefined && (data.durationMinutes <= 0 || data.durationMinutes > 720)) {
+    return { success: false, error: 'Duration must be between 1 and 720 minutes (12h).', field: 'durationMinutes' };
+  }
+
+  return { success: true, data: true };
+}
+

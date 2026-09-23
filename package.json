@@ -10,15 +10,18 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "verify": "tsc -b && vitest run && vite build",
-    "keepalive": "node scripts/keepalive.mjs"
+    "keepalive": "node scripts/keepalive.mjs",
+    "remotion:studio": "remotion studio src/remotion/index.ts"
   },
   "dependencies": {
+    "@remotion/player": "4.0.527",
     "@supabase/supabase-js": "^2.112.3",
     "framer-motion": "^13.4.2",
     "lucide-react": "^1.16.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0"
+    "react-router-dom": "^7.3.0",
+    "remotion": "4.0.527"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

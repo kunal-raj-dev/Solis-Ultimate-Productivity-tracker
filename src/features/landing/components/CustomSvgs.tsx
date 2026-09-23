@@ -261,11 +261,11 @@ export const ArchivalDossierSvg: React.FC<{ className?: string }> = ({ className
     <text x="32" y="22" fill="#E8E2D8" fontSize="10.5" fontFamily="var(--font-mono)" letterSpacing="0.12em">
       INSTRUMENT DOSSIER // PROTOCOL ARCHIVAL CADENCE
     </text>
-    <text x="640" y="22" fill="#78726A" fontSize="9.5" fontFamily="var(--font-mono)">
+    <text x="785" y="22" fill="#78726A" fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
       LOCAL_IDB: 0.42ms • ROW_SECURED
     </text>
-    <rect x="800" y="11" width="62" height="15" rx="2" fill="rgba(62,114,80,0.2)" stroke="rgba(62,114,80,0.4)" />
-    <text x="831" y="22" fill="#4D8F63" fontSize="8.5" fontFamily="var(--font-mono)" textAnchor="middle" fontWeight="600">
+    <rect x="795" y="11" width="64" height="15" rx="2" fill="rgba(62,114,80,0.2)" stroke="rgba(62,114,80,0.4)" />
+    <text x="827" y="22" fill="#4D8F63" fontSize="8.5" fontFamily="var(--font-mono)" textAnchor="middle" fontWeight="600">
       VERIFIED
     </text>
 

@@ -8,6 +8,7 @@ import { GuideProvider } from '../context/GuideContext';
 import { ToastContainer } from '../components/feedback/Toast/ToastContainer';
 import { OfflineBanner } from '../components/feedback/OfflineBanner/OfflineBanner';
 import { ErrorBoundary } from '../components/feedback/ErrorBoundary/ErrorBoundary';
+import { SolisCursor } from '../components/ui/SolisCursor/SolisCursor';
 
 export const RootLayout: React.FC = () => {
   return (
@@ -17,6 +18,7 @@ export const RootLayout: React.FC = () => {
           <DataProvider>
             <ToastProvider>
               <GuideProvider>
+                <SolisCursor />
                 <OfflineBanner />
                 <Outlet />
                 <ToastContainer />

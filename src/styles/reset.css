@@ -44,14 +44,28 @@ svg {
 input,
 button,
 textarea,
-select {
+select,
+a,
+[role="button"] {
   font: inherit;
   color: inherit;
   letter-spacing: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a[href],
+[role="button"],
+select,
+input[type="submit"],
+input[type="button"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
 }
 
 button {
-  cursor: pointer;
   background: none;
   border: none;
 }
@@ -66,6 +80,7 @@ ol {
   list-style: none;
 }
 
+/* Modern Web Guidance: Balanced and Pretty Text Wrapping */
 h1,
 h2,
 h3,
@@ -74,10 +89,39 @@ h5,
 h6 {
   overflow-wrap: break-word;
   font-weight: normal;
+  text-wrap: balance;
 }
 
-p {
+p,
+blockquote,
+.pretty-text {
   overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+/* Modern Web Guidance: Standardized Custom Scrollbars */
+:root {
+  --scrollbar-thumb: var(--border-subtle, rgba(168, 161, 150, 0.4));
+  --scrollbar-track: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+@supports not (scrollbar-color: auto) {
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
 }
 
 /* Reduced motion preference */

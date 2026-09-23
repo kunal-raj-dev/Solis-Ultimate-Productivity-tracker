@@ -8,7 +8,8 @@ import {
   Calendar,
   BookOpen,
   ArrowRight,
-  Flame
+  Flame,
+  Film
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
@@ -17,6 +18,7 @@ import { SegmentedControl } from '../../components/ui/SegmentedControl/Segmented
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
 import { ExamReadinessCard } from '../../components/features/Analytics/ExamReadinessCard';
 import { RetentionForecastGraph } from '../../components/features/Analytics/RetentionForecastGraph';
+import { CircadianFocusReelModal } from '../../components/features/Analytics/CircadianFocusReelModal';
 import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
@@ -44,6 +46,7 @@ export const AnalyticsPage: React.FC = () => {
   const navigate = useNavigate();
   const { openGuide } = useGuide();
   const [scope, setScope] = useState<TimeRangeScope>('this_week');
+  const [isReelOpen, setIsReelOpen] = useState(false);
 
   const cachedSubjects = queryCache.get<StudySubject[]>('subjects:false');
   const cachedSessions = queryCache.get<StudySession[]>('study_sessions_recent');
@@ -230,6 +233,16 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Film size={14} color="var(--accent-terracotta)" />}
+            onClick={() => setIsReelOpen(true)}
+            title="Watch 10-second Circadian Focus Reel (Remotion)"
+            data-cursor="action"
+          >
+            Circadian Reel
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -692,6 +705,12 @@ export const AnalyticsPage: React.FC = () => {
           </div>
         </section>
       )}
+
+      {/* Circadian Focus Reel Remotion Showcase Modal */}
+      <CircadianFocusReelModal
+        isOpen={isReelOpen}
+        onClose={() => setIsReelOpen(false)}
+      />
     </div>
   );
 };

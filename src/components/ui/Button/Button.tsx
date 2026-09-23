@@ -12,6 +12,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   isFullWidth?: boolean;
+  'data-cursor'?: string;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -26,6 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       isFullWidth = false,
       disabled,
+      'data-cursor': dataCursor = 'action',
       ...props
     },
     ref
@@ -34,6 +36,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
+        aria-busy={isLoading ? 'true' : undefined}
+        aria-disabled={disabled || isLoading ? 'true' : undefined}
+        data-cursor={dataCursor}
         className={cn(
           'solis-btn',
           `solis-btn--${variant}`,

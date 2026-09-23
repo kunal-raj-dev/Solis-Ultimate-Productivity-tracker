@@ -116,6 +116,7 @@
   box-shadow: none;
   overflow: hidden;
   transition: border-color var(--duration-swift) ease;
+  container-type: inline-size;
 }
 
 .solis-solar-hero::before {
@@ -314,6 +315,7 @@
   box-shadow: none;
   position: relative;
   transition: border-color var(--duration-swift) ease;
+  container-type: inline-size;
 }
 
 .solis-panel:hover {
@@ -346,6 +348,7 @@
   letter-spacing: -0.01em;
   color: var(--text-primary);
   margin: 0;
+  text-wrap: balance;
 }
 
 .solis-panel__badge {

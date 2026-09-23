@@ -9,7 +9,8 @@ import {
   Flame,
   Edit2,
   Trash2,
-  Calendar
+  Calendar,
+  Target
 } from 'lucide-react';
 import { Task, TaskTimeBlock } from '../../types/task';
 import { ExternalCalendarEvent } from '../../types/calendar';
@@ -427,8 +428,9 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
                                 )}
 
                                 {linkedGoal && (
-                                  <Badge variant="lavender">
-                                    🎯 {linkedGoal.title}
+                                  <Badge variant="lavender" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                    <Target size={10} aria-hidden="true" />
+                                    <span>{linkedGoal.title}</span>
                                   </Badge>
                                 )}
 

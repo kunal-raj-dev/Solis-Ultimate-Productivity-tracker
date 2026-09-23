@@ -46,6 +46,10 @@ class QueryCache {
     }
   }
 
+  public invalidatePrefix(prefix: string): void {
+    this.invalidate(prefix);
+  }
+
   public delete(key: string): void {
     this.cache.delete(key);
   }

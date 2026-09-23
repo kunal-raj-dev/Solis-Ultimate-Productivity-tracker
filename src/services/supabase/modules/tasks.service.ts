@@ -3,7 +3,7 @@ import { Task, TaskFilterOptions, SubTask, TaskTimeBlock, TimeBlockReviewPayload
 import { mapTask, mapSubtask, mapTaskTimeBlock } from '../supabaseMappers';
 
 import { isToday, isFuture, isPast, getISODateString } from '../../../utils/date';
-import { validateTaskInput, ValidationError } from '../../../utils/validation';
+import { validateTaskInput, validateTimeBlockInput, ValidationError } from '../../../utils/validation';
 import { spawnNextRecurringOccurrence } from '../../../utils/tasks/recurrenceEngine';
 import { queryCache } from '../../cache';
 import { SupabaseServiceContext } from './types';
@@ -369,6 +369,11 @@ export class SupabaseTaskService implements ITaskService {
       throw new ValidationError('Task title is required for a time block.', 'taskTitle');
     }
 
+    const validation = validateTimeBlockInput(block);
+    if (!validation.success) {
+      throw new ValidationError(validation.error, validation.field);
+    }
+
     const userId = await this.ctx.getUserId();
     const payload = {
       user_id: userId,
@@ -401,6 +406,7 @@ export class SupabaseTaskService implements ITaskService {
     }
 
     this.ctx.notify();
+    queryCache.invalidatePrefix('supabase:timeblocks:');
     return mapTaskTimeBlock(data);
   };
 
@@ -457,6 +463,7 @@ export class SupabaseTaskService implements ITaskService {
     }
 
     this.ctx.notify();
+    queryCache.invalidatePrefix('supabase:timeblocks:');
     return mapped;
   };
 
@@ -470,6 +477,7 @@ export class SupabaseTaskService implements ITaskService {
 
     if (error) throw error;
     this.ctx.notify();
+    queryCache.invalidatePrefix('supabase:timeblocks:');
     return true;
   };
 

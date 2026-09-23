@@ -23,7 +23,6 @@ import { Button } from '../../components/ui/Button/Button';
 import { Container } from '../../components/layout/Container/Container';
 import { ScrollReveal } from '../../components/motion/ScrollReveal';
 import { InteractiveCockpitPreview } from './components/InteractiveCockpitPreview';
-import { ForgettingCurveSvg } from './components/ForgettingCurveSvg';
 import {
   GridBackgroundSvg,
   SynapseNetworkSvg,
@@ -31,7 +30,46 @@ import {
   TelemetryRealismGaugeSvg,
   ArchivalDossierSvg
 } from './components/CustomSvgs';
+import { SolisBrandMark } from '../../assets/svg/SolisBrandMark';
+import { CircadianSolarArc } from '../../assets/svg/CircadianSolarArc';
+import { EbbinghausRetentionChart } from '../../assets/svg/EbbinghausRetentionChart';
+import { CognitiveCapacityGauge } from '../../assets/svg/CognitiveCapacityGauge';
+import { ArchivalLibraryEngraving } from '../../assets/svg/ArchivalLibraryEngraving';
 import './LandingPage.css';
+
+const getPhaseInfo = (hour: number) => {
+  if (hour >= 6 && hour < 12) {
+    return {
+      title: 'Dawn Horizon • Morning Intentionality',
+      coord: `HORIZON +${Math.round((hour - 6) * 10)}°`,
+      advice: 'Optimal state for creative formulation, deep syllabus architecture, and calibrating your daily priority.'
+    };
+  } else if (hour >= 12 && hour < 18) {
+    return {
+      title: 'Solar Zenith • High-Focus Execution',
+      coord: `ZENITH +${Math.round(Math.max(60, 90 - Math.abs(hour - 13.5) * 10))}°`,
+      advice: 'Austere Pomodoro study sanctuary in full effect. Zero notification bleed; channel energy into core problem sets.'
+    };
+  } else if (hour >= 18 && hour < 22) {
+    return {
+      title: 'Dusk Consolidation • Spaced Retrieval Review',
+      coord: `DUSK -${Math.round((hour - 18) * 8)}°`,
+      advice: 'Ebbinghaus SM-2 flashcard recall cycle active. Review high-yield notes before bedtime memory consolidation.'
+    };
+  } else {
+    return {
+      title: 'Midnight Nadir • Rest & Memory Synthesis',
+      coord: `NADIR -${Math.round((hour >= 22 ? hour - 22 : hour + 2) * 12)}°`,
+      advice: 'Cognitive recovery protocol. Offline IndexedDB replication verified; workstation enters silent hibernation.'
+    };
+  }
+};
+
+const formatSolarTime = (h: number) => {
+  const hours = Math.floor(h);
+  const mins = Math.round((h - hours) * 60);
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} SOLAR TIME`;
+};
 
 interface FAQItem {
   question: string;
@@ -146,6 +184,9 @@ const INSTITUTIONS = [
 export const LandingPage: React.FC = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [selectedSoundscape, setSelectedSoundscape] = useState<string>('Rain on Skylight');
+  const [solarHour, setSolarHour] = useState<number>(13.5);
+
+  const activePhase = getPhaseInfo(solarHour);
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex((prev) => (prev === index ? null : index));
@@ -181,6 +222,9 @@ export const LandingPage: React.FC = () => {
 
         <Container>
           <ScrollReveal delayMs={0}>
+            <div className="solis-hero-badge-wrap" data-cursor="examine">
+              <SolisBrandMark size={48} className="solis-hero-brandmark" />
+            </div>
             <div className="solis-hero-eyebrow">
               <span className="solis-eyebrow-pip" aria-hidden="true" />
               <span>Living Circadian Operating System • Local-First IDB</span>
@@ -203,13 +247,13 @@ export const LandingPage: React.FC = () => {
 
           <ScrollReveal delayMs={90}>
             <div className="solis-hero-actions">
-              <Link to="/app/dashboard">
+              <Link to="/app/dashboard" data-cursor="action">
                 <Button variant="accent" size="lg" className="tactile-press" rightIcon={<ArrowRight size={16} />}>
                   Enter Solis Workspace
                   <span className="solis-keycap-hint">↵ Return</span>
                 </Button>
               </Link>
-              <Link to="/auth/signup">
+              <Link to="/auth/signup" data-cursor="action">
                 <Button variant="outline" size="lg" className="tactile-press">
                   Create Study Sanctuary
                 </Button>
@@ -236,7 +280,7 @@ export const LandingPage: React.FC = () => {
 
           {/* THE SHOWPIECE: LIVE INTERACTIVE COCKPIT SIMULATOR */}
           <ScrollReveal delayMs={130}>
-            <div id="interactive-preview">
+            <div id="interactive-preview" data-cursor="examine">
               <InteractiveCockpitPreview />
             </div>
           </ScrollReveal>
@@ -275,6 +319,56 @@ export const LandingPage: React.FC = () => {
               from stressful artificial deadlines into calm, compounding flow.
             </p>
           </div>
+
+          {/* THE LIVING CIRCADIAN INSTRUMENT: LIVE SOLAR SIMULATOR */}
+          <ScrollReveal delayMs={30}>
+            <div className="solis-circadian-live-instrument">
+              <div className="solis-circadian-header">
+                <div className="solis-circadian-title-group">
+                  <span className="solis-circadian-live-badge">
+                    <span className="solis-live-dot" /> LIVE SOLAR SIMULATOR
+                  </span>
+                  <h3 className="solis-circadian-active-phase">{activePhase.title}</h3>
+                </div>
+                <div className="solis-circadian-time-display">
+                  <span className="solis-circadian-clock-val">{formatSolarTime(solarHour)}</span>
+                  <span className="solis-circadian-coord-val">{activePhase.coord}</span>
+                </div>
+              </div>
+
+              <div className="solis-circadian-viz-split">
+                <div className="solis-circadian-arc-wrapper" data-cursor="examine">
+                  <CircadianSolarArc currentHour={solarHour} />
+                </div>
+                <div className="solis-circadian-gauge-wrapper">
+                  <CognitiveCapacityGauge
+                    allocatedHours={Number((Math.min(5.5, Math.max(1.0, (solarHour - 6) * 0.45))).toFixed(1))}
+                    maxHours={5.5}
+                  />
+                  <div className="solis-circadian-advice-pill">
+                    <span className="solis-advice-label">COGNITIVE PROTOCOL:</span>
+                    <span className="solis-advice-text">{activePhase.advice}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="solis-circadian-slider-row">
+                <span className="solis-slider-bound">06:00 DAWN</span>
+                <input
+                  type="range"
+                  min={6}
+                  max={23}
+                  step={0.5}
+                  value={solarHour}
+                  onChange={(e) => setSolarHour(parseFloat(e.target.value))}
+                  className="solis-solar-slider"
+                  data-cursor="drag"
+                  aria-label="Solar time simulator scrubber"
+                />
+                <span className="solis-slider-bound">23:00 NIGHT</span>
+              </div>
+            </div>
+          </ScrollReveal>
 
           <div className="solis-ritual-timeline">
             {CIRCADIAN_RITUAL_STEPS.map((step, idx) => {
@@ -488,8 +582,8 @@ export const LandingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="solis-console-display">
-                <ForgettingCurveSvg />
+              <div className="solis-console-display" data-cursor="examine">
+                <EbbinghausRetentionChart />
               </div>
             </div>
 
@@ -522,6 +616,7 @@ export const LandingPage: React.FC = () => {
                       type="button"
                       className={`solis-soundscape-pill ${selectedSoundscape === sound ? 'solis-soundscape-pill--active' : ''}`}
                       onClick={() => setSelectedSoundscape(sound)}
+                      data-cursor="action"
                     >
                       {sound}
                     </button>
@@ -546,7 +641,7 @@ export const LandingPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="solis-console-display solis-console-display--vertical">
+              <div className="solis-console-display solis-console-display--vertical" data-cursor="examine">
                 <TelemetryRealismGaugeSvg />
                 <span className="solis-telemetry-caption">
                   5.2h logged / 5.5h scheduled • Zero Schedule Drift
@@ -576,6 +671,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className={`solis-fieldnote-cell ${t.isFeatured ? 'solis-fieldnote-cell--featured' : ''}`}
                   onMouseMove={handleCardMouseMove}
+                  data-cursor="examine"
                 >
                   <span className="solis-fieldnote-tag">{t.code}</span>
                   <blockquote className="solis-fieldnote-quote">“{t.quote}”</blockquote>
@@ -594,6 +690,14 @@ export const LandingPage: React.FC = () => {
       {/* 07 // THE SCHOLAR'S MANIFESTO */}
       <section id="manifesto" className="solis-manifesto-section">
         <Container>
+          <div className="solis-manifesto-engraving-plate" data-cursor="examine">
+            <ArchivalLibraryEngraving />
+            <div className="solis-engraving-caption">
+              <span>FIG. 04 // THE SCHOLAR'S COMMONPLACE WORKSTATION</span>
+              <span>• SACRED INTELLECTUAL SANCTUARY</span>
+            </div>
+          </div>
+
           <blockquote className="solis-manifesto-quote">
             “Order is not pressure; it is the calm canvas upon which deep mastery is composed.”
           </blockquote>
@@ -658,6 +762,7 @@ export const LandingPage: React.FC = () => {
                     className="solis-faq-trigger"
                     onClick={() => toggleFaq(idx)}
                     aria-expanded={isOpen}
+                    data-cursor="action"
                   >
                     <span>{item.question}</span>
                     <ChevronDown
@@ -704,13 +809,13 @@ export const LandingPage: React.FC = () => {
                 Step into your personal study operating system and cultivate lifelong intellectual momentum.
               </p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Link to="/app/dashboard">
+                <Link to="/app/dashboard" data-cursor="action">
                   <Button variant="accent" size="lg" className="tactile-press" rightIcon={<Compass size={16} />}>
                     Enter Solis Workspace
                     <span className="solis-keycap-hint">↵ Return</span>
                   </Button>
                 </Link>
-                <Link to="/auth/signup">
+                <Link to="/auth/signup" data-cursor="action">
                   <Button variant="outline" size="lg" className="tactile-press">
                     Create Study Sanctuary
                   </Button>

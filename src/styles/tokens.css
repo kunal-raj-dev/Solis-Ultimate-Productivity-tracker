@@ -105,26 +105,45 @@
   --radius-tag: 2px;
 
   /* ------------------------------------------------------------------------
-     4. MOTION & TACTILE TRANSITIONS (Disciplined Spring Micro-Physics)
+     4. MOTION & TACTILE TRANSITIONS (Archival Premium Motion System)
+        Personality: Premium Archetype (Calm, Monastic, Precision Physics)
      ------------------------------------------------------------------------ */
+  /* Duration Palette: Micro, Swift, Standard, Deliberate, Cinematic */
   --duration-instant: 60ms;
   --duration-swift: 120ms;
-  --duration-moderate: 180ms;
-  --duration-deliberate: 240ms;
-  --duration-cinematic: 280ms;
+  --duration-moderate: 240ms;
+  --duration-deliberate: 380ms;
+  --duration-cinematic: 600ms;
 
-  --ease-tactile: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spatial: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Weight Class Durations */
+  --duration-light: var(--duration-swift);        /* Tooltips, badges, icon swaps */
+  --duration-medium: var(--duration-moderate);    /* Cards, panels, rows */
+  --duration-heavy: var(--duration-deliberate);   /* Modals, drawers, full overlays */
+
+  /* Directional & Physics Easing Families */
+  --ease-signature: cubic-bezier(0.4, 0, 0.2, 1);       /* Solis Signature (Premium) */
+  --ease-entrance: cubic-bezier(0.05, 0.7, 0.1, 1);     /* Entrance: Decelerate (fast start, gentle land) */
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);              /* Exit: Accelerate (gentle start, swift exit) */
+  --ease-tactile: cubic-bezier(0.16, 1, 0.3, 1);        /* Tactile: Crisp micro-press feedback */
+  --ease-spatial: cubic-bezier(0.2, 0, 0, 1);           /* Spatial: Snappy UI displacement */
+  --ease-ambient: cubic-bezier(0.37, 0, 0.63, 1);       /* Ambient: Seamless sine wave breathing */
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --spring-tactile: cubic-bezier(0.16, 1, 0.3, 1);
-  --spring-spatial: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-spatial: cubic-bezier(0.2, 0, 0, 1);
   --spring-snappy: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Semantic Transitions */
   --transition-fast: var(--duration-swift) var(--ease-tactile);
-  --transition-base: var(--duration-moderate) var(--ease-spatial);
-  --transition-smooth: var(--duration-moderate) var(--ease-spatial);
-  --transition-spring: var(--duration-swift) var(--ease-spatial);
+  --transition-base: var(--duration-moderate) var(--ease-signature);
+  --transition-smooth: var(--duration-deliberate) var(--ease-signature);
+  --transition-spring: var(--duration-swift) var(--ease-spring);
+  --transition-enter: var(--duration-moderate) var(--ease-entrance);
+  --transition-exit: var(--duration-swift) var(--ease-exit);
+
+  /* Stagger Budgets (Strictly bounded to maintain responsive UI) */
+  --stagger-micro: 25ms;   /* List rows (total < 180ms) */
+  --stagger-grid: 50ms;    /* Cards / panels (total < 350ms) */
 
   /* ------------------------------------------------------------------------
      5. LAYOUT & DIMENSIONS

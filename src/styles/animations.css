@@ -69,17 +69,21 @@
   }
 }
 
-/* Animation Helper Classes (Disciplined 100-200ms Transitions) */
+/* Animation Helper Classes (Directional & Physics Easing) */
 .animate-fade-in {
-  animation: fadeIn var(--duration-swift) var(--ease-spatial) forwards;
+  animation: fadeIn var(--duration-swift) var(--ease-entrance) forwards;
 }
 
 .animate-slide-up {
-  animation: fadeSlideUp var(--duration-moderate) var(--ease-spatial) forwards;
+  animation: fadeSlideUp var(--duration-moderate) var(--ease-entrance) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn var(--duration-instant) var(--ease-spatial) forwards;
+  animation: scaleIn var(--duration-instant) var(--ease-entrance) forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--duration-swift) var(--ease-exit) forwards;
 }
 
 .animate-pulse-subtle {
@@ -99,14 +103,12 @@
   border-radius: var(--radius-sm);
 }
 
-/* Stagger delay helpers neutralized to eliminate sluggish page reveals */
-.delay-100,
-.delay-200,
-.delay-300,
-.delay-400,
-.delay-500 {
-  animation-delay: 0ms;
-}
+/* Stagger delay helpers bounded by stagger budgets */
+.delay-100 { animation-delay: 25ms; }
+.delay-200 { animation-delay: 50ms; }
+.delay-300 { animation-delay: 75ms; }
+.delay-400 { animation-delay: 100ms; }
+.delay-500 { animation-delay: 125ms; }
 
 /* --------------------------------------------------------------------------
    VIEW TRANSITION API (Modern Browser SPA Continuity)
@@ -116,11 +118,11 @@
 }
 
 ::view-transition-old(root) {
-  animation: var(--duration-swift) var(--ease-spatial) both fadeOut;
+  animation: var(--duration-swift) var(--ease-exit) both fadeOut;
 }
 
 ::view-transition-new(root) {
-  animation: var(--duration-moderate) var(--ease-spatial) both fadeIn;
+  animation: var(--duration-moderate) var(--ease-entrance) both fadeIn;
 }
 
 @keyframes fadeOut {
@@ -134,7 +136,7 @@
 }
 
 .animate-check-pop {
-  animation: checkmarkPop var(--duration-swift) var(--ease-spatial) forwards;
+  animation: checkmarkPop var(--duration-swift) var(--ease-signature) forwards;
 }
 
 .press-tactile {

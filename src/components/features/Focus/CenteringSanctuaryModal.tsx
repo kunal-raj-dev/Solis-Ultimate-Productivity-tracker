@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Play, Pause, ArrowRight, Volume2, VolumeX } from 'lucide-react';
+import { X, Play, Pause, ArrowRight, Volume2, VolumeX, Wind } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
 import './CenteringSanctuaryModal.css';
 
@@ -166,7 +166,7 @@ export const CenteringSanctuaryModal: React.FC<CenteringSanctuaryModalProps> = (
         {/* Header */}
         <div className="solis-centering-header">
           <div className="solis-centering-title-wrap">
-            <span style={{ fontSize: '18px' }}>🌿</span>
+            <Wind size={18} style={{ color: 'var(--color-sage-400, #4A7C59)' }} aria-hidden="true" />
             <span className="solis-centering-title">Centering Sanctuary</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
