@@ -17,9 +17,18 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
   className
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    if (mediaQuery.matches) {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -38,9 +47,9 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
   }, [threshold]);
 
   const getTransform = () => {
-    if (isVisible) return 'none';
-    if (direction === 'up') return 'translateY(24px)';
-    if (direction === 'down') return 'translateY(-24px)';
+    if (prefersReducedMotion || isVisible) return 'none';
+    if (direction === 'up') return 'translateY(20px)';
+    if (direction === 'down') return 'translateY(-20px)';
     return 'none';
   };
 
@@ -49,10 +58,12 @@ export const ScrollReveal: React.FC<ScrollRevealProps> = ({
       ref={elementRef}
       className={cn('solis-reveal-layer', className)}
       style={{
-        opacity: isVisible ? 1 : 0,
+        opacity: isVisible || prefersReducedMotion ? 1 : 0,
         transform: getTransform(),
-        transition: `opacity 0.7s var(--ease-out-expo) ${delayMs}ms, transform 0.7s var(--ease-out-expo) ${delayMs}ms`,
-        willChange: 'opacity, transform'
+        transition: prefersReducedMotion
+          ? 'none'
+          : `opacity 0.5s var(--ease-out-expo) ${delayMs}ms, transform 0.5s var(--ease-out-expo) ${delayMs}ms`,
+        willChange: prefersReducedMotion ? 'auto' : 'opacity, transform'
       }}
     >
       {children}
