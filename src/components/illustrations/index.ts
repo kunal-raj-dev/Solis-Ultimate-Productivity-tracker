@@ -3,3 +3,6 @@ export { StudySanctuaryEmptyIllustration } from './StudySanctuaryEmptyIllustrati
 export { NotesEmptyIllustration } from './NotesEmptyIllustration';
 export { TasksEmptyIllustration } from './TasksEmptyIllustration';
 export { FocusZenIllustration } from './FocusZenIllustration';
+export { SolarArc } from './SolarArc';
+export { SolarDial } from './SolarDial';
+
