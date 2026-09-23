@@ -35,7 +35,7 @@ export const CognitiveLoadAlert: React.FC<CognitiveLoadAlertProps> = ({ report }
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Activity size={18} color="var(--color-coral-500)" />
           <span style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>
-            Cognitive Load & Balance Sanctuary
+            Study Balance & Brain Health
           </span>
           <Badge variant={statusBadgeVariant}>
             {report.status.replace('_', ' ').toUpperCase()}
