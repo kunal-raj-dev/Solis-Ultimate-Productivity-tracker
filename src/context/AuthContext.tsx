@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { UserProfile, LoginCredentials, SignupCredentials } from '../types/auth';
+import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials } from '../types/auth';
 import { dataService } from '../services/dataService';
 import { supabase, isSupabaseConfigured } from '../services/supabase/supabaseClient';
 import { formatAuthError } from '../utils/authErrors';
@@ -18,6 +18,12 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
+  updateProfile: (updates: {
+    name?: string;
+    email?: string;
+    focusField?: string;
+    preferences?: Partial<UserPreferences>;
+  }) => Promise<UserProfile>;
   clearError: () => void;
 }
 
@@ -182,6 +188,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const updateProfile = useCallback(async (updates: {
+    name?: string;
+    email?: string;
+    focusField?: string;
+    preferences?: Partial<UserPreferences>;
+  }): Promise<UserProfile> => {
+    setAuthError(null);
+    try {
+      const updated = await dataService.auth.updateProfile(updates);
+      if (isMountedRef.current) {
+        setUser(updated);
+      }
+      return updated;
+    } catch (err) {
+      if (isMountedRef.current) {
+        const formatted = formatAuthError(err);
+        setAuthError(formatted.userMessage);
+        throw new Error(formatted.userMessage);
+      }
+      throw err;
+    }
+  }, []);
+
   const clearError = useCallback(() => setAuthError(null), []);
 
   const isLoading = authStatus === 'initializing';
@@ -200,6 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       requestPasswordReset,
       updatePassword,
+      updateProfile,
       clearError
     }),
     [
@@ -214,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
       requestPasswordReset,
       updatePassword,
+      updateProfile,
       clearError
     ]
   );

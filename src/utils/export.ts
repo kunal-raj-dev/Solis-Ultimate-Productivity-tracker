@@ -3,13 +3,19 @@
  * Pure deterministic transformations for JSON and CSV exports.
  */
 
-import { Task } from '../types/task';
+import { Task, TaskTimeBlock } from '../types/task';
 import { StudySubject, StudySession, StudyPlanItem, StudyTopic } from '../types/study';
 import { Note } from '../types/note';
 import { FocusSession } from '../types/focus';
 import { Habit } from '../types/habit';
 import { Goal } from '../types/goal';
 import { UserProfile } from '../types/auth';
+import { RecurringStudyRoutine } from '../types/planning';
+import { StudyResource } from '../types/resource';
+import { Flashcard } from '../types/learning';
+import { DailyReflection } from '../types/reflection';
+import { IDataService } from '../services/api.interface';
+import { getISODateString } from './date';
 
 export interface SolisWorkspaceBackup {
   schema: 'solis-export-v1';
@@ -21,11 +27,18 @@ export interface SolisWorkspaceBackup {
   topics: StudyTopic[];
   studyPlans: StudyPlanItem[];
   studySessions: StudySession[];
+  // Collections added after the original v1 format: optional so older
+  // backups and validators keep accepting the previous shape.
+  studyRoutines?: RecurringStudyRoutine[];
+  studyResources?: StudyResource[];
   focusSessions: FocusSession[];
   tasks: Task[];
+  taskTimeBlocks?: TaskTimeBlock[];
   habits: Habit[];
   goals: Goal[];
   notes: Note[];
+  flashcards?: Flashcard[];
+  dailyReflections?: DailyReflection[];
 }
 
 export function createWorkspaceBackup(params: {
@@ -34,11 +47,16 @@ export function createWorkspaceBackup(params: {
   topics: StudyTopic[];
   studyPlans: StudyPlanItem[];
   studySessions: StudySession[];
+  studyRoutines?: RecurringStudyRoutine[];
+  studyResources?: StudyResource[];
   focusSessions: FocusSession[];
   tasks: Task[];
+  taskTimeBlocks?: TaskTimeBlock[];
   habits: Habit[];
   goals: Goal[];
   notes: Note[];
+  flashcards?: Flashcard[];
+  dailyReflections?: DailyReflection[];
 }): SolisWorkspaceBackup {
   return {
     schema: 'solis-export-v1',
@@ -55,12 +73,52 @@ export function createWorkspaceBackup(params: {
     topics: params.topics,
     studyPlans: params.studyPlans,
     studySessions: params.studySessions,
+    studyRoutines: params.studyRoutines ?? [],
+    studyResources: params.studyResources ?? [],
     focusSessions: params.focusSessions,
     tasks: params.tasks,
+    taskTimeBlocks: params.taskTimeBlocks ?? [],
     habits: params.habits,
     goals: params.goals,
-    notes: params.notes
+    notes: params.notes,
+    flashcards: params.flashcards ?? [],
+    dailyReflections: params.dailyReflections ?? []
   };
+}
+
+/**
+ * Enumerates every task time block for a complete workspace backup/restore.
+ * Prefers the exhaustive `getAllTimeBlocks` API when the active backend
+ * provides one; otherwise scans every date anchored by other user data
+ * (today, task due dates, plan dates, and session dates).
+ */
+export async function fetchAllTimeBlocks(service: IDataService): Promise<TaskTimeBlock[]> {
+  const getAll = service.tasks.getAllTimeBlocks;
+  if (typeof getAll === 'function') {
+    try {
+      return await getAll.call(service.tasks);
+    } catch {
+      // Fall through to the date-derived scan below.
+    }
+  }
+
+  const [tasks, plans, sessions, focusSessions] = await Promise.all([
+    service.tasks.getTasks(),
+    service.study.getTodayPlan(),
+    service.study.getRecentSessions(),
+    service.focus.getRecentSessions()
+  ]);
+
+  const dates = new Set<string>([getISODateString()]);
+  tasks.forEach((t) => t.dueDate && dates.add(t.dueDate));
+  plans.forEach((p) => p.scheduledDate && dates.add(p.scheduledDate));
+  sessions.forEach((s) => s.completedAt && dates.add(s.completedAt.slice(0, 10)));
+  focusSessions.forEach((f) => f.createdAt && dates.add(f.createdAt.slice(0, 10)));
+
+  const results = await Promise.all(
+    [...dates].map((date) => service.tasks.getTimeBlocks(date).catch(() => [] as TaskTimeBlock[]))
+  );
+  return results.flat();
 }
 
 export function escapeCSVField(field: any): string {

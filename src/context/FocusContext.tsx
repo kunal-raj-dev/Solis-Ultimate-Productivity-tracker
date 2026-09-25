@@ -75,6 +75,39 @@ export interface FocusContextValue {
 
 const FocusContext = createContext<FocusContextValue | undefined>(undefined);
 
+function getSavedFocusPreferences(): {
+  defaultFocusDurationMinutes: number;
+  defaultBreakDurationMinutes: number;
+  soundEnabled: boolean;
+} {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('solis_user_preferences');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          defaultFocusDurationMinutes:
+            typeof parsed.defaultFocusDurationMinutes === 'number' && parsed.defaultFocusDurationMinutes > 0
+              ? parsed.defaultFocusDurationMinutes
+              : 25,
+          defaultBreakDurationMinutes:
+            typeof parsed.defaultBreakDurationMinutes === 'number' && parsed.defaultBreakDurationMinutes > 0
+              ? parsed.defaultBreakDurationMinutes
+              : 5,
+          soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : true
+        };
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+  return {
+    defaultFocusDurationMinutes: 25,
+    defaultBreakDurationMinutes: 5,
+    soundEnabled: true
+  };
+}
+
 export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { addToast } = useToast();
 
@@ -88,8 +121,12 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
+  const initialFocusSeconds = getSavedFocusPreferences().defaultFocusDurationMinutes * 60;
+
   const [preset, setPresetState] = useState<FocusPreset>(persisted?.preset || 'pomodoro');
-  const [totalDurationSeconds, setTotalDurationSeconds] = useState<number>(persisted?.totalDurationSeconds || 25 * 60);
+  const [totalDurationSeconds, setTotalDurationSeconds] = useState<number>(
+    persisted?.totalDurationSeconds || initialFocusSeconds
+  );
   const [status, setStatus] = useState<TimerStatus>(persisted?.status === 'running' ? 'running' : persisted?.status === 'paused' ? 'paused' : 'idle');
   const [targetEndTimeMs, setTargetEndTimeMs] = useState<number | null>(persisted?.targetEndTimeMs || null);
   const [pausedRemainingMs, setPausedRemainingMs] = useState<number | null>(persisted?.pausedRemainingMs || null);
@@ -108,7 +145,9 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [parkedThoughts, setParkedThoughts] = useState<ParkedThought[]>(persisted?.parkedThoughts || []);
 
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
-  const [completedSessionMinutes, setCompletedSessionMinutes] = useState(25);
+  const [completedSessionMinutes, setCompletedSessionMinutes] = useState(
+    getSavedFocusPreferences().defaultFocusDurationMinutes
+  );
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -121,7 +160,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (persisted?.status === 'paused' && persisted?.pausedRemainingMs) {
       return Math.ceil(persisted.pausedRemainingMs / 1000);
     }
-    return persisted?.totalDurationSeconds || 25 * 60;
+    return persisted?.totalDurationSeconds || initialFocusSeconds;
   });
 
   const animFrameRef = useRef<number | null>(null);
@@ -247,7 +286,9 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTargetEndTimeMs(null);
     setPausedRemainingMs(null);
 
-    playFocusCompletionChime();
+    if (getSavedFocusPreferences().soundEnabled) {
+      playFocusCompletionChime();
+    }
     const mins = Math.max(1, Math.round(totalDurationSeconds / 60));
     setCompletedSessionMinutes(mins);
     setIsReflectionModalOpen(true);
@@ -348,12 +389,13 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast({ title: 'Session cancelled', description: 'Session was not logged.', type: 'info' });
   };
 
-  const selectPreset = (newPreset: FocusPreset, customMinutes?: number) => {
+  const selectPreset = useCallback((newPreset: FocusPreset, customMinutes?: number) => {
+    const savedPrefs = getSavedFocusPreferences();
     setStatus('idle');
     setPresetState(newPreset);
-    let sec = 25 * 60;
+    let sec = savedPrefs.defaultFocusDurationMinutes * 60;
     if (newPreset === 'deep_flow') sec = 50 * 60;
-    if (newPreset === 'short_break') sec = 5 * 60;
+    if (newPreset === 'short_break') sec = savedPrefs.defaultBreakDurationMinutes * 60;
     if (newPreset === 'custom' && customMinutes) sec = customMinutes * 60;
 
     setTotalDurationSeconds(sec);
@@ -361,7 +403,27 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTargetEndTimeMs(null);
     setPausedRemainingMs(null);
     setCheckpointAcknowledged(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePrefsUpdate = () => {
+      if (status === 'idle') {
+        const savedPrefs = getSavedFocusPreferences();
+        if (preset === 'pomodoro') {
+          const sec = savedPrefs.defaultFocusDurationMinutes * 60;
+          setTotalDurationSeconds(sec);
+          setSecondsRemaining(sec);
+        } else if (preset === 'short_break') {
+          const sec = savedPrefs.defaultBreakDurationMinutes * 60;
+          setTotalDurationSeconds(sec);
+          setSecondsRemaining(sec);
+        }
+      }
+    };
+    window.addEventListener('solis:preferences-updated', handlePrefsUpdate);
+    return () => window.removeEventListener('solis:preferences-updated', handlePrefsUpdate);
+  }, [status, preset]);
 
   const setSoundscape = (type: SoundscapeType) => {
     setSoundscapeState(type);

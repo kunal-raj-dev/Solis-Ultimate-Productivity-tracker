@@ -156,6 +156,26 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                 <span className="solis-import-stat__num">{validation.summary?.habitsCount || 0}</span>
                 <span className="solis-import-stat__label">Habits</span>
               </div>
+              <div className="solis-import-stat">
+                <span className="solis-import-stat__num">{validation.summary?.routinesCount || 0}</span>
+                <span className="solis-import-stat__label">Routines</span>
+              </div>
+              <div className="solis-import-stat">
+                <span className="solis-import-stat__num">{validation.summary?.resourcesCount || 0}</span>
+                <span className="solis-import-stat__label">Resources</span>
+              </div>
+              <div className="solis-import-stat">
+                <span className="solis-import-stat__num">{validation.summary?.timeBlocksCount || 0}</span>
+                <span className="solis-import-stat__label">Time Blocks</span>
+              </div>
+              <div className="solis-import-stat">
+                <span className="solis-import-stat__num">{validation.summary?.flashcardsCount || 0}</span>
+                <span className="solis-import-stat__label">Flashcards</span>
+              </div>
+              <div className="solis-import-stat">
+                <span className="solis-import-stat__num">{validation.summary?.reflectionsCount || 0}</span>
+                <span className="solis-import-stat__label">Reflections</span>
+              </div>
             </div>
 
             {/* Conflict Strategy Selector */}
@@ -214,7 +234,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                         Destructive Restore Safeguard
                       </p>
                       <p style={{ margin: '4px 0 8px', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
-                        This will replace existing tasks, notes, and habits with the contents of this backup.
+                        This will replace your existing subjects, tasks, notes, habits, goals, sessions, flashcards, routines, resources, time blocks, and reflections with the contents of this backup.
                       </p>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-caption)', cursor: 'pointer' }}>
                         <input

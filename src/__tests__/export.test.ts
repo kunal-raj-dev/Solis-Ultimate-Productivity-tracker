@@ -48,6 +48,102 @@ describe('Solis Data Export & Portability Suite', () => {
     expect(backup.version).toBe(1);
     expect(backup.exportedAt).toBeDefined();
     expect(backup.profile.name).toBe('Scholar Kunal');
+
+    // Section 16.3: a workspace backup must carry every user domain collection.
+    const collections: (keyof typeof backup)[] = [
+      'subjects',
+      'topics',
+      'studyPlans',
+      'studySessions',
+      'studyRoutines',
+      'studyResources',
+      'focusSessions',
+      'tasks',
+      'taskTimeBlocks',
+      'habits',
+      'goals',
+      'notes',
+      'flashcards',
+      'dailyReflections'
+    ];
+    for (const key of collections) {
+      expect(Array.isArray(backup[key])).toBe(true);
+    }
+  });
+
+  it('carries full SM-2, habit history and milestone state in the backup payload', () => {
+    const backup = createWorkspaceBackup({
+      profile: null,
+      subjects: [],
+      topics: [],
+      studyPlans: [],
+      studySessions: [],
+      studyRoutines: [],
+      studyResources: [],
+      focusSessions: [],
+      tasks: [],
+      taskTimeBlocks: [],
+      habits: [
+        {
+          id: 'h-rt',
+          title: 'Morning Pages',
+          category: 'wellness',
+          frequency: 'daily',
+          color: 'coral',
+          currentStreak: 2,
+          longestStreak: 2,
+          completedToday: true,
+          history: { '2026-09-01': true, '2026-09-02': true, '2026-09-03': false },
+          createdAt: '2026-08-01T00:00:00Z',
+          updatedAt: '2026-08-01T00:00:00Z'
+        }
+      ],
+      goals: [
+        {
+          id: 'g-rt',
+          title: 'Ship Backup Integrity',
+          horizon: 'short_term',
+          status: 'active',
+          category: 'skill',
+          priority: 'high',
+          color: 'coral',
+          targetDate: '2026-09-30',
+          progressPercentage: 50,
+          milestones: [
+            { id: 'm-1', title: 'Write validator', targetDate: '2026-09-20', completed: true },
+            { id: 'm-2', title: 'Write importer', targetDate: '2026-09-25', completed: false }
+          ],
+          createdAt: '2026-08-01T00:00:00Z',
+          updatedAt: '2026-08-01T00:00:00Z'
+        }
+      ],
+      notes: [],
+      flashcards: [
+        {
+          id: 'fc-rt',
+          subjectId: 'sub-1',
+          frontPrompt: 'What does SM-2 store?',
+          backAnswer: 'Ease factor, interval, repetitions',
+          cardType: 'standard',
+          difficultyRating: 'hard',
+          repetitionCount: 3,
+          intervalDays: 7,
+          easeFactor: 2.32,
+          nextReviewDate: '2026-09-20',
+          createdAt: '2026-08-01T00:00:00Z',
+          updatedAt: '2026-08-01T00:00:00Z'
+        }
+      ],
+      dailyReflections: []
+    });
+
+    expect(backup.habits[0].history['2026-09-02']).toBe(true);
+    expect(backup.habits[0].history['2026-09-03']).toBe(false);
+    expect(backup.goals[0].milestones[0].completed).toBe(true);
+    expect(backup.goals[0].milestones[1].completed).toBe(false);
+    expect(backup.flashcards?.[0]?.easeFactor).toBe(2.32);
+    expect(backup.flashcards?.[0]?.intervalDays).toBe(7);
+    expect(backup.flashcards?.[0]?.repetitionCount).toBe(3);
   });
 
   it('converts tasks to valid escaped CSV', () => {

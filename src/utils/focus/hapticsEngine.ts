@@ -4,6 +4,8 @@
  * and key state changes without loading external audio files.
  */
 
+import type { NotificationChimeType } from '../../types/notification';
+
 class MicroHapticsEngine {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
@@ -108,6 +110,54 @@ class MicroHapticsEngine {
         osc.stop(now + 1.6);
       });
     } catch {}
+  }
+
+  /**
+   * Gentle Notification Chime (Web Audio, zero external assets)
+   * Single canonical chime synthesis for notification fallbacks
+   * (absorbed from the retired src/utils/notifications.ts duplicate audio path).
+   * 'start' = ascending fifth for block starts, 'transition' = reflective
+   * single tone for hour reviews, 'chime' = soft default tone.
+   */
+  public playNotificationChime(type: NotificationChimeType = 'chime'): void {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      if (type === 'start') {
+        // Ascending gentle fifth (440Hz -> 660Hz)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(660, now + 0.35);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      } else if (type === 'transition') {
+        // Reflective double-tone (523Hz C5)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.25, now + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+      }
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.3);
+    } catch {
+      // AudioContext blocked or not allowed yet
+    }
   }
 
   /**
