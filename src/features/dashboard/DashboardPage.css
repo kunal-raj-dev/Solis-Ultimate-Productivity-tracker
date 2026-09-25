@@ -13,91 +13,6 @@
   padding: 0 var(--space-md) var(--space-4xl);
 }
 
-/* Quick Start Checklist Banner for Students */
-.solis-quick-start-banner {
-  background: var(--bg-surface-primary);
-  border: 1px solid var(--border-hairline);
-  border-left: 3px solid var(--color-coral-500);
-  border-radius: var(--radius-sm, 4px);
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.solis-quick-start-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-interface);
-  font-size: var(--text-body-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.solis-quick-start-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-@media (max-width: 768px) {
-  .solis-quick-start-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.solis-quick-step-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--bg-surface-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm, 4px);
-  text-align: left;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.solis-quick-step-card:hover {
-  background: var(--bg-surface-hover);
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
-}
-
-.solis-quick-step-num {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--color-coral-500);
-  color: #ffffff;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.solis-quick-step-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.solis-quick-step-info strong {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.solis-quick-step-info span {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
 @media (min-width: 768px) {
   .solis-cockpit-layout {
     padding: 0 var(--space-xl) var(--space-4xl);
@@ -302,6 +217,22 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
+}
+
+/* Zone 5 — compact 3-card bottom strip (Due Recall / Habits / Exam Horizons) */
+.solis-zone-strip {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+  margin-top: var(--space-xl);
+}
+
+@media (min-width: 1024px) {
+  .solis-zone-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2xl);
+  }
 }
 
 /* --------------------------------------------------------------------------

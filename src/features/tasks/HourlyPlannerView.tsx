@@ -9,12 +9,9 @@ import {
   Flame,
   Edit2,
   Trash2,
-  Calendar,
   Target
 } from 'lucide-react';
 import { Task, TaskTimeBlock } from '../../types/task';
-import { ExternalCalendarEvent } from '../../types/calendar';
-import { calendarService } from '../../services/calendar/calendar.service';
 import { StudySubject } from '../../types/study';
 import { Goal } from '../../types/goal';
 import { Badge, BadgeVariant } from '../../components/ui/Badge/Badge';
@@ -117,32 +114,6 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
     return () => clearTimeout(timer);
   }, [isToday]);
 
-  const [externalEvents, setExternalEvents] = useState<ExternalCalendarEvent[]>(() => calendarService.getEvents());
-
-  useEffect(() => {
-    const unsub = calendarService.subscribe(() => {
-      setExternalEvents(calendarService.getEvents());
-    });
-    return () => unsub();
-  }, []);
-
-  const externalEventsByHour = useMemo(() => {
-    const map = new Map<number, ExternalCalendarEvent[]>();
-    externalEvents.forEach((ev) => {
-      if (!ev.isBusy) return;
-      const startIso = ev.startTime.slice(0, 10);
-      const endIso = ev.endTime.slice(0, 10);
-      if (startIso !== selectedDate && endIso !== selectedDate) return;
-
-      const startDate = new Date(ev.startTime);
-      const h = startDate.getHours();
-      const existing = map.get(h) || [];
-      existing.push(ev);
-      map.set(h, existing);
-    });
-    return map;
-  }, [externalEvents, selectedDate]);
-
   // Group time blocks by start hour
   const blocksByHour = new Map<number, TaskTimeBlock[]>();
   timeBlocks.forEach((block) => {
@@ -158,11 +129,14 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   const partialBlocks = timeBlocks.filter((b) => b.status === 'partial').length;
   const missedBlocks = timeBlocks.filter((b) => b.status === 'missed').length;
   const currentTotalMins = currentHour * 60 + currentMinute;
-  const pendingReviewBlocks = timeBlocks.filter((b) => {
-    const blockEndMins = b.startHour * 60 + (b.startMinute || 0) + (b.durationMinutes || 60);
-    const isPastBlock = isPastDate || (isToday && blockEndMins <= currentTotalMins);
-    return isPastBlock && (b.status === 'planned' || b.status === 'active');
-  }).length;
+  const unreviewedPastBlocks = useMemo(() => {
+    return timeBlocks.filter((b) => {
+      const blockEndMins = b.startHour * 60 + (b.startMinute || 0) + (b.durationMinutes || 60);
+      const isPastBlock = isPastDate || (isToday && blockEndMins <= currentTotalMins);
+      return isPastBlock && (b.status === 'planned' || b.status === 'active');
+    });
+  }, [timeBlocks, isPastDate, isToday, currentTotalMins]);
+  const pendingReviewBlocks = unreviewedPastBlocks.length;
 
   const totalPlannedMinutes = timeBlocks.reduce((acc, b) => acc + (b.durationMinutes || 60), 0);
   const actualMinutesLogged = timeBlocks.reduce((acc, b) => acc + (b.actualMinutes || 0), 0);
@@ -188,6 +162,46 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           onAutoReplanCandidates={onAutoReplanCandidates}
         />
       </div>
+
+      {/* 1.5 Actionable Unreviewed Past Blocks Banner (Integrated Daily Review) */}
+      {unreviewedPastBlocks.length > 0 && (
+        <div
+          className="solis-review-banner"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            padding: '12px 16px',
+            marginBottom: '14px',
+            borderRadius: 'var(--radius-md, 8px)',
+            background: 'var(--color-amber-50, rgba(245, 158, 11, 0.08))',
+            border: '1px solid var(--color-amber-200, rgba(245, 158, 11, 0.3))'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <RotateCcw size={16} style={{ color: 'var(--color-amber-600, #d97706)', flexShrink: 0 }} />
+            <div>
+              <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+                {unreviewedPastBlocks.length === 1
+                  ? '1 past block requires review'
+                  : `${unreviewedPastBlocks.length} past blocks require review`}
+              </span>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                Next: &ldquo;{unreviewedPastBlocks[0].taskTitle}&rdquo; ({formatHourLabel(unreviewedPastBlocks[0].startHour)})
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => onOpenReviewBlock(unreviewedPastBlocks[0])}
+            leftIcon={<RotateCcw size={13} />}
+          >
+            Review Block
+          </Button>
+        </div>
+      )}
 
       {/* 2. Unscheduled Tasks Shelf (if any tasks due today are not in a time block) */}
       {unscheduledTasks.length > 0 && onScheduleTaskToHour && (
@@ -361,20 +375,6 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
 
               {/* Hour Slot Content */}
               <div className="solis-hour-content">
-                {/* External Calendar Events for this hour */}
-                {externalEventsByHour.get(hour)?.map((ev) => (
-                  <div key={ev.id} className="solis-calendar-event-row">
-                    <Calendar size={13} className="solis-calendar-event-icon" />
-                    <span className="solis-calendar-event-title">{ev.title}</span>
-                    <span className="solis-calendar-event-time">
-                      {ev.startTime.slice(11, 16)}–{ev.endTime.slice(11, 16)}
-                    </span>
-                    <span className="solis-calendar-event-badge">
-                      {ev.calendarName}
-                    </span>
-                  </div>
-                ))}
-
                 {hasBlocks ? (
                   <div className="solis-hour-blocks-list">
                     {blocks.map((block) => {

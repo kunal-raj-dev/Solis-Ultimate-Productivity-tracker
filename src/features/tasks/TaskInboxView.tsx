@@ -17,6 +17,9 @@ interface TaskInboxViewProps {
   onAddSubtask?: (taskId: string, title: string) => Promise<void>;
   onToggleSubtask?: (taskId: string, subId: string) => Promise<void>;
   onDeleteSubtask?: (taskId: string, subId: string) => Promise<void>;
+  title?: string;
+  subtitle?: string;
+  emptyMessage?: string;
 }
 
 export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
@@ -26,7 +29,10 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
   onToggleTask,
   onEditTask,
   onDeleteTask,
-  onScheduleToHour
+  onScheduleToHour,
+  title,
+  subtitle,
+  emptyMessage
 }) => {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState<number>(-1);
@@ -69,10 +75,10 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
       <div className="solis-inbox-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
         <div>
           <h3 style={{ fontSize: 'var(--text-body)', fontWeight: 600, color: 'var(--text-primary)' }}>
-            Inbox & Intentional Backlog
+            {title || 'Tasks & Intentional Backlog'}
           </h3>
           <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            Capture fast, then slot tasks into dedicated 1-hour time blocks when you are ready to execute.
+            {subtitle || 'Capture fast, then slot tasks into dedicated 1-hour time blocks when you are ready to execute.'}
           </p>
         </div>
         <div className="solis-task-kbd-hint">
@@ -97,7 +103,7 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
             }}
           >
             <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, fontWeight: 500 }}>
-              No tasks in backlog.
+              {emptyMessage || 'No tasks found.'}
             </p>
             <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
               Press <kbd className="solis-task-kbd">N</kbd> or use the input above to capture intentional tasks.

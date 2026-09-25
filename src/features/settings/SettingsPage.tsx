@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Link2 } from 'lucide-react';
+import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -14,11 +14,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
-import { calendarService } from '../../services/calendar/calendar.service';
 import { resetActivation } from '../../utils/activation';
 import './SettingsPage.css';
 import {
   createWorkspaceBackup,
+  fetchAllTimeBlocks,
   convertTasksToCSV,
   convertStudySessionsToCSV,
   convertFocusSessionsToCSV,
@@ -27,34 +27,46 @@ import {
   convertGoalsToCSV,
   triggerDownload
 } from '../../utils/export';
-import {
-  loadNotificationPreferences,
-  saveNotificationPreferences,
-  requestNotificationPermission,
-  NotificationPreferences
-} from '../../utils/notifications';
+import { notificationService } from '../../services/notifications/notification.service';
+import type { SmartNotificationPreferences } from '../../types/notification';
 import { getISODateString } from '../../utils/date';
 
 export const SettingsPage: React.FC = () => {
-  const { user, logout, isLoggingOut } = useAuth();
+  const { user, logout, isLoggingOut, updateProfile } = useAuth();
   const { theme, setTheme, density, setDensity } = useTheme();
   const { openGuide } = useGuide();
   const { addToast } = useToast();
   const navigate = useNavigate();
 
+  const savedLocalPrefs = React.useMemo(() => {
+    try {
+      const raw = localStorage.getItem('solis_user_preferences');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const [name, setName] = useState(user?.name || 'Scholar');
   const [email, setEmail] = useState(user?.email || '');
   const [focusField, setFocusField] = useState(user?.focusField || 'General Mastery');
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [focusDuration, setFocusDuration] = useState('25');
-  const [breakDuration, setBreakDuration] = useState('5');
-  const [dailyGoal, setDailyGoal] = useState('180');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(
+    user?.preferences?.soundEnabled ?? savedLocalPrefs?.soundEnabled ?? true
+  );
+  const [focusDuration, setFocusDuration] = useState<string>(
+    String(user?.preferences?.defaultFocusDurationMinutes ?? savedLocalPrefs?.defaultFocusDurationMinutes ?? 25)
+  );
+  const [breakDuration, setBreakDuration] = useState<string>(
+    String(user?.preferences?.defaultBreakDurationMinutes ?? savedLocalPrefs?.defaultBreakDurationMinutes ?? 5)
+  );
+  const [dailyGoal, setDailyGoal] = useState<string>(
+    String(user?.preferences?.dailyStudyGoalMinutes ?? savedLocalPrefs?.dailyStudyGoalMinutes ?? 360)
+  );
   const [weekStart, setWeekStart] = useState(() => localStorage.getItem('solis_week_start') || 'monday');
   const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('solis_gemini_api_key') || '');
-  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(loadNotificationPreferences);
-  const [calConfig, setCalConfig] = useState(() => calendarService.getConfig());
-  const [calEmailInput, setCalEmailInput] = useState(() => calendarService.getConfig().accountEmail || 'scholar@university.edu');
-  const [isCalSyncing, setIsCalSyncing] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState<SmartNotificationPreferences>(
+    () => notificationService.getPreferences()
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -63,13 +75,41 @@ export const SettingsPage: React.FC = () => {
       if (user.name) setName(user.name);
       if (user.email) setEmail(user.email);
       if (user.focusField) setFocusField(user.focusField);
+      if (user.preferences) {
+        if (typeof user.preferences.soundEnabled === 'boolean') {
+          setSoundEnabled(user.preferences.soundEnabled);
+        }
+        if (user.preferences.defaultFocusDurationMinutes) {
+          setFocusDuration(String(user.preferences.defaultFocusDurationMinutes));
+        }
+        if (user.preferences.defaultBreakDurationMinutes) {
+          setBreakDuration(String(user.preferences.defaultBreakDurationMinutes));
+        }
+        if (user.preferences.dailyStudyGoalMinutes) {
+          setDailyGoal(String(user.preferences.dailyStudyGoalMinutes));
+        }
+      }
     }
   }, [user]);
 
   const handleExportFullBackup = async () => {
     setIsExporting(true);
     try {
-      const [subjects, studyPlans, studySessions, focusSessions, tasks, habits, goals, notes] = await Promise.all([
+      const [
+        subjects,
+        studyPlans,
+        studySessions,
+        focusSessions,
+        tasks,
+        habits,
+        goals,
+        notes,
+        studyRoutines,
+        studyResources,
+        flashcards,
+        dailyReflections,
+        taskTimeBlocks
+      ] = await Promise.all([
         dataService.study.getSubjects(true),
         dataService.study.getTodayPlan(),
         dataService.study.getRecentSessions(),
@@ -77,7 +117,13 @@ export const SettingsPage: React.FC = () => {
         dataService.tasks.getTasks(),
         dataService.habits.getHabits(),
         dataService.goals.getGoals(),
-        dataService.notes.getNotes()
+        dataService.notes.getNotes(),
+        dataService.routines.getRoutines(),
+        dataService.resources.getResources(),
+        dataService.flashcards.getFlashcards(),
+        // One reflection per day; 3650 covers ~10 years of daily entries.
+        dataService.reflections.getReflections(3650),
+        fetchAllTimeBlocks(dataService)
       ]);
 
       const topicsArrays = await Promise.all(subjects.map((s) => dataService.study.getTopics(s.id)));
@@ -89,11 +135,16 @@ export const SettingsPage: React.FC = () => {
         topics,
         studyPlans,
         studySessions,
+        studyRoutines,
+        studyResources,
         focusSessions,
         tasks,
+        taskTimeBlocks,
         habits,
         goals,
-        notes
+        notes,
+        flashcards,
+        dailyReflections
       });
 
       const jsonStr = JSON.stringify(backup, null, 2);
@@ -162,22 +213,62 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    saveNotificationPreferences(notifPrefs);
+    const parsedFocus = Math.max(1, parseInt(focusDuration, 10) || 25);
+    const parsedBreak = Math.max(1, parseInt(breakDuration, 10) || 5);
+    const parsedDailyGoal = Math.max(15, parseInt(dailyGoal, 10) || 360);
+
+    notificationService.updatePreferences(notifPrefs);
     localStorage.setItem('solis_week_start', weekStart);
     localStorage.setItem('solis_density', density);
     localStorage.setItem('solis_gemini_api_key', geminiApiKey);
-    addToast({
-      title: 'Preferences Saved',
-      description: 'Your study system configuration, calendar, and notification preferences are updated.',
-      type: 'success'
-    });
+
+    const nextPreferences = {
+      ...(user?.preferences || {}),
+      theme,
+      soundEnabled,
+      defaultFocusDurationMinutes: parsedFocus,
+      defaultBreakDurationMinutes: parsedBreak,
+      dailyStudyGoalMinutes: parsedDailyGoal
+    };
+
+    try {
+      localStorage.setItem('solis_user_preferences', JSON.stringify(nextPreferences));
+    } catch {
+      // Ignore storage errors
+    }
+
+    try {
+      await updateProfile({
+        name: name.trim(),
+        email: email.trim(),
+        focusField: focusField.trim(),
+        preferences: nextPreferences
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('solis:preferences-updated', { detail: nextPreferences }));
+      }
+      addToast({
+        title: 'Preferences Saved',
+        description: 'Your learner profile, focus timer durations, daily capacity, and notifications are updated.',
+        type: 'success'
+      });
+    } catch (err: any) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('solis:preferences-updated', { detail: nextPreferences }));
+      }
+      addToast({
+        title: 'Preferences Saved Locally',
+        description: err?.message || 'Settings saved in browser; cloud sync will retry when online.',
+        type: 'info'
+      });
+    }
   };
 
   const handleEnableBrowserNotifications = async () => {
-    const perm = await requestNotificationPermission();
-    if (perm === 'granted') {
+    const granted = await notificationService.requestBrowserPermission();
+    if (granted) {
       addToast({
         title: 'Browser Notifications Active',
         description: 'Solis will deliver study prompts and timer completions.',
@@ -480,101 +571,27 @@ export const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Connections & External Integrations */}
+          {/* Recurring Commitments */}
           <Card>
             <CardHeader>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Link2 size={18} color="var(--color-coral-500)" />
-                  <CardTitle>Connections & Integrations</CardTitle>
-                </div>
-                <Badge variant={calConfig.status === 'synced' ? 'sage' : 'neutral'}>
-                  {calConfig.status === 'synced' ? 'Google Calendar Linked' : 'No Active Connections'}
-                </Badge>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={18} color="var(--color-coral-500)" />
+                <CardTitle>Recurring Commitments</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0 }}>
-                  Bridge your Solis study plan with your real-world calendar commitments. Solis analyzes your external classes, meetings, and obligations to calculate realistic Available Time and prevent plan collisions.
+                  Recurring classes and commitments are managed as Routines on the Today page — use the Routines button in the 24-Hour Schedule header to create, pause, or remove them. Active routines project onto your daily schedule.
                 </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Calendar size={20} color="var(--color-lavender-500)" />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>Google Calendar</div>
-                        <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
-                          {calConfig.status === 'synced' ? `Connected: ${calConfig.accountEmail}` : 'Sync lectures, meetings, and exam dates'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant={calConfig.status === 'synced' ? 'subtle' : 'accent'}
-                      size="sm"
-                      isLoading={isCalSyncing}
-                      onClick={async () => {
-                        if (calConfig.status === 'synced') {
-                          await calendarService.disconnectCalendar();
-                          setCalConfig(calendarService.getConfig());
-                          addToast({ title: 'Calendar Disconnected', description: 'External schedule unlinked.', type: 'info' });
-                        } else {
-                          setIsCalSyncing(true);
-                          try {
-                            const updated = await calendarService.connectCalendar(calEmailInput);
-                            setCalConfig(updated);
-                            addToast({ title: 'Google Calendar Linked', description: `Synchronized events for ${calEmailInput}.`, type: 'success' });
-                          } finally {
-                            setIsCalSyncing(false);
-                          }
-                        }
-                      }}
-                    >
-                      {calConfig.status === 'synced' ? 'Disconnect' : 'Connect Calendar'}
-                    </Button>
-                  </div>
-
-                  {calConfig.status !== 'synced' && (
-                    <div style={{ marginTop: '8px' }}>
-                      <label style={{ display: 'block', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                        Google Workspace / Academic Email
-                      </label>
-                      <Input
-                        value={calEmailInput}
-                        onChange={(e) => setCalEmailInput(e.target.value)}
-                        placeholder="e.g. scholar@university.edu"
-                      />
-                    </div>
-                  )}
-
-                  {calConfig.status === 'synced' && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', fontSize: 'var(--text-caption)' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>
-                        Last synced: {calConfig.lastSyncedAt ? new Date(calConfig.lastSyncedAt).toLocaleTimeString() : 'Just now'}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          setIsCalSyncing(true);
-                          try {
-                            await calendarService.syncNow();
-                            setCalConfig(calendarService.getConfig());
-                            addToast({ title: 'Calendar Refreshed', description: 'Schedule is up to date.', type: 'success' });
-                          } finally {
-                            setIsCalSyncing(false);
-                          }
-                        }}
-                      >
-                        Sync Now
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <Button
+                  type="button"
+                  variant="subtle"
+                  size="sm"
+                  onClick={() => navigate('/app/dashboard')}
+                >
+                  Manage Routines
+                </Button>
               </div>
             </CardContent>
           </Card>

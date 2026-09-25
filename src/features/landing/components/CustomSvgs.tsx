@@ -262,7 +262,7 @@ export const ArchivalDossierSvg: React.FC<{ className?: string }> = ({ className
       INSTRUMENT DOSSIER // PROTOCOL ARCHIVAL CADENCE
     </text>
     <text x="785" y="22" fill="#78726A" fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
-      LOCAL_IDB: 0.42ms • ROW_SECURED
+      ROW LEVEL SECURITY • LOCAL DEMO STORAGE
     </text>
     <rect x="795" y="11" width="64" height="15" rx="2" fill="rgba(62,114,80,0.2)" stroke="rgba(62,114,80,0.4)" />
     <text x="827" y="22" fill="#4D8F63" fontSize="8.5" fontFamily="var(--font-mono)" textAnchor="middle" fontWeight="600">
@@ -384,7 +384,7 @@ export const ArchivalDossierSvg: React.FC<{ className?: string }> = ({ className
       CALM COGNITIVE SANCTUARY PROTOCOL • V4.0.0
     </text>
     <text x="856" y="328" fill="#78726A" fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
-      ZERO TRACKING • OFFLINE FIRST INDEXEDDB
+      ZERO TRACKING • FULL DATA EXPORT
     </text>
   </svg>
 );

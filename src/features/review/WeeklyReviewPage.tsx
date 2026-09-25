@@ -27,11 +27,14 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { useGuide } from '../../context/GuideContext';
 import { Task } from '../../types/task';
-import { StudySubject, StudySession } from '../../types/study';
+import { StudySubject, StudySession, StudyTopic } from '../../types/study';
 import { Note } from '../../types/note';
 import { Habit } from '../../types/habit';
 import { FocusSession } from '../../types/focus';
+import { Flashcard } from '../../types/learning';
+import { StudyResource } from '../../types/resource';
 import { generateSolisIntelligenceReport } from '../../utils/intelligence';
+import { getISODateString, addDays } from '../../utils/date';
 import './WeeklyReviewPage.css';
 
 export const WeeklyReviewPage: React.FC = () => {
@@ -48,6 +51,9 @@ export const WeeklyReviewPage: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
+  const [topics, setTopics] = useState<StudyTopic[]>([]);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [resources, setResources] = useState<StudyResource[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
 
   // Reflection inputs
@@ -71,22 +77,36 @@ export const WeeklyReviewPage: React.FC = () => {
         taskRes,
         noteRes,
         subRes,
-        habitRes
+        habitRes,
+        cardRes,
+        resRes
       ] = await Promise.allSettled([
         dataService.study.getRecentSessions(),
         dataService.focus.getRecentSessions(),
         dataService.tasks.getTasks(),
         dataService.notes.getNotes(),
         dataService.study.getSubjects(),
-        dataService.habits.getHabits()
+        dataService.habits.getHabits(),
+        dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([]),
+        dataService.resources ? dataService.resources.getResources() : Promise.resolve([])
       ]);
 
       if (sessRes.status === 'fulfilled') setSessions(sessRes.value);
       if (focusRes.status === 'fulfilled') setFocusSessions(focusRes.value);
       if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
       if (noteRes.status === 'fulfilled') setNotes(noteRes.value);
-      if (subRes.status === 'fulfilled') setSubjects(subRes.value);
+      if (subRes.status === 'fulfilled') {
+        setSubjects(subRes.value);
+        try {
+          const topicArrays = await Promise.all(subRes.value.map((s) => dataService.study.getTopics(s.id).catch(() => [])));
+          setTopics(topicArrays.flat());
+        } catch {
+          // secondary
+        }
+      }
       if (habitRes.status === 'fulfilled') setHabits(habitRes.value);
+      if (cardRes && cardRes.status === 'fulfilled') setFlashcards(cardRes.value);
+      if (resRes && resRes.status === 'fulfilled') setResources(resRes.value);
 
     } catch (err) {
       console.error('Failed to load review data:', err);
@@ -101,21 +121,24 @@ export const WeeklyReviewPage: React.FC = () => {
     return () => unsubscribe();
   }, [loadData]);
 
-  // Derived intelligence (memoized to prevent rerender stutter)
+  // Derived intelligence with real topics, flashcards, notes, resources
   const intelReport = useMemo(() => {
     return generateSolisIntelligenceReport(
       {
         sessions,
         planItems: [],
         subjects,
-        topics: [],
+        topics,
         focusSessions,
         tasks,
-        habits
+        habits,
+        flashcards,
+        notes,
+        resources
       },
       'this_week'
     );
-  }, [sessions, subjects, focusSessions, tasks, habits]);
+  }, [sessions, subjects, topics, focusSessions, tasks, habits, flashcards, notes, resources]);
 
   const totalStudyMinutes = sessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
   const totalStudyHours = (totalStudyMinutes / 60).toFixed(1);
@@ -180,7 +203,7 @@ export const WeeklyReviewPage: React.FC = () => {
   const handleSaveToNotes = async () => {
     setIsSavingNote(true);
     try {
-      const dateStr = new Date().toISOString().split('T')[0];
+      const dateStr = getISODateString(new Date());
       const markdownContent = `## Weekly Study & Productivity Review (${dateStr})
 
 ### 1. Accomplished Momentum
@@ -216,7 +239,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
       let createdGoalId: string | undefined = undefined;
 
       if (createGoalHorizon && nextWeekCommitment.trim()) {
-        const targetDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const targetDueDate = getISODateString(addDays(new Date(), 7));
         const newGoal = await dataService.goals.createGoal({
           title: nextWeekCommitment.trim().slice(0, 60),
           description: nextWeekCommitment.trim(),
@@ -236,7 +259,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
       }
 
       if (createActionableTask && nextWeekCommitment.trim()) {
-        const targetDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const targetDueDate = getISODateString(addDays(new Date(), 7));
         await dataService.tasks.createTask({
           title: `Commitment: ${nextWeekCommitment.trim().slice(0, 80)}`,
           description: nextWeekCommitment.trim(),

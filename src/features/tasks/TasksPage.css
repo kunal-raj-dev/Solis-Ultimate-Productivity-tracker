@@ -343,53 +343,6 @@
   }
 }
 
-/* External Calendar Event Row (De-slopified hairline badge row) */
-.solis-calendar-event-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  margin-bottom: 4px;
-  border-radius: var(--radius-sm);
-  background-color: var(--bg-surface-secondary);
-  border: 1px solid var(--border-hairline);
-  font-size: var(--text-caption);
-  transition: background-color var(--duration-instant) ease;
-}
-
-.solis-calendar-event-row:hover {
-  background-color: var(--bg-surface-hover);
-}
-
-.solis-calendar-event-icon {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.solis-calendar-event-title {
-  font-weight: 500;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-.solis-calendar-event-time {
-  font-family: var(--font-mono, monospace);
-  font-size: var(--text-micro);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.solis-calendar-event-badge {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: var(--bg-surface-elevated);
-  padding: 1px 6px;
-  border-radius: var(--radius-xs);
-  border: 1px solid var(--border-hairline);
-  margin-left: auto;
-}
-
 /* Unscheduled Tasks Shelf */
 .solis-unscheduled-shelf {
   background: var(--bg-surface-primary);

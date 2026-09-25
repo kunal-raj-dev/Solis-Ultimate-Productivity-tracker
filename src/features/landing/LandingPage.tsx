@@ -60,7 +60,7 @@ const getPhaseInfo = (hour: number) => {
     return {
       title: 'Midnight Nadir • Rest & Memory Synthesis',
       coord: `NADIR -${Math.round((hour >= 22 ? hour - 22 : hour + 2) * 12)}°`,
-      advice: 'Cognitive recovery protocol. Offline IndexedDB replication verified; workstation enters silent hibernation.'
+      advice: 'Cognitive recovery protocol. Your logged sessions persist — locally in Demo Mode or synced to your account — while the workstation rests until dawn.'
     };
   }
 };
@@ -104,7 +104,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: 'Is my data private, offline-accessible, and locally owned?',
     answer:
-      'Yes. Solis employs a local-first architecture backed by IndexedDB in your browser with instant sub-millisecond responsiveness. When connected, changes synchronize seamlessly to cloud PostgreSQL via Supabase with strict Row-Level Security (RLS). You retain full export ownership of your markdown notes, cards, and study logs.'
+      'Yes. In Demo Mode, Solis keeps all of your data in browser localStorage on your device, so it survives page reloads without any account. Sign in and your data syncs to Supabase PostgreSQL with row-level security, so only you can read your rows. Full JSON and CSV exports let you take complete ownership of your notes, flashcards, and study logs at any time.'
   }
 ];
 
@@ -112,7 +112,7 @@ const SCHOLAR_FIELDNOTES: FieldNoteItem[] = [
   {
     code: 'NOTE // 01 • CAMBRIDGE NEUROSCIENCE',
     quote:
-      'Solis dissolved the chaotic friction of 12 Notion databases and Anki decks into a singular, quiet daily ritual. Retention increased by 40% with significantly less cognitive fatigue. It feels less like software and more like a private library desk.',
+      'Solis dissolved the chaotic friction of 12 Notion databases and Anki decks into a singular, quiet daily ritual. One workspace for planning, focus, and recall means far less cognitive fatigue. It feels less like software and more like a private library desk.',
     author: 'Dr. Aris Vance',
     role: 'Postdoctoral Fellow in Neuroscience',
     institution: 'Cambridge University',
@@ -227,7 +227,7 @@ export const LandingPage: React.FC = () => {
             </div>
             <div className="solis-hero-eyebrow">
               <span className="solis-eyebrow-pip" aria-hidden="true" />
-              <span>Living Circadian Operating System • Local-First IDB</span>
+              <span>Living Circadian Operating System • Local Demo, Cloud Sync</span>
             </div>
           </ScrollReveal>
 
@@ -265,7 +265,7 @@ export const LandingPage: React.FC = () => {
             <div className="solis-hero-proof">
               <span className="solis-proof-item">
                 <ShieldCheck size={14} color="var(--color-coral-400)" />
-                Sub-ms Local-First IndexedDB
+                Local Demo Mode • Secure Cloud Sync
               </span>
               <span className="solis-proof-item">
                 <Lock size={14} color="var(--color-amber-400)" />
@@ -555,8 +555,8 @@ export const LandingPage: React.FC = () => {
                     <span className="solis-stat-lbl">Mastery Level</span>
                   </div>
                   <div className="solis-stat-chip">
-                    <span className="solis-stat-val">0.42ms</span>
-                    <span className="solis-stat-lbl">IDB Query Latency</span>
+                    <span className="solis-stat-val">JSON</span>
+                    <span className="solis-stat-lbl">/ CSV Data Export</span>
                   </div>
                 </div>
               </div>
@@ -734,8 +734,8 @@ export const LandingPage: React.FC = () => {
                 03 • Sovereign Knowledge
               </h4>
               <p className="solis-triad-text">
-                Your intellectual work belongs to you. Built offline-first with IndexedDB, full markdown portability,
-                and zero vendor lock-in.
+                Your intellectual work belongs to you. Data stays local in Demo Mode, syncs to your account with
+                row-level security, and full JSON/CSV export means zero vendor lock-in.
               </p>
             </div>
           </div>

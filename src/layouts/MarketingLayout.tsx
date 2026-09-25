@@ -95,7 +95,7 @@ export const MarketingLayout: React.FC = () => {
               </p>
               <div className="solis-footer-status">
                 <span className="solis-status-dot" />
-                <span>Local Subsystems Active • Sub-ms IndexedDB</span>
+                <span>Demo Data Stays Local • Cloud Sync via Supabase</span>
               </div>
             </div>
 
@@ -139,7 +139,7 @@ export const MarketingLayout: React.FC = () => {
             <div className="solis-footer-bottom-badges">
               <span className="solis-badge-tiny">Zero Trackers</span>
               <span className="solis-badge-tiny">Local-First</span>
-              <span className="solis-badge-tiny">MIT/Apache</span>
+              <span className="solis-badge-tiny">JSON/CSV Export</span>
             </div>
           </div>
         </Container>

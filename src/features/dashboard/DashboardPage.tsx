@@ -7,31 +7,22 @@ import {
   Repeat,
   Sparkles,
   Play,
-  Info,
   FileText,
   Layers,
-  Compass,
   Moon,
-  ChevronRight,
   Clock
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
-import { Badge } from '../../components/ui/Badge/Badge';
-import { Progress } from '../../components/ui/Progress/Progress';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
-import { Modal } from '../../components/feedback/Modal/Modal';
 import { cn } from '../../utils/classNames';
 import { TimeBlockGrid } from '../../components/features/Planning/TimeBlockGrid';
 import { RecurringRoutinesModal } from '../../components/features/Planning/RecurringRoutinesModal';
 import { EveningClosureModal } from '../../components/features/Reflection/EveningClosureModal';
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
-import { CircadianSynthesisCard } from '../../components/features/Analytics/CircadianSynthesisCard';
 import { KnowledgeResurfacingCard } from '../../components/features/Notes/KnowledgeResurfacingCard';
-import { synthesizeCircadianResonance } from '../../utils/intelligence/circadianSynthesis';
-import { CalendarOverlayCard } from '../../components/features/Calendar/CalendarOverlayCard';
 import { ExamHorizonBar } from '../../components/features/Goals/ExamHorizonBar';
-import { SolarArc, SolarDial } from '../../components/illustrations';
+import { SolarArc } from '../../components/illustrations';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { dataService } from '../../services/dataService';
@@ -48,8 +39,6 @@ import { DailySummary } from '../../types/analytics';
 import { RecurringStudyRoutine, TimeBlock } from '../../types/planning';
 import { DailyReflection } from '../../types/reflection';
 import { getTimeOfDayGreeting, formatFriendlyDate, formatFullDate, getISODateString } from '../../utils/date';
-import { calculateDailySummary } from '../../utils/productivity';
-import { generateSolisIntelligenceReport } from '../../utils/intelligence';
 import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntelligence';
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
 import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
@@ -100,7 +89,6 @@ export const DashboardPage: React.FC = () => {
   }, [currentTime, tasks, taskTimeBlocks]);
 
   // Modals
-  const [isScoreModalOpen, setIsScoreModalOpen] = useState(false);
   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
   const [isRoutinesModalOpen, setIsRoutinesModalOpen] = useState(false);
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(() => {
@@ -128,9 +116,11 @@ export const DashboardPage: React.FC = () => {
       studyPlan,
       tasks,
       focusSessions: recentFocus,
-      routines
+      routines,
+      taskTimeBlocks,
+      targetDate: getISODateString(currentTime)
     });
-  }, [studyPlan, tasks, recentFocus, routines]);
+  }, [studyPlan, tasks, recentFocus, routines, taskTimeBlocks, currentTime]);
 
   const timeConflicts = useMemo(() => findTimeBlockConflicts(timeBlocks), [timeBlocks]);
   const timeStats = useMemo(() => calculateTimeAllocation(timeBlocks), [timeBlocks]);
@@ -410,6 +400,16 @@ export const DashboardPage: React.FC = () => {
       }
     } else if (block.type === 'task_deadline') {
       await handleToggleTask(block.entityId);
+    } else if (block.type === 'task_block') {
+      try {
+        const nextStatus = block.completed ? 'planned' : 'completed';
+        if (dataService.tasks.updateTimeBlock) {
+          await dataService.tasks.updateTimeBlock(block.entityId, { status: nextStatus });
+        }
+        await loadDashboardData();
+      } catch {
+        addToast({ title: 'Update failed', type: 'error' });
+      }
     }
   };
 
@@ -421,6 +421,12 @@ export const DashboardPage: React.FC = () => {
       params.set('taskId', block.entityId);
     } else if (block.type === 'study_plan') {
       params.set('planId', block.entityId);
+    } else if (block.type === 'task_block') {
+      params.set('blockId', block.entityId);
+      const matchedBlock = taskTimeBlocks.find(tb => tb.id === block.entityId);
+      if (matchedBlock?.taskId) {
+        params.set('taskId', matchedBlock.taskId);
+      }
     }
     navigate(`/app/focus?${params.toString()}`);
   };
@@ -482,13 +488,6 @@ export const DashboardPage: React.FC = () => {
     }
   };
 
-  const scoreDetails = calculateDailySummary({
-    tasks,
-    studySessions: recentSessions,
-    focusSessions: recentFocus,
-    habits
-  }).breakdown;
-
   const cognitiveReport = useMemo(() => {
     return evaluateCognitiveLoad({
       focusSessions: recentFocus,
@@ -496,34 +495,6 @@ export const DashboardPage: React.FC = () => {
       reflections
     });
   }, [recentFocus, recentSessions, reflections]);
-
-  // Intelligence Recommendation Resolution
-  const intelligenceReport = useMemo(() => {
-    return generateSolisIntelligenceReport(
-      {
-        sessions: recentSessions,
-        planItems: studyPlan,
-        subjects,
-        topics,
-        focusSessions: recentFocus,
-        tasks,
-        habits
-      },
-      'today'
-    );
-  }, [recentSessions, studyPlan, subjects, topics, recentFocus, tasks, habits]);
-
-  const topRecommendation = intelligenceReport.recommendations[0];
-
-  const circadianResonance = useMemo(() => {
-    return synthesizeCircadianResonance({
-      currentDate: currentTime,
-      workload,
-      tasks,
-      studyPlan,
-      subjects
-    });
-  }, [currentTime, workload, tasks, studyPlan, subjects]);
 
   if (isLoading) {
     return (
@@ -538,10 +509,6 @@ export const DashboardPage: React.FC = () => {
   }
 
   const activeTasks = tasks.filter((t) => t.status !== 'completed');
-  const lastFocus = recentFocus.length > 0 ? recentFocus[0] : null;
-  const lastStudy = recentSessions.length > 0 ? recentSessions[0] : null;
-  const nextPendingPlan = studyPlan.find((p) => !p.completed);
-  const latestNote = notes.length > 0 ? notes[0] : null;
 
   return (
     <div className="solis-cockpit-layout">
@@ -592,52 +559,18 @@ export const DashboardPage: React.FC = () => {
               >
                 Start Focus Session
               </Button>
-            </div>
-          </div>
-
-          {/* 3-Step Quick Start Checklist for Students & New Users */}
-          <div className="solis-quick-start-banner" role="region" aria-label="Quick Start Guide">
-            <div className="solis-quick-start-title">
-              <Sparkles size={16} color="var(--color-coral-500)" />
-              <span>Quick Start — 3 Easy Steps to Begin</span>
-            </div>
-            <div className="solis-quick-start-grid">
-              <button
-                type="button"
-                className="solis-quick-step-card tactile-press"
-                onClick={() => navigate('/app/study')}
-                data-cursor="action"
-              >
-                <span className="solis-quick-step-num">1</span>
-                <div className="solis-quick-step-info">
-                  <strong>1. Add Your Subjects</strong>
-                  <span>Add your classes, courses & exams</span>
-                </div>
-              </button>
-              <button
-                type="button"
-                className="solis-quick-step-card tactile-press"
-                onClick={() => navigate('/app/tasks')}
-                data-cursor="action"
-              >
-                <span className="solis-quick-step-num">2</span>
-                <div className="solis-quick-step-info">
-                  <strong>2. Add Today's Tasks</strong>
-                  <span>List homework, readings & practice</span>
-                </div>
-              </button>
-              <button
-                type="button"
-                className="solis-quick-step-card tactile-press"
-                onClick={() => navigate('/app/focus')}
-                data-cursor="action"
-              >
-                <span className="solis-quick-step-num">3</span>
-                <div className="solis-quick-step-info">
-                  <strong>3. Start Focus Timer</strong>
-                  <span>Study distraction-free for 25 mins</span>
-                </div>
-              </button>
+              {/* Evening Closure primary CTA after 17:00 (Zone 1) */}
+              {currentTime.getHours() >= 17 && (
+                <Button
+                  variant="accent"
+                  size="md"
+                  className="tactile-press"
+                  leftIcon={<Moon size={16} />}
+                  onClick={() => setIsClosureModalOpen(true)}
+                >
+                  Evening Closure
+                </Button>
+              )}
             </div>
           </div>
 
@@ -651,143 +584,82 @@ export const DashboardPage: React.FC = () => {
         </div>
       </header>
  
-      {/* 01.5 // CIRCADIAN CREATIVE SYNTHESIS & KNOWLEDGE RESONANCE */}
-      <CircadianSynthesisCard synthesis={circadianResonance} />
-
       {/* Cognitive Load Alert if needed */}
       {cognitiveReport.status !== 'optimal' && (
         <CognitiveLoadAlert report={cognitiveReport} />
       )}
 
-      {/* Evening Closure Banner (Circadian conditional >= 18:00) */}
-      {currentTime.getHours() >= 18 && (
-        <section className="solis-evening-closure-banner" aria-label="Evening Reflection & Closure">
-          <div className="solis-evening-closure-banner__lead">
-            <div className="solis-evening-closure-banner__icon">
-              <Moon size={20} />
-            </div>
-            <div>
-              <span className="solis-evening-closure-banner__title">Evening Rest & Reflection</span>
-              <span className="solis-evening-closure-banner__desc">
-                Take 3 minutes to synthesize today's achievements and prepare tomorrow's intentions.
-              </span>
-            </div>
-          </div>
-          <Button
-            variant="accent"
-            size="md"
-            className="tactile-press"
-            onClick={() => setIsClosureModalOpen(true)}
-          >
-            Begin Evening Closure
-          </Button>
-        </section>
-      )}
-
-      {/* 02 // ASYMMETRIC MASTER GRID (Stage 62% / Vault 38%) */}
+      {/* ZONES 3 & 4 // ASYMMETRIC MASTER GRID (Priority Tasks left / Unified Schedule right) */}
       <div className="solis-cockpit-grid">
-        {/* LEFT COLUMN: THE LIVING STAGE */}
+        {/* ZONE 3 — LEFT COLUMN: PRIORITY TASKS & QUICK CAPTURE */}
         <main className="solis-cockpit-stage">
-          {/* Sanctuary Horizon (Active Orbit) */}
-          {(topRecommendation || nextPendingPlan || lastFocus || lastStudy || latestNote) && (
-            <section className="solis-orbit-stage" aria-label="Active Focus Horizon">
-              <div className="solis-orbit-stage__content">
-                <div className="solis-orbit-stage__tag">
-                  <Compass size={14} color="var(--color-coral-500)" aria-hidden="true" />
-                  <span>
-                    {topRecommendation
-                      ? 'Recommended Focus Horizon'
-                      : nextPendingPlan
-                      ? 'Next Scheduled Study Block'
-                      : lastFocus
-                      ? 'Recent Study Momentum'
-                      : 'External Knowledge State'}
-                  </span>
-                  <Badge variant="neutral">
-                    {topRecommendation
-                      ? (topRecommendation.type === 'spaced_retrieval' ? 'Spaced Retrieval' : 'Active Rec')
-                      : nextPendingPlan
-                      ? (nextPendingPlan.scheduledTime ? `${nextPendingPlan.scheduledTime}` : 'Today')
-                      : 'Continuity Anchor'}
-                  </Badge>
-                </div>
-
-                <div className="solis-orbit-stage__title">
-                  {topRecommendation?.title || nextPendingPlan?.title || (lastFocus ? `Resume: ${lastFocus.title || lastFocus.topic || 'Subject Study'}` : latestNote?.title || 'Knowledge Note')}
-                </div>
-
-                <div className="solis-orbit-stage__reason">
-                  {topRecommendation?.whyExplanation || topRecommendation?.evidence || (
-                    nextPendingPlan
-                      ? `${nextPendingPlan.subjectName || 'General'} • ${nextPendingPlan.targetMinutes}m planned`
-                      : lastFocus
-                      ? `${lastFocus.subjectName || 'General'} • ${lastFocus.durationMinutes}m logged`
-                      : `${latestNote?.subjectName || 'Notes'} • ${formatFriendlyDate(latestNote?.updatedAt || '')}`
-                  )}
-                </div>
+          {/* Today's Deliberate Intentions (Integrated Tasks & Capacity) */}
+          <section className="solis-panel" aria-label="Today Priority Queue">
+            <div className="solis-panel__header">
+              <div className="solis-panel__title-group">
+                <CheckCircle2 size={16} className="solis-panel__icon" aria-hidden="true" />
+                <h2 className="solis-panel__title">Today Priority Queue</h2>
+                <span className="solis-panel__badge">
+                  {activeTasks.length} {activeTasks.length === 1 ? 'action' : 'actions'}
+                </span>
               </div>
+              <Link to="/app/tasks">
+                <Button variant="ghost" size="sm" rightIcon={<ArrowRight size={13} />}>
+                  All Tasks ({tasks.length})
+                </Button>
+              </Link>
+            </div>
 
-              <div className="solis-orbit-stage__actions">
-                {topRecommendation ? (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="tactile-press"
-                    leftIcon={<Flame size={14} />}
-                    onClick={() => {
-                      if (topRecommendation.actionPayload?.type === 'start_focus') {
-                        navigate('/app/focus', {
-                          state: {
-                            subjectId: topRecommendation.actionPayload.subjectId,
-                            subjectName: topRecommendation.actionPayload.subjectName,
-                            topic: topRecommendation.actionPayload.topicTitle,
-                            durationMinutes: topRecommendation.actionPayload.durationMinutes || 25
-                          }
-                        });
-                      } else if (topRecommendation.actionPayload?.type === 'drill_flashcards') {
-                        navigate('/app/study');
-                      } else {
-                        navigate(topRecommendation.actionPayload?.targetRoute || '/app/study');
-                      }
-                    }}
-                  >
-                    {topRecommendation.actionLabel || 'Engage Focus'}
-                  </Button>
-                ) : nextPendingPlan ? (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="tactile-press"
-                    leftIcon={<Flame size={14} />}
-                    onClick={() => navigate(`/app/focus?subjectId=${nextPendingPlan.subjectId}&planId=${nextPendingPlan.id}&title=${encodeURIComponent(nextPendingPlan.title)}`)}
-                  >
-                    Begin Study Block
-                  </Button>
-                ) : lastFocus ? (
-                  <Button
-                    variant="subtle"
-                    size="sm"
-                    className="tactile-press"
-                    rightIcon={<ChevronRight size={14} />}
-                    onClick={() => navigate(`/app/focus?subjectId=${lastFocus.subjectId || ''}`)}
-                  >
-                    Resume Subject
-                  </Button>
-                ) : (
-                  <Button
-                    variant="subtle"
-                    size="sm"
-                    className="tactile-press"
-                    rightIcon={<ChevronRight size={14} />}
-                    onClick={() => navigate('/app/notes')}
-                  >
-                    Open Notes
-                  </Button>
-                )}
+            {/* Integrated Capacity Bar */}
+            <div className="solis-actions-capacity">
+              <WorkloadCapacityBar
+                workload={workload}
+                onAutoReplanCandidates={() => navigate('/app/tasks')}
+              />
+            </div>
+
+            {/* Smart NLP Input */}
+            <div className="solis-actions-input-wrap">
+              <SmartTaskInput
+                onCommit={handleCreateFromNLP}
+                subjects={subjects}
+                defaultDueDate={getISODateString(currentTime)}
+                placeholder='Add intention for today... (e.g. "Review DSA at 4pm for 45m !high")'
+              />
+            </div>
+
+            {/* Task Rows */}
+            {activeTasks.length === 0 ? (
+              <div className="solis-empty-stub">
+                <span>All deliberate intentions completed. Ready to reflect or rest.</span>
+                <Button variant="subtle" size="sm" onClick={() => navigate('/app/tasks')}>
+                  View Completed
+                </Button>
               </div>
-            </section>
-          )}
+            ) : (
+              <div className="solis-actions-list">
+                {activeTasks.slice(0, 5).map((task) => {
+                  const linkedSub = subjects.find((s) => s.id === task.subjectId);
+                  return (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      subject={linkedSub}
+                      onToggle={handleToggleTask}
+                      onEdit={() => navigate('/app/tasks')}
+                      onDelete={handleDeleteTask}
+                      onStartFocus={handleStartFocusOnTask}
+                      showScheduleAction={false}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </main>
 
+        {/* ZONE 4 — RIGHT COLUMN: UNIFIED TODAY SCHEDULE */}
+        <aside className="solis-cockpit-vault" aria-label="Unified Today Schedule">
           {/* Living 24H Schedule Ribbon */}
           <section className="solis-panel" aria-label="24-Hour Schedule & Timeline">
             <div className="solis-panel__header">
@@ -880,290 +752,87 @@ export const DashboardPage: React.FC = () => {
               </div>
             )}
           </section>
-
-          {/* Today's Deliberate Intentions (Integrated Tasks & Capacity) */}
-          <section className="solis-panel" aria-label="Today Priority Queue">
-            <div className="solis-panel__header">
-              <div className="solis-panel__title-group">
-                <CheckCircle2 size={16} className="solis-panel__icon" aria-hidden="true" />
-                <h2 className="solis-panel__title">Today Priority Queue</h2>
-                <span className="solis-panel__badge">
-                  {activeTasks.length} {activeTasks.length === 1 ? 'action' : 'actions'}
-                </span>
-              </div>
-              <Link to="/app/tasks">
-                <Button variant="ghost" size="sm" rightIcon={<ArrowRight size={13} />}>
-                  All Tasks ({tasks.length})
-                </Button>
-              </Link>
-            </div>
-
-            {/* Integrated Capacity Bar */}
-            <div className="solis-actions-capacity">
-              <WorkloadCapacityBar
-                workload={workload}
-                onAutoReplanCandidates={() => navigate('/app/tasks')}
-              />
-            </div>
-
-            {/* Smart NLP Input */}
-            <div className="solis-actions-input-wrap">
-              <SmartTaskInput
-                onCommit={handleCreateFromNLP}
-                subjects={subjects}
-                defaultDueDate={getISODateString(currentTime)}
-                placeholder='Add intention for today... (e.g. "Review DSA at 4pm for 45m !high")'
-              />
-            </div>
-
-            {/* Task Rows */}
-            {activeTasks.length === 0 ? (
-              <div className="solis-empty-stub">
-                <span>All deliberate intentions completed. Ready to reflect or rest.</span>
-                <Button variant="subtle" size="sm" onClick={() => navigate('/app/tasks')}>
-                  View Completed
-                </Button>
-              </div>
-            ) : (
-              <div className="solis-actions-list">
-                {activeTasks.slice(0, 5).map((task) => {
-                  const linkedSub = subjects.find((s) => s.id === task.subjectId);
-                  return (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      subject={linkedSub}
-                      onToggle={handleToggleTask}
-                      onEdit={() => navigate('/app/tasks')}
-                      onDelete={handleDeleteTask}
-                      onStartFocus={handleStartFocusOnTask}
-                      showScheduleAction={false}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* Academic Calendar Awareness */}
-          <CalendarOverlayCard
-            date={getISODateString(new Date())}
-            solisBlocks={timeBlocks}
-            studyPlans={studyPlan}
-            onResolveConflict={(conflict) => {
-              if (conflict.suggestedAction.proposedStartTime) {
-                navigate(`/app/tasks?action=replan&id=${conflict.solisPlanId}&time=${conflict.suggestedAction.proposedStartTime}`);
-              } else {
-                navigate('/app/tasks');
-              }
-            }}
-          />
-        </main>
-
-        {/* RIGHT COLUMN: THE INTELLECTUAL VAULT */}
-        <aside className="solis-cockpit-vault" aria-label="Intellectual Vault & Telemetry">
-          {/* Momentum Telemetry Dial */}
-          <section className="solis-panel" aria-label="Circadian Momentum Telemetry">
-            <div className="solis-panel__header">
-              <div className="solis-panel__title-group">
-                <Sparkles size={16} className="solis-panel__icon" aria-hidden="true" />
-                <h2 className="solis-panel__title">Momentum Telemetry</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsScoreModalOpen(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '11px',
-                  fontFamily: 'var(--font-mono, monospace)'
-                }}
-                title="View formula breakdown"
-              >
-                <Info size={13} /> Formula
-              </button>
-            </div>
-
-            <div className="solis-momentum-vault">
-              <div className="solis-momentum-gauge-row">
-                <SolarDial
-                  score={
-                    Boolean(summary && (summary.totalTasksCount > 0 || summary.totalStudyMinutes > 0 || summary.focusSessionsCount > 0))
-                      ? summary?.momentumScore ?? 0
-                      : 0
-                  }
-                  size={114}
-                  onClick={() => setIsScoreModalOpen(true)}
-                />
-
-                <div className="solis-momentum-telemetry-stack">
-                  <div className="solis-telemetry-row">
-                    <div className="solis-telemetry-row__labels">
-                      <span>Task Velocity</span>
-                      <span className="solis-telemetry-row__metric">{scoreDetails.taskScore}%</span>
-                    </div>
-                    <div className="solis-telemetry-row__bar">
-                      <div className="solis-telemetry-row__fill" style={{ width: `${scoreDetails.taskScore}%` }} />
-                    </div>
-                  </div>
-
-                  <div className="solis-telemetry-row">
-                    <div className="solis-telemetry-row__labels">
-                      <span>Study Volume</span>
-                      <span className="solis-telemetry-row__metric">{summary?.totalStudyMinutes || 0}m</span>
-                    </div>
-                    <div className="solis-telemetry-row__bar">
-                      <div
-                        className="solis-telemetry-row__fill solis-telemetry-row__fill--amber"
-                        style={{ width: `${Math.min(100, Math.round(((summary?.totalStudyMinutes || 0) / 180) * 100))}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="solis-telemetry-row">
-                    <div className="solis-telemetry-row__labels">
-                      <span>Deep Focus</span>
-                      <span className="solis-telemetry-row__metric">{scoreDetails.focusScore}%</span>
-                    </div>
-                    <div className="solis-telemetry-row__bar">
-                      <div
-                        className="solis-telemetry-row__fill solis-telemetry-row__fill--lavender"
-                        style={{ width: `${scoreDetails.focusScore}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="solis-telemetry-row">
-                    <div className="solis-telemetry-row__labels">
-                      <span>Ritual Consistency</span>
-                      <span className="solis-telemetry-row__metric">{summary?.habitsCompletedRatio || '0/0'}</span>
-                    </div>
-                    <div className="solis-telemetry-row__bar">
-                      <div
-                        className="solis-telemetry-row__fill solis-telemetry-row__fill--sage"
-                        style={{ width: `${scoreDetails.habitScore}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Daily Rituals & Habit Pulse */}
-          <section className="solis-panel" aria-label="Daily Rituals & Habits">
-            <div className="solis-panel__header">
-              <div className="solis-panel__title-group">
-                <Repeat size={16} className="solis-panel__icon" aria-hidden="true" />
-                <h2 className="solis-panel__title">Daily Rituals</h2>
-                <span className="solis-panel__badge">
-                  {habits.filter((h) => h.completedToday).length}/{habits.length}
-                </span>
-              </div>
-              <Link to="/app/habits">
-                <Button variant="ghost" size="sm">Habits</Button>
-              </Link>
-            </div>
-
-            {habits.length === 0 ? (
-              <div className="solis-empty-stub">
-                <span>No daily rituals active today.</span>
-                <Button variant="subtle" size="sm" onClick={() => navigate('/app/habits')}>
-                  Create Habit
-                </Button>
-              </div>
-            ) : (
-              <div className="solis-habit-pulse-list">
-                {habits.slice(0, 4).map((h) => (
-                  <div key={h.id} className="solis-habit-pulse-item">
-                    <div className="solis-habit-pulse-item__info">
-                      <span
-                        className="solis-habit-pulse-item__title"
-                        style={{ textDecoration: h.completedToday ? 'line-through' : 'none', opacity: h.completedToday ? 0.65 : 1 }}
-                      >
-                        {h.title}
-                      </span>
-                      <span className="solis-habit-pulse-item__streak" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Flame size={12} color="var(--accent-terracotta)" aria-hidden="true" />
-                        <span>{h.currentStreak}d streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}</span>
-                      </span>
-                    </div>
-                    <Checkbox
-                      checked={h.completedToday}
-                      onChange={() => handleToggleHabit(h.id)}
-                      aria-label={`Toggle habit ${h.title}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Knowledge Studio Resurfacing & Syllabus */}
-          <section className="solis-panel" aria-label="Knowledge Studio Resurfacing">
-            <div className="solis-panel__header">
-              <div className="solis-panel__title-group">
-                <FileText size={16} className="solis-panel__icon" aria-hidden="true" />
-                <h2 className="solis-panel__title">Active Knowledge</h2>
-              </div>
-              <Link to="/app/notes">
-                <Button variant="ghost" size="sm">Notes Studio</Button>
-              </Link>
-            </div>
-
-            <KnowledgeResurfacingCard notes={notes} />
-          </section>
-
-          {/* Knowledge Disciplines (Subject Worlds) & Exam Horizon */}
-          <section className="solis-panel" aria-label="Knowledge Disciplines">
-            <div className="solis-panel__header">
-              <div className="solis-panel__title-group">
-                <Layers size={16} className="solis-panel__icon" aria-hidden="true" />
-                <h2 className="solis-panel__title">Disciplines</h2>
-                <span className="solis-panel__badge">{subjects.length} Active</span>
-              </div>
-              <Link to="/app/study">
-                <Button variant="ghost" size="sm">Syllabus</Button>
-              </Link>
-            </div>
-
-            <ExamHorizonBar />
-
-            <div className="solis-subject-vault-grid" style={{ marginTop: '12px' }}>
-              {subjects.filter((s) => s.status !== 'archived').slice(0, 4).map((sub) => {
-                const studiedHours = recentSessions
-                  .filter((s) => s.subjectId === sub.id)
-                  .reduce((acc, s) => acc + (s.durationMinutes || 0), 0) / 60;
-                return (
-                  <div
-                    key={sub.id}
-                    className="solis-subject-vault-chip"
-                    onClick={() => navigate(`/app/study?subjectId=${sub.id}`)}
-                  >
-                    <div className="solis-subject-vault-chip__top">
-                      <Badge variant={sub.color as any || 'coral'}>
-                        {sub.code || 'CORE'}
-                      </Badge>
-                      <span style={{ fontSize: '10.5px', fontFamily: 'var(--font-mono, monospace)', color: 'var(--text-muted)' }}>
-                        {sub.targetHoursPerWeek}h/wk
-                      </span>
-                    </div>
-                    <div className="solis-subject-vault-chip__name">
-                      {sub.name}
-                    </div>
-                    <Progress value={studiedHours} max={sub.targetHoursPerWeek || 10} size="sm" variant={sub.color as any || 'coral'} />
-                  </div>
-                );
-              })}
-            </div>
-          </section>
         </aside>
       </div>
+
+      {/* ZONE 5 — BOTTOM ROW: DUE RECALL, DAILY HABITS & EXAM HORIZONS */}
+      <section className="solis-zone-strip" aria-label="Due Recall, Daily Habits & Exam Horizons">
+        {/* Knowledge Studio Resurfacing (Due Recall) */}
+        <section className="solis-panel" aria-label="Knowledge Studio Resurfacing">
+          <div className="solis-panel__header">
+            <div className="solis-panel__title-group">
+              <FileText size={16} className="solis-panel__icon" aria-hidden="true" />
+              <h2 className="solis-panel__title">Active Knowledge</h2>
+            </div>
+            <Link to="/app/notes">
+              <Button variant="ghost" size="sm">Notes Studio</Button>
+            </Link>
+          </div>
+
+          <KnowledgeResurfacingCard notes={notes} />
+        </section>
+
+        {/* Daily Rituals & Habit Pulse */}
+        <section className="solis-panel" aria-label="Daily Rituals & Habits">
+          <div className="solis-panel__header">
+            <div className="solis-panel__title-group">
+              <Repeat size={16} className="solis-panel__icon" aria-hidden="true" />
+              <h2 className="solis-panel__title">Daily Rituals</h2>
+              <span className="solis-panel__badge">
+                {habits.filter((h) => h.completedToday).length}/{habits.length}
+              </span>
+            </div>
+            <Link to="/app/habits">
+              <Button variant="ghost" size="sm">Habits</Button>
+            </Link>
+          </div>
+
+          {habits.length === 0 ? (
+            <div className="solis-empty-stub">
+              <span>No daily rituals active today.</span>
+              <Button variant="subtle" size="sm" onClick={() => navigate('/app/habits')}>
+                Create Habit
+              </Button>
+            </div>
+          ) : (
+            <div className="solis-habit-pulse-list">
+              {habits.slice(0, 4).map((h) => (
+                <div key={h.id} className="solis-habit-pulse-item">
+                  <div className="solis-habit-pulse-item__info">
+                    <span
+                      className="solis-habit-pulse-item__title"
+                      style={{ textDecoration: h.completedToday ? 'line-through' : 'none', opacity: h.completedToday ? 0.65 : 1 }}
+                    >
+                      {h.title}
+                    </span>
+                    <span className="solis-habit-pulse-item__streak" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <Flame size={12} color="var(--accent-terracotta)" aria-hidden="true" />
+                      <span>{h.currentStreak}d streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}</span>
+                    </span>
+                  </div>
+                  <Checkbox
+                    checked={h.completedToday}
+                    onChange={() => handleToggleHabit(h.id)}
+                    aria-label={`Toggle habit ${h.title}`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Exam & Goal Horizons */}
+        <section className="solis-panel" aria-label="Exam Horizons">
+          <div className="solis-panel__header">
+            <div className="solis-panel__title-group">
+              <Layers size={16} className="solis-panel__icon" aria-hidden="true" />
+              <h2 className="solis-panel__title">Exam Horizons</h2>
+            </div>
+          </div>
+
+          <ExamHorizonBar />
+        </section>
+      </section>
 
       {/* Evening Closure & Reflection Ritual Modal */}
       <EveningClosureModal
@@ -1177,37 +846,6 @@ export const DashboardPage: React.FC = () => {
         }}
         onSaveReflection={handleSaveEveningClosure}
       />
-
-      {/* Momentum Formula Modal */}
-      <Modal
-        isOpen={isScoreModalOpen}
-        onClose={() => setIsScoreModalOpen(false)}
-        title="Momentum Score & Deterministic Formula"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            Solis derives your daily momentum deterministically across 4 weighted intellectual pillars:
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ padding: '10px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Tasks Velocity (30% weight)</span>
-              <strong>{scoreDetails.taskScore}%</strong>
-            </div>
-            <div style={{ padding: '10px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Study Volume (30% weight)</span>
-              <strong>{Math.min(100, Math.round(((summary?.totalStudyMinutes || 0) / 180) * 100))}%</strong>
-            </div>
-            <div style={{ padding: '10px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Deep Focus Concentration (20% weight)</span>
-              <strong>{scoreDetails.focusScore}%</strong>
-            </div>
-            <div style={{ padding: '10px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between' }}>
-              <span>Ritual Consistency (20% weight)</span>
-              <strong>{scoreDetails.habitScore}%</strong>
-            </div>
-          </div>
-        </div>
-      </Modal>
 
       {/* Recurring Routines Management Modal */}
       <RecurringRoutinesModal

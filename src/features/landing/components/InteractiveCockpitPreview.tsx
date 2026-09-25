@@ -109,12 +109,12 @@ export const InteractiveCockpitPreview: React.FC = () => {
           <span className="solis-titlebar-spec">HOROLOGY // 24H_SOLAR_OBSERVATORY</span>
         </div>
         <div className="solis-titlebar-title">
-          SOLIS WORKSPACE • LOCAL-FIRST IDB SUBSYSTEM
+          SOLIS WORKSPACE • INTERACTIVE PREVIEW
         </div>
         <div className="solis-titlebar-telemetry">
           <span className="solis-telemetry-badge">
             <Shield size={11} color="var(--color-sage-400)" />
-            <span>0.42ms INDEXEDDB</span>
+            <span>LOCAL DEMO STORAGE</span>
           </span>
           <span className="solis-keycap-hint">⌘K COMMAND</span>
         </div>
@@ -542,7 +542,7 @@ export const InteractiveCockpitPreview: React.FC = () => {
         <div className="solis-preview-footer">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
             <span className="solis-live-dot" />
-            <span>Fully functional in Solis Workspace • Local IndexedDB + Supabase Postgres sync</span>
+            <span>Fully functional in Solis Workspace • Demo data stays local; accounts sync to Supabase Postgres</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

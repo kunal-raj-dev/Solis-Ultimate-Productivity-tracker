@@ -38,10 +38,8 @@ import { formatFriendlyDate, getISODateString } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
 import { useTimeBlockScheduler } from '../../hooks/useTimeBlockScheduler';
 import { HourlyPlannerView } from './HourlyPlannerView';
-import { TaskTimelineView } from './TaskTimelineView';
 import { TaskInboxView } from './TaskInboxView';
 import { TaskPriorityMatrix } from './TaskPriorityMatrix';
-import { TaskReviewSummary } from './TaskReviewSummary';
 import { CreateTimeBlockModal } from './CreateTimeBlockModal';
 import { HourReviewModal } from './HourReviewModal';
 import { SmartTaskInput } from './components/SmartTaskInput';
@@ -65,7 +63,15 @@ export const TasksPage: React.FC = () => {
   const [isRetrying, setIsRetrying] = useState(false);
 
   // View Mode & Temporal State
-  const [viewMode, setViewMode] = useState<TaskViewMode>('today');
+  const [viewMode, setViewMode] = useState<TaskViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const mode = new URLSearchParams(window.location.search).get('view');
+      if (mode === 'schedule' || mode === 'today' || mode === 'timeline' || mode === 'review') return 'schedule';
+      if (mode === 'matrix') return 'matrix';
+      if (mode === 'list' || mode === 'inbox') return 'list';
+    }
+    return 'list';
+  });
   const [selectedDate, setSelectedDate] = useState<string>(getISODateString(new Date()));
   const [timeBlocks, setTimeBlocks] = useState<TaskTimeBlock[]>([]);
 
@@ -128,10 +134,38 @@ export const TasksPage: React.FC = () => {
     return tasks.filter((t) => t.dueDate === selectedDate);
   }, [tasks, selectedDate]);
 
-  const inboxTasks = useMemo(() => {
+  const scheduledTaskIds = useMemo(() => {
+    return new Set(timeBlocks.map((b) => b.taskId).filter(Boolean) as string[]);
+  }, [timeBlocks]);
+
+  const todayStr = getISODateString(new Date());
+
+  const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
-      if (t.dueDate) return false;
+      // 1. Time / Status Filter
+      if (selectedTimeFilter === 'completed') {
+        if (t.status !== 'completed') return false;
+      } else {
+        if (t.status === 'completed' || t.status === 'archived') {
+          if (selectedTimeFilter !== 'all') return false;
+        }
+
+        if (selectedTimeFilter === 'today') {
+          if (t.dueDate !== selectedDate) return false;
+        } else if (selectedTimeFilter === 'upcoming') {
+          if (!t.dueDate || t.dueDate <= selectedDate) return false;
+        } else if (selectedTimeFilter === 'overdue') {
+          if (!t.dueDate || t.dueDate >= todayStr) return false;
+        } else if (selectedTimeFilter === 'unscheduled') {
+          const isUnscheduled = !t.dueDate || t.dueDate === '' || !scheduledTaskIds.has(t.id);
+          if (!isUnscheduled) return false;
+        }
+      }
+
+      // 2. Domain / Category Filter
       if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
+
+      // 3. Search Query Filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = t.title.toLowerCase().includes(q);
@@ -139,9 +173,27 @@ export const TasksPage: React.FC = () => {
         const matchTag = t.tags?.some((tag) => tag.toLowerCase().includes(q)) || false;
         if (!matchTitle && !matchDesc && !matchTag) return false;
       }
+
       return true;
+    }).sort((a, b) => {
+      if (sortBy === 'priority') {
+        const priorityOrder: Record<PriorityLevel, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+        return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+      }
+      if (sortBy === 'dueDate') {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+      if (sortBy === 'createdAt') {
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      }
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
     });
-  }, [tasks, selectedCategory, searchQuery]);
+  }, [tasks, selectedTimeFilter, selectedCategory, searchQuery, sortBy, selectedDate, todayStr, scheduledTaskIds]);
 
   // Form State
   const [formTitle, setFormTitle] = useState('');
@@ -150,7 +202,7 @@ export const TasksPage: React.FC = () => {
   const [formPriority, setFormPriority] = useState<PriorityLevel>('medium');
   const [formSubjectId, setFormSubjectId] = useState<string>('');
   const [formGoalId, setFormGoalId] = useState<string>('');
-  const [formDueDate, setFormDueDate] = useState(getISODateString(new Date()));
+  const [formDueDate, setFormDueDate] = useState('');
   const [formDueTime, setFormDueTime] = useState('18:00');
   const [formEstimatedMinutes, setFormEstimatedMinutes] = useState('30');
   const [formTags, setFormTags] = useState('');
@@ -165,14 +217,14 @@ export const TasksPage: React.FC = () => {
     setFormPriority('medium');
     setFormSubjectId('');
     setFormGoalId(searchParams.get('goalId') || '');
-    setFormDueDate(getISODateString(new Date()));
+    setFormDueDate(viewMode === 'schedule' || viewMode === 'today' ? selectedDate : selectedTimeFilter === 'today' ? selectedDate : '');
     setFormDueTime('18:00');
     setFormEstimatedMinutes('30');
     setFormTags('');
     setFormError(null);
     setShowMoreOptions(false);
     setIsCreateModalOpen(true);
-  }, [searchParams]);
+  }, [searchParams, viewMode, selectedDate, selectedTimeFilter]);
 
   // Load Tasks
   const loadTasks = useCallback(async (isInitial = false) => {
@@ -249,7 +301,7 @@ export const TasksPage: React.FC = () => {
         return next;
       }, { replace: true });
     } else if (action === 'replan') {
-      setViewMode('timeline');
+      setViewMode('schedule');
       const conflictId = searchParams.get('id');
       const targetTime = searchParams.get('time');
       if (conflictId && targetTime) {
@@ -379,18 +431,14 @@ export const TasksPage: React.FC = () => {
         handleFocusInlineCapture();
       } else if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
-        setViewMode('today');
+        setViewMode('schedule');
         setSelectedDate(getISODateString(new Date()));
       } else if (e.key === '1') {
-        setViewMode('today');
+        setViewMode('list');
       } else if (e.key === '2') {
-        setViewMode('timeline');
+        setViewMode('schedule');
       } else if (e.key === '3') {
-        setViewMode('inbox');
-      } else if (e.key === '4') {
         setViewMode('matrix');
-      } else if (e.key === '5') {
-        setViewMode('review');
       }
     };
 
@@ -792,6 +840,7 @@ export const TasksPage: React.FC = () => {
     { id: 'all', label: 'All Tasks' },
     { id: 'today', label: 'Today' },
     { id: 'upcoming', label: 'Upcoming' },
+    { id: 'unscheduled', label: 'Unscheduled' },
     { id: 'overdue', label: 'Overdue' },
     { id: 'completed', label: 'Completed' }
   ];
@@ -805,11 +854,9 @@ export const TasksPage: React.FC = () => {
   ];
 
   const viewModeOptions: { value: string; label: string }[] = [
-    { value: 'today', label: 'Today & Planner (24h)' },
-    { value: 'timeline', label: 'Timeline' },
-    { value: 'inbox', label: 'Task Inbox' },
-    { value: 'matrix', label: 'Priority Matrix' },
-    { value: 'review', label: 'Daily Review' }
+    { value: 'list', label: 'List' },
+    { value: 'schedule', label: 'Schedule (24h)' },
+    { value: 'matrix', label: 'Priority Matrix' }
   ];
 
   const handleCreateFromNLP = useCallback(async (taskPayload: Partial<Task>) => {
@@ -821,7 +868,7 @@ export const TasksPage: React.FC = () => {
         priority: taskPayload.priority || 'medium',
         subjectId: taskPayload.subjectId,
         goalId: taskPayload.goalId,
-        dueDate: taskPayload.dueDate || (viewMode === 'today' ? selectedDate : undefined),
+        dueDate: taskPayload.dueDate || (viewMode === 'schedule' || viewMode === 'today' ? selectedDate : selectedTimeFilter === 'today' ? selectedDate : undefined),
         dueTime: taskPayload.dueTime,
         estimatedMinutes: taskPayload.estimatedMinutes || 30,
         tags: taskPayload.tags || [],
@@ -843,7 +890,7 @@ export const TasksPage: React.FC = () => {
         type: 'error'
       });
     }
-  }, [selectedDate, viewMode, addToast]);
+  }, [selectedDate, viewMode, selectedTimeFilter, addToast]);
 
   return (
     <div>
@@ -886,7 +933,7 @@ export const TasksPage: React.FC = () => {
           />
         </div>
 
-        {(viewMode === 'today' || viewMode === 'timeline' || viewMode === 'review') && (
+        {(viewMode === 'schedule' || viewMode === 'today' || viewMode === 'timeline' || viewMode === 'review') && (
           <div className="solis-tasks-date-controls">
             <Button
               variant="subtle"
@@ -918,15 +965,15 @@ export const TasksPage: React.FC = () => {
         )}
       </div>
 
-      {/* Inline Fast Smart Capture for non-today views */}
-      {viewMode !== 'today' && (
+      {/* Inline Fast Smart Capture for matrix view (list has it inline above filters, schedule has it in its left panel) */}
+      {viewMode === 'matrix' && (
         <div className="solis-tasks-inline-capture" style={{ marginBottom: '16px' }}>
           <SmartTaskInput
             inputRef={smartInputRef}
             onCommit={handleCreateFromNLP}
             subjects={activeSubjects}
             defaultDueDate={undefined}
-            placeholder='Quick capture or natural language... e.g. "Read OS chapter 4 tomorrow at 3pm for 45m !high"'
+            placeholder='Quick capture or natural language... e.g. "Draft research abstract !urgent"'
           />
         </div>
       )}
@@ -979,20 +1026,116 @@ export const TasksPage: React.FC = () => {
         </Card>
       ) : (
         <>
-          {/* VIEW MODE 1: TODAY DUAL-PANE HYBRID (TASK LIST + 24H HOURLY GRID) */}
-          {viewMode === 'today' && (
+          {/* VIEW MODE 1: LIST VIEW (CANONICAL LIST WITH FILTERS & SEARCH) */}
+          {(viewMode === 'list' || viewMode === 'inbox') && (
+            <div>
+              <div style={{ marginBottom: '16px' }}>
+                <SmartTaskInput
+                  inputRef={smartInputRef}
+                  onCommit={handleCreateFromNLP}
+                  subjects={activeSubjects}
+                  defaultDueDate={selectedTimeFilter === 'today' ? selectedDate : undefined}
+                  placeholder='Capture deliberate intention... (e.g. "Read OS chapter 4 tomorrow at 3pm for 45m !high")'
+                />
+              </div>
+
+              {/* Filter Toolbar */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'var(--space-xl)' }}>
+                <div style={{ overflowX: 'auto', paddingBottom: '2px' }}>
+                  <SegmentedControl
+                    variant="contained"
+                    size="sm"
+                    value={selectedTimeFilter}
+                    onChange={(val) => setSelectedTimeFilter(val as TaskTimeFilter)}
+                    options={timeFilters.map((tf) => ({ value: tf.id, label: tf.label }))}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ overflowX: 'auto' }}>
+                    <SegmentedControl
+                      variant="pills"
+                      size="sm"
+                      value={selectedCategory}
+                      onChange={setSelectedCategory}
+                      options={categories.map((c) => ({ value: c.id, label: c.label }))}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px', maxWidth: '520px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 180px', minWidth: '150px' }}>
+                      <Input
+                        placeholder="Search statements, tags, or notes..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        leftIcon={<Search size={14} />}
+                      />
+                    </div>
+                    <div style={{ flex: '0 0 auto', minWidth: '130px' }}>
+                      <CustomSelect
+                        variant="subtle"
+                        value={sortBy}
+                        onChange={(val) => setSortBy(val as TaskSortField)}
+                        options={[
+                          { value: 'priority', label: 'Priority' },
+                          { value: 'dueDate', label: 'Due Date' },
+                          { value: 'createdAt', label: 'Created' },
+                          { value: 'title', label: 'Title' }
+                        ]}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <TaskInboxView
+                tasks={filteredTasks}
+                subjects={subjects}
+                goals={goals}
+                onToggleTask={handleToggleTask}
+                onEditTask={openEditModal}
+                onDeleteTask={handleDeleteTask}
+                onScheduleToHour={handleScheduleTaskToHour}
+                onAddSubtask={handleAddSubtask}
+                onToggleSubtask={handleToggleSubtask}
+                onDeleteSubtask={handleDeleteSubtask}
+                title="Task List"
+                subtitle="All tasks across your study horizon. Filter by timeframe, domain, or search."
+                emptyMessage={
+                  selectedTimeFilter === 'overdue'
+                    ? "No overdue tasks — you're caught up!"
+                    : selectedTimeFilter === 'unscheduled'
+                    ? "No unscheduled tasks — all active items are slotted."
+                    : selectedTimeFilter === 'today'
+                    ? "No tasks due today. Add one above or schedule from your backlog."
+                    : "No tasks found matching your filters."
+                }
+              />
+            </div>
+          )}
+
+          {/* VIEW MODE 2: SCHEDULE (24H INTERACTIVE PLANNER + UNSCHEDULED TASKS SIDEBAR + INTEGRATED REVIEW) */}
+          {(viewMode === 'schedule' || viewMode === 'today' || viewMode === 'timeline' || viewMode === 'review') && (
             <div className="solis-tasks-today-hybrid">
               <div className="solis-tasks-today-panel">
                 <SmartTaskInput
                   inputRef={smartInputRef}
                   onCommit={handleCreateFromNLP}
-                  subjects={subjects}
+                  subjects={activeSubjects}
                   defaultDueDate={selectedDate}
-                  placeholder='Add deliberate task for today... (e.g. "Review Chapter 4 at 3pm for 45m !high")'
+                  placeholder='Add deliberate task for schedule... (e.g. "Review Chapter 4 at 3pm for 45m !high")'
                 />
 
                 <div className="solis-tasks-today-list-header">
-                  <span className="solis-tasks-today-list-title">Today's Intentions</span>
+                  <span className="solis-tasks-today-list-title">Ready to Schedule</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span className="solis-tasks-today-list-counter">
                       {todayTasks.filter((t) => t.status === 'completed').length}/{todayTasks.length} done
@@ -1066,122 +1209,13 @@ export const TasksPage: React.FC = () => {
             </div>
           )}
 
-          {/* VIEW MODE 2: CONTINUOUS TIMELINE */}
-          {viewMode === 'timeline' && (
-            <TaskTimelineView
-              selectedDate={selectedDate}
-              timeBlocks={timeBlocks}
-              subjects={subjects}
-              onOpenCreateBlock={handleOpenCreateBlock}
-              onOpenEditBlock={handleOpenEditBlock}
-              onOpenReviewBlock={handleOpenReviewBlock}
-              onDeleteBlock={handleDeleteTimeBlock}
-            />
-          )}
-
-          {/* VIEW MODE 3: TASK INBOX & BACKLOG */}
-          {viewMode === 'inbox' && (
-            <div>
-              <div style={{ marginBottom: '16px' }}>
-                <SmartTaskInput
-                  onCommit={handleCreateFromNLP}
-                  subjects={subjects}
-                  placeholder='Capture deliberate intention into backlog... (e.g. "Draft architecture notes !high #study")'
-                />
-              </div>
-
-              {/* Filter Toolbar */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: 'var(--space-xl)' }}>
-                <div style={{ overflowX: 'auto', paddingBottom: '2px' }}>
-                  <SegmentedControl
-                    variant="contained"
-                    size="sm"
-                    value={selectedTimeFilter}
-                    onChange={(val) => setSelectedTimeFilter(val as TaskTimeFilter)}
-                    options={timeFilters.map((tf) => ({ value: tf.id, label: tf.label }))}
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div style={{ overflowX: 'auto' }}>
-                    <SegmentedControl
-                      variant="pills"
-                      size="sm"
-                      value={selectedCategory}
-                      onChange={setSelectedCategory}
-                      options={categories.map((c) => ({ value: c.id, label: c.label }))}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px', maxWidth: '520px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: '1 1 180px', minWidth: '150px' }}>
-                      <Input
-                        placeholder="Search statements, tags, or notes..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        leftIcon={<Search size={14} />}
-                      />
-                    </div>
-                    <div style={{ flex: '0 0 auto', minWidth: '130px' }}>
-                      <CustomSelect
-                        variant="subtle"
-                        value={sortBy}
-                        onChange={(val) => setSortBy(val as TaskSortField)}
-                        options={[
-                          { value: 'priority', label: 'Priority' },
-                          { value: 'dueDate', label: 'Due Date' },
-                          { value: 'createdAt', label: 'Created' },
-                          { value: 'title', label: 'Title' }
-                        ]}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <TaskInboxView
-                tasks={inboxTasks}
-                subjects={subjects}
-                goals={goals}
-                onToggleTask={handleToggleTask}
-                onEditTask={openEditModal}
-                onDeleteTask={handleDeleteTask}
-                onScheduleToHour={handleScheduleTaskToHour}
-                onAddSubtask={handleAddSubtask}
-                onToggleSubtask={handleToggleSubtask}
-                onDeleteSubtask={handleDeleteSubtask}
-              />
-            </div>
-          )}
-
-          {/* VIEW MODE 4: PRIORITY MATRIX (EISENHOWER) */}
+          {/* VIEW MODE 3: PRIORITY MATRIX (EISENHOWER) */}
           {viewMode === 'matrix' && (
             <TaskPriorityMatrix
               tasks={tasks}
               subjects={subjects}
               onScheduleToHour={handleScheduleTaskToHour}
               onToggleTask={handleToggleTask}
-            />
-          )}
-
-          {/* VIEW MODE 5: DAILY REVIEW & REFLECTION */}
-          {viewMode === 'review' && (
-            <TaskReviewSummary
-              selectedDate={selectedDate}
-              timeBlocks={timeBlocks}
-              tasks={tasks}
-              subjects={subjects}
-              onOpenReviewBlock={handleOpenReviewBlock}
-              onNavigateDate={handleNavigateDate}
-              onSwitchToPlanner={() => setViewMode('today')}
             />
           )}
         </>

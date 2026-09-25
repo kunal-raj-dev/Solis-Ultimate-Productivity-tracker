@@ -8,8 +8,7 @@ import {
   Calendar,
   BookOpen,
   ArrowRight,
-  Flame,
-  Film
+  Flame
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
@@ -18,7 +17,6 @@ import { SegmentedControl } from '../../components/ui/SegmentedControl/Segmented
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
 import { ExamReadinessCard } from '../../components/features/Analytics/ExamReadinessCard';
 import { RetentionForecastGraph } from '../../components/features/Analytics/RetentionForecastGraph';
-import { CircadianFocusReelModal } from '../../components/features/Analytics/CircadianFocusReelModal';
 import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
@@ -28,6 +26,8 @@ import { Task } from '../../types/task';
 import { Habit } from '../../types/habit';
 import { Goal } from '../../types/goal';
 import { Flashcard } from '../../types/learning';
+import { Note } from '../../types/note';
+import { StudyResource } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
 import {
   generateSolisIntelligenceReport,
@@ -39,6 +39,7 @@ import {
   calculateExamReadiness,
   calculateTopicRetentionForecast
 } from '../../utils/intelligence/masteryIntelligence';
+import { calculateOverallHabitStreak } from '../../utils/streaks';
 import { queryCache } from '../../services/cache';
 import './AnalyticsPage.css';
 
@@ -46,7 +47,6 @@ export const AnalyticsPage: React.FC = () => {
   const navigate = useNavigate();
   const { openGuide } = useGuide();
   const [scope, setScope] = useState<TimeRangeScope>('this_week');
-  const [isReelOpen, setIsReelOpen] = useState(false);
 
   const cachedSubjects = queryCache.get<StudySubject[]>('subjects:false');
   const cachedSessions = queryCache.get<StudySession[]>('study_sessions_recent');
@@ -67,6 +67,8 @@ export const AnalyticsPage: React.FC = () => {
   const [habits, setHabits] = useState<Habit[]>(() => cachedHabits || []);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [resources, setResources] = useState<StudyResource[]>([]);
   const [reflections, setReflections] = useState<DailyReflection[]>([]);
 
   const loadAllAnalyticsData = useCallback(async () => {
@@ -80,6 +82,8 @@ export const AnalyticsPage: React.FC = () => {
         habitRes,
         goalRes,
         cardRes,
+        noteRes,
+        resourceRes,
         refRes
       ] = await Promise.allSettled([
         dataService.study.getSubjects(),
@@ -90,6 +94,8 @@ export const AnalyticsPage: React.FC = () => {
         dataService.habits.getHabits(),
         dataService.goals ? dataService.goals.getGoals() : Promise.resolve([]),
         dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([]),
+        dataService.notes ? dataService.notes.getNotes() : Promise.resolve([]),
+        dataService.resources ? dataService.resources.getResources() : Promise.resolve([]),
         dataService.reflections ? dataService.reflections.getReflections(10) : Promise.resolve([])
       ]);
 
@@ -111,6 +117,8 @@ export const AnalyticsPage: React.FC = () => {
       if (habitRes.status === 'fulfilled') setHabits(habitRes.value);
       if (goalRes.status === 'fulfilled') setGoals(goalRes.value);
       if (cardRes.status === 'fulfilled') setFlashcards(cardRes.value);
+      if (noteRes.status === 'fulfilled') setNotes(noteRes.value);
+      if (resourceRes.status === 'fulfilled') setResources(resourceRes.value);
       if (refRes.status === 'fulfilled') setReflections(refRes.value);
 
     } catch (err) {
@@ -128,7 +136,7 @@ export const AnalyticsPage: React.FC = () => {
     return () => unsubscribe();
   }, [loadAllAnalyticsData]);
 
-  // Derived Pure Intelligence Report
+  // Derived Pure Intelligence Report with real flashcards, notes, resources
   const report: SolisIntelligenceReport = useMemo(() => {
     return generateSolisIntelligenceReport(
       {
@@ -138,11 +146,14 @@ export const AnalyticsPage: React.FC = () => {
         topics,
         focusSessions,
         tasks,
-        habits
+        habits,
+        flashcards,
+        notes,
+        resources
       },
       scope
     );
-  }, [sessions, planItems, subjects, topics, focusSessions, tasks, habits, scope]);
+  }, [sessions, planItems, subjects, topics, focusSessions, tasks, habits, flashcards, notes, resources, scope]);
 
   // Mastery Intelligence 2.0 Calculations
   const cognitiveReport = useMemo(() => {
@@ -163,17 +174,19 @@ export const AnalyticsPage: React.FC = () => {
           goal: g,
           topics,
           flashcards,
-          habits
+          habits,
+          studySessions: sessions
         })
       }));
-  }, [goals, topics, flashcards, habits]);
+  }, [goals, topics, flashcards, habits, sessions]);
 
   const retentionForecasts = useMemo(() => {
+    const histories = report.snapshot?.topicHistories;
     return topics.slice(0, 4).map((top) => ({
       topic: top,
-      forecast: calculateTopicRetentionForecast(top, flashcards)
+      forecast: calculateTopicRetentionForecast(top, flashcards, histories?.get(top.id))
     }));
-  }, [topics, flashcards]);
+  }, [topics, flashcards, report.snapshot]);
 
   const handleActionClick = (actionPayload?: {
     type: string;
@@ -233,16 +246,6 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<Film size={14} color="var(--accent-terracotta)" />}
-            onClick={() => setIsReelOpen(true)}
-            title="Watch 10-second Circadian Focus Reel (Remotion)"
-            data-cursor="action"
-          >
-            Circadian Reel
-          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -350,6 +353,7 @@ export const AnalyticsPage: React.FC = () => {
               </span>
             </div>
             <div className="solis-metric-card__subtext">
+              {calculateOverallHabitStreak(habits) > 0 ? `${calculateOverallHabitStreak(habits)}d active consistency streak • ` : ''}
               {topics.length > 0
                 ? `${report.mastery.masteredCount} Mastered • ${report.mastery.learningCount} Learning • ${report.mastery.unstudiedCount} Unstudied topics.`
                 : 'Add subjects and syllabus topics to begin tracking mastery.'}
@@ -705,12 +709,6 @@ export const AnalyticsPage: React.FC = () => {
           </div>
         </section>
       )}
-
-      {/* Circadian Focus Reel Remotion Showcase Modal */}
-      <CircadianFocusReelModal
-        isOpen={isReelOpen}
-        onClose={() => setIsReelOpen(false)}
-      />
     </div>
   );
 };

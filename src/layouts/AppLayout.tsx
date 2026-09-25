@@ -14,7 +14,7 @@ import { MiniFocusPlayer } from '../components/layout/MiniFocusPlayer/MiniFocusP
 import { isFocusRoute } from '../constants/navigation';
 import { dataService } from '../services/dataService';
 import { getISODateString } from '../utils/date';
-import { notifyTimeBlockStart, notifyHourReviewPrompt } from '../utils/notifications';
+import { notificationService } from '../services/notifications/notification.service';
 import { globalNotifiedStarts, globalNotifiedReviews } from '../hooks/useTimeBlockScheduler';
 import { cn } from '../utils/classNames';
 import './AppLayout.css';
@@ -60,7 +60,7 @@ export const AppLayout: React.FC = () => {
           if (elapsedSinceStart >= 0 && elapsedSinceStart <= 3 && block.status === 'planned') {
             if (!globalNotifiedStarts.has(blockKey)) {
               globalNotifiedStarts.add(blockKey);
-              notifyTimeBlockStart(block.taskTitle, block.durationMinutes);
+              notificationService.notifyTimeBlockStart(block.taskTitle, block.durationMinutes);
             }
           }
 
@@ -68,7 +68,7 @@ export const AppLayout: React.FC = () => {
           if (elapsedSinceEnd >= 0 && elapsedSinceEnd <= 15 && (block.status === 'planned' || block.status === 'active')) {
             if (!globalNotifiedReviews.has(blockKey)) {
               globalNotifiedReviews.add(blockKey);
-              notifyHourReviewPrompt(blockEndHour, block.taskTitle);
+              notificationService.notifyHourReviewPrompt(blockEndHour, block.taskTitle);
             }
           }
         });
