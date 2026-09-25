@@ -1,0 +1,25 @@
+{
+  "objective": "Deeply understand Solis, identify fundamental weaknesses, conduct modern academic & productivity research, establish clear product vision, and execute disciplined phased development roadmap.",
+  "currentMilestone": "Phase 0 — Strategic Audit & Architectural Foundations",
+  "completedWork": [
+    "Comprehensive repository inspection and multi-view state flow tracing across all 10 canonical modules.",
+    "Comprehensive product, UX, study planning, study tracking, and intelligence audit completed.",
+    "In-depth market research on Shovel (time cushion), Sunsama (morning/evening rituals), Motion (agency pitfalls), RemNote (inline flashcard extraction), and student abandonment psychology.",
+    "Constitutional updates to master.md incorporating Streak Forgiveness, Forward Time Cushion, and Inline Recall extraction.",
+    "Created master strategic blueprint: docs/SOLIS_COMPREHENSIVE_AUDIT_AND_PRODUCT_STRATEGY.md."
+  ],
+  "nextWork": [
+    "Fix src/utils/import.ts merge_skip flashcard key matching to ensure 100% passing test suite.",
+    "Excise residual ParallaxScene and AtmosphericOrb imports from FocusPage and SubjectListHeader.",
+    "Streamline DashboardPage.tsx into the scannable 5-zone / 3-section layout.",
+    "Implement Time Cushion Engine (src/utils/planning/timeCushion.ts).",
+    "Implement Streak Forgiveness in src/utils/streaks.ts."
+  ],
+  "knownBlockers": [],
+  "keyDecisions": [
+    "Never take agency away from the student: adopt assisted planning with 1-click confirmation over robotic auto-scheduling.",
+    "Eliminate all-or-nothing streak resets: enforce 'Never Miss Twice' recovery to prevent habit tracking abandonment.",
+    "Time Cushion over vanity metrics: prioritize forward-looking capacity vs. exam workload over historical hour totals.",
+    "Inline flashcard extraction (concept :: definition) in Markdown notes to eliminate double-entry friction."
+  ]
+}

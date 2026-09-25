@@ -1,0 +1,61 @@
+{
+  "features": [
+    {
+      "id": "feat-import-merge-skip-fix",
+      "category": "Data Layer",
+      "description": "Fix flashcard key resolution during workspace backup import in merge_skip mode so existing cards with populated subjectNames are accurately skipped.",
+      "acceptanceCriteria": [
+        "Resolves subject name from backup.subjects or target map when f.subjectName is undefined.",
+        "src/__tests__/import.test.ts passes completely with 0 failures."
+      ],
+      "verificationProcedure": "npx vitest run src/__tests__/import.test.ts",
+      "status": "VERIFIED"
+    },
+    {
+      "id": "feat-dashboard-streamlining",
+      "category": "UX & Frontend",
+      "description": "Streamline DashboardPage.tsx into 3 scannable sections (Solar Briefing, 2-Column Core Focus & Timeline, and Compact Bottom Ribbon), eliminating scroll fatigue.",
+      "acceptanceCriteria": [
+        "DashboardPage consumable in under 10 seconds without vertical scroll fatigue.",
+        "Zero layout shifts on data load.",
+        "Retains 1-click Focus launch, Quick Add, and Daily Intention persistence."
+      ],
+      "verificationProcedure": "npm run build && npx vitest run src/__tests__/phase2Consolidation.test.ts",
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "feat-time-cushion-engine",
+      "category": "Intelligence & Planning",
+      "description": "Implement forward-looking Time Cushion algorithm comparing available weekly routine study hours with upcoming exam syllabus workload.",
+      "acceptanceCriteria": [
+        "Calculates surplus/deficit hours between current date and exam target date.",
+        "Renders visual cushion indicator in ExamHorizonBar and WorkloadCapacityBar."
+      ],
+      "verificationProcedure": "npx vitest run src/__tests__/planningCore.test.ts",
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "feat-streak-forgiveness",
+      "category": "Habits & Psychology",
+      "description": "Implement 'Never Miss Twice' habit streak protection so an isolated missed day enters a recovery state rather than resetting to 0.",
+      "acceptanceCriteria": [
+        "Single missed day maintains active streak in 'Recovering' status.",
+        "Two consecutive missed days resets the streak.",
+        "All streak calculation tests in src/__tests__/streaks.test.ts pass."
+      ],
+      "verificationProcedure": "npx vitest run src/__tests__/streaks.test.ts",
+      "status": "NOT_STARTED"
+    },
+    {
+      "id": "feat-inline-notes-flashcard-syntax",
+      "category": "Knowledge & Recall",
+      "description": "Parse inline flashcard syntax (concept :: definition) in NotesPage markdown canvas to auto-index active recall cards in topic decks.",
+      "acceptanceCriteria": [
+        "Typing 'Concept :: Definition' in Markdown notes auto-indexes as a flashcard linked to the subject and note.",
+        "Flashcard review decks surface inline cards seamlessly."
+      ],
+      "verificationProcedure": "npx vitest run src/__tests__/notes.test.ts",
+      "status": "NOT_STARTED"
+    }
+  ]
+}
