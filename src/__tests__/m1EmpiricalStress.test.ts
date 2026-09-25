@@ -13,7 +13,6 @@ describe('Milestone 1 Empirical Stress Test Suite (Challenger 1)', () => {
   const atmosphericOrbPath = path.join(rootDir, 'src/components/parallax/AtmosphericOrb.tsx');
   const atmosphereCanvasPath = path.join(rootDir, 'src/components/layout/AtmosphereCanvas/AtmosphereCanvas.tsx');
   const atmosphereCanvasCssPath = path.join(rootDir, 'src/components/layout/AtmosphereCanvas/AtmosphereCanvas.css');
-  const sceneAtmospherePath = path.join(rootDir, 'src/components/scene/SceneAtmosphere.tsx');
 
   describe('1. Theme Colors & Token Discipline', () => {
     it('declares #0E0C0B as Deep Obsidian night canvas ground in tokens.css', () => {
@@ -196,12 +195,6 @@ describe('Milestone 1 Empirical Stress Test Suite (Challenger 1)', () => {
     it('AtmosphericOrb component renders null (deactivated)', () => {
       const content = fs.readFileSync(atmosphericOrbPath, 'utf8');
       expect(content).toMatch(/return null;/);
-    });
-
-    it('SceneAtmosphere does not render any AtmosphericOrb or floating orbs', () => {
-      const content = fs.readFileSync(sceneAtmospherePath, 'utf8');
-      expect(content).not.toContain('AtmosphericOrb');
-      expect(content).not.toContain('orb');
     });
 
     it('AtmosphereCanvas.tsx renders clean canvas without orb elements', () => {

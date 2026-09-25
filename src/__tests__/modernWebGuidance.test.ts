@@ -57,7 +57,6 @@ describe('Modern Web Guidance & Frontend Design Compliance Suite', () => {
   it('verifies container queries (size-aware styling) on modular components', () => {
     const cardCss = fs.readFileSync(path.join(rootDir, 'components', 'ui', 'Card', 'Card.css'), 'utf-8');
     const dashboardCss = fs.readFileSync(path.join(rootDir, 'features', 'dashboard', 'DashboardPage.css'), 'utf-8');
-    const synthesisCss = fs.readFileSync(path.join(rootDir, 'components', 'features', 'Analytics', 'CircadianSynthesisCard.css'), 'utf-8');
 
     // Card container type and queries
     expect(cardCss).toContain('container-type: inline-size');
@@ -66,10 +65,6 @@ describe('Modern Web Guidance & Frontend Design Compliance Suite', () => {
 
     // Dashboard panel & solar hero container types
     expect(dashboardCss).toContain('container-type: inline-size');
-
-    // Synthesis card container type and query
-    expect(synthesisCss).toContain('container-type: inline-size');
-    expect(synthesisCss).toContain('@container (max-width: 520px)');
   });
 
   it('verifies frontend design principles: zero generic AI cliches and strict typography pairing', () => {

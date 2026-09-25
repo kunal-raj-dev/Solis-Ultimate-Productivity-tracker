@@ -38,3 +38,7 @@ coverage/
 # Antigravity agent configuration
 .agents/
 .vercel
+.mimosa/
+**/.mimosa/
+.zcode/
+**/.zcode/

@@ -111,9 +111,6 @@ export default defineConfig({
             ) {
               return 'vendor-framework';
             }
-            if (id.includes('remotion') || id.includes('@remotion')) {
-              return 'vendor-remotion';
-            }
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
             }
