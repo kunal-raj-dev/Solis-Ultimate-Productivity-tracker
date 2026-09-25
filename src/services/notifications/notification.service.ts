@@ -1,15 +1,114 @@
 /**
  * Solis - Smart Notification Service
  * Part 3: Autonomous Connected OS & Real-Time Notification Engine
+ *
+ * Single canonical notification store & dispatch path (master.md §6 "Notification Services"):
+ * - Preferences: `solis_smart_notification_prefs`
+ * - Inbox: `solis_notifications_inbox_v1` (one-time migrated from `solis_notifications_list`)
+ * - Browser notifications, quiet hours and the fallback chime (via hapticsEngine) all flow
+ *   through this service; the former duplicate `src/utils/notifications.ts` store
+ *   (`solis_notification_preferences`) is migrated once and removed.
  */
 
 import {
   SolisNotification,
-  SmartNotificationPreferences
+  SmartNotificationPreferences,
+  NotificationChimeType
 } from '../../types/notification';
+import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 
-const STORAGE_KEY_NOTIFS = 'solis_notifications_list';
+const STORAGE_KEY_NOTIFS = 'solis_notifications_inbox_v1';
+const STORAGE_KEY_NOTIFS_LEGACY = 'solis_notifications_list';
 const STORAGE_KEY_PREFS = 'solis_smart_notification_prefs';
+const STORAGE_KEY_PREFS_LEGACY = 'solis_notification_preferences';
+
+export const DEFAULT_SMART_NOTIFICATION_PREFERENCES: SmartNotificationPreferences = {
+  enabled: true,
+  webPushEnabled: false,
+  quietHoursEnabled: true,
+  quietHoursStart: '22:00',
+  quietHoursEnd: '07:00',
+  categories: {
+    task: true,
+    study: true,
+    room: true,
+    calendar: true,
+    habit: true,
+    intelligence: true
+  },
+  minimumPriority: 'normal',
+  studyReminders: true,
+  focusReminders: true,
+  habitReminders: true,
+  goalReminders: false,
+  timeBlockReminders: true,
+  hourReviewReminders: true,
+  roomAlerts: true,
+  soundEnabled: true
+};
+
+/**
+ * Pure quiet-hours calculation (HH:mm 24h strings, supports overnight windows).
+ * Kept as a standalone export so callers can evaluate arbitrary windows
+ * (e.g. Settings previews) without mutating service preferences.
+ */
+export function isWithinQuietHours(
+  currentTime: Date,
+  startTimeStr: string,
+  endTimeStr: string
+): boolean {
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+
+  const [startH, startM] = startTimeStr.split(':').map((n) => parseInt(n, 10) || 0);
+  const [endH, endM] = endTimeStr.split(':').map((n) => parseInt(n, 10) || 0);
+
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  if (startMinutes <= endMinutes) {
+    // Normal range (e.g. 09:00 to 17:00)
+    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+  } else {
+    // Overnight range (e.g. 22:00 to 07:00)
+    return currentMinutes >= startMinutes || currentMinutes < endMinutes;
+  }
+}
+
+// Reminder-toggle fields inherited from the former duplicate preferences store.
+const LEGACY_BOOLEAN_FIELDS = [
+  'quietHoursEnabled',
+  'studyReminders',
+  'focusReminders',
+  'habitReminders',
+  'goalReminders',
+  'timeBlockReminders',
+  'hourReviewReminders',
+  'roomAlerts',
+  'soundEnabled'
+] as const;
+
+/**
+ * Map a record from the retired `solis_notification_preferences` store onto
+ * SmartNotificationPreferences. Values are mapped 1:1 (zero data loss); fields the
+ * legacy store never had keep the service defaults.
+ */
+function mapLegacyPreferences(legacy: Record<string, unknown>): SmartNotificationPreferences {
+  const prefs: SmartNotificationPreferences = { ...DEFAULT_SMART_NOTIFICATION_PREFERENCES };
+
+  for (const field of LEGACY_BOOLEAN_FIELDS) {
+    const value = legacy[field];
+    if (typeof value === 'boolean') {
+      prefs[field] = value;
+    }
+  }
+  if (typeof legacy.quietHoursStart === 'string') {
+    prefs.quietHoursStart = legacy.quietHoursStart;
+  }
+  if (typeof legacy.quietHoursEnd === 'string') {
+    prefs.quietHoursEnd = legacy.quietHoursEnd;
+  }
+  return prefs;
+}
 
 export class NotificationService {
   private notifications: SolisNotification[] = [];
@@ -22,27 +121,67 @@ export class NotificationService {
   }
 
   private loadPreferences(): SmartNotificationPreferences {
+    this.migrateLegacyPreferences();
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY_PREFS);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          // Merge over defaults so stores written before a field existed stay complete.
+          return {
+            ...DEFAULT_SMART_NOTIFICATION_PREFERENCES,
+            ...parsed,
+            categories: {
+              ...DEFAULT_SMART_NOTIFICATION_PREFERENCES.categories,
+              ...(parsed.categories ?? {})
+            }
+          };
+        }
+      }
     } catch (e) {}
 
-    return {
-      enabled: true,
-      webPushEnabled: false,
-      quietHoursEnabled: true,
-      quietHoursStart: '22:00',
-      quietHoursEnd: '07:00',
-      categories: {
-        task: true,
-        study: true,
-        room: true,
-        calendar: true,
-        habit: true,
-        intelligence: true
-      },
-      minimumPriority: 'normal'
-    };
+    return { ...DEFAULT_SMART_NOTIFICATION_PREFERENCES };
+  }
+
+  /**
+   * One-time migration of the retired duplicate store (`solis_notification_preferences`):
+   * when the canonical key is absent its values are mapped onto
+   * SmartNotificationPreferences and written to the canonical key; when the canonical
+   * key already exists, only fields it has never written are filled in from the legacy
+   * store. Either way the legacy key is then removed.
+   */
+  private migrateLegacyPreferences(): void {
+    try {
+      const legacyRaw = localStorage.getItem(STORAGE_KEY_PREFS_LEGACY);
+      if (legacyRaw === null) return;
+
+      const canonicalRaw = localStorage.getItem(STORAGE_KEY_PREFS);
+
+      if (canonicalRaw === null) {
+        const legacy = JSON.parse(legacyRaw);
+        if (legacy && typeof legacy === 'object') {
+          localStorage.setItem(
+            STORAGE_KEY_PREFS,
+            JSON.stringify(mapLegacyPreferences(legacy))
+          );
+        }
+      } else {
+        const canonical = JSON.parse(canonicalRaw);
+        const legacy = JSON.parse(legacyRaw);
+        if (canonical && typeof canonical === 'object' && legacy && typeof legacy === 'object') {
+          // Canonical is authoritative; adopt only legacy-only fields it is missing.
+          localStorage.setItem(
+            STORAGE_KEY_PREFS,
+            JSON.stringify({ ...mapLegacyPreferences(legacy), ...canonical })
+          );
+        }
+      }
+
+      localStorage.removeItem(STORAGE_KEY_PREFS_LEGACY);
+    } catch (e) {
+      // Unreadable legacy store: leave it untouched and retry on next boot.
+    }
   }
 
   private savePreferences(prefs: SmartNotificationPreferences) {
@@ -55,8 +194,27 @@ export class NotificationService {
 
   private loadNotifications(): SolisNotification[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY_NOTIFS);
-      if (raw) return JSON.parse(raw);
+      let raw = localStorage.getItem(STORAGE_KEY_NOTIFS);
+
+      const legacyRaw = localStorage.getItem(STORAGE_KEY_NOTIFS_LEGACY);
+      if (legacyRaw !== null) {
+        // One-time migration: move legacy inbox items to the canonical key.
+        if (raw === null) {
+          try {
+            const legacyItems = JSON.parse(legacyRaw);
+            if (Array.isArray(legacyItems)) {
+              raw = JSON.stringify(legacyItems);
+              localStorage.setItem(STORAGE_KEY_NOTIFS, raw);
+            }
+          } catch (e) {}
+        }
+        localStorage.removeItem(STORAGE_KEY_NOTIFS_LEGACY);
+      }
+
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (e) {}
     return this.getDefaultNotifications();
   }
@@ -121,20 +279,11 @@ export class NotificationService {
 
   public isInQuietHours(date: Date = new Date()): boolean {
     if (!this.preferences.quietHoursEnabled) return false;
-    const currentMins = date.getHours() * 60 + date.getMinutes();
-
-    const [sh, sm] = this.preferences.quietHoursStart.split(':').map(Number);
-    const [eh, em] = this.preferences.quietHoursEnd.split(':').map(Number);
-
-    const startMins = (sh || 0) * 60 + (sm || 0);
-    const endMins = (eh || 0) * 60 + (em || 0);
-
-    if (startMins > endMins) {
-      // Overnight (e.g. 22:00 to 07:00)
-      return currentMins >= startMins || currentMins < endMins;
-    }
-
-    return currentMins >= startMins && currentMins < endMins;
+    return isWithinQuietHours(
+      date,
+      this.preferences.quietHoursStart,
+      this.preferences.quietHoursEnd
+    );
   }
 
   public dispatch(
@@ -172,17 +321,9 @@ export class NotificationService {
     if (
       !options?.skipBrowserNotification &&
       (!isQuiet || payload.priority === 'urgent') &&
-      this.preferences.webPushEnabled &&
-      typeof window !== 'undefined' &&
-      'Notification' in window &&
-      Notification.permission === 'granted'
+      this.preferences.webPushEnabled
     ) {
-      try {
-        new Notification(newNotif.title, {
-          body: newNotif.message,
-          icon: '/favicon.ico'
-        });
-      } catch (e) {}
+      this.sendBrowserNotification(newNotif.title, { body: newNotif.message });
     }
 
     return newNotif;
@@ -203,6 +344,143 @@ export class NotificationService {
     } catch (e) {
       return false;
     }
+  }
+
+  /**
+   * Single direct browser-notification sending path (permission-gated).
+   * Used by dispatch() and the domain reminder methods below.
+   */
+  private sendBrowserNotification(title: string, options?: NotificationOptions): boolean {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return false;
+    }
+    if (Notification.permission !== 'granted') {
+      return false;
+    }
+    try {
+      new Notification(title, {
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        ...options
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Audible + visible delivery for domain reminders: plays the fallback chime
+   * through the canonical hapticsEngine audio path, then attempts the browser
+   * notification. Returns whether the browser notification was delivered.
+   */
+  private deliverBrowserAlert(
+    title: string,
+    body: string,
+    tag: string,
+    chimeType: NotificationChimeType
+  ): boolean {
+    if (this.preferences.soundEnabled) {
+      hapticsEngine.playNotificationChime(chimeType);
+    }
+    return this.sendBrowserNotification(title, { body, tag });
+  }
+
+  public notifyTimeBlockStart(
+    blockTitle: string,
+    durationMinutes = 60,
+    onFallback?: (msg: string) => void
+  ): boolean {
+    if (!this.preferences.timeBlockReminders) return false;
+    if (this.isInQuietHours()) return false;
+
+    try {
+      this.dispatch({
+        category: 'task',
+        priority: 'high',
+        title: `Starting Planned Block: ${blockTitle}`,
+        message: `Your scheduled ${durationMinutes}m focus window is starting now. Enter the flow.`,
+        actionUrl: '/app/tasks',
+        actionLabel: 'Open Timeline'
+      }, { skipBrowserNotification: true });
+    } catch {}
+
+    const sent = this.deliverBrowserAlert(
+      `Starting Planned Block: ${blockTitle}`,
+      `Your scheduled ${durationMinutes}m focus window is starting now. Enter the flow.`,
+      'time-block-start',
+      'start'
+    );
+
+    if (!sent && onFallback) {
+      onFallback(`Starting block: ${blockTitle} (${durationMinutes}m)`);
+    }
+    return sent;
+  }
+
+  public notifyHourReviewPrompt(
+    hour: number,
+    blockTitle?: string,
+    onFallback?: (msg: string) => void
+  ): boolean {
+    if (!this.preferences.hourReviewReminders) return false;
+    if (this.isInQuietHours()) return false;
+
+    const formattedHour = `${hour % 12 === 0 ? 12 : hour % 12}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
+
+    try {
+      this.dispatch({
+        category: 'task',
+        priority: 'normal',
+        title: `Hour Complete (${formattedHour})`,
+        message: blockTitle
+          ? `What did you get done for "${blockTitle}"? Take 30 seconds to capture progress.`
+          : 'The hour has concluded. Reflect on what was accomplished and plan what is next.',
+        actionUrl: '/app/tasks',
+        actionLabel: 'Log Hour Review'
+      }, { skipBrowserNotification: true });
+    } catch {}
+
+    const sent = this.deliverBrowserAlert(
+      `Hour Complete (${formattedHour})`,
+      blockTitle
+        ? `What did you get done for "${blockTitle}"? Take 30 seconds to capture progress.`
+        : 'The hour has concluded. Reflect on what was accomplished and plan what is next.',
+      'hour-review',
+      'transition'
+    );
+
+    if (!sent && onFallback) {
+      onFallback(`Hour complete: Reflect on ${blockTitle || 'your progress'}`);
+    }
+    return sent;
+  }
+
+  public notifyStudyRoomEvent(
+    title: string,
+    body: string,
+    onFallback?: (msg: string) => void
+  ): boolean {
+    if (!this.preferences.roomAlerts) return false;
+    if (this.isInQuietHours()) return false;
+
+    try {
+      this.dispatch({
+        category: 'room',
+        priority: 'normal',
+        title,
+        message: body,
+        actionUrl: '/app/rooms',
+        actionLabel: 'Enter Room'
+      }, { skipBrowserNotification: true });
+    } catch {}
+
+    const sent = this.deliverBrowserAlert(title, body, 'study-room-event', 'chime');
+
+    if (!sent && onFallback) {
+      onFallback(`${title} — ${body}`);
+    }
+    return sent;
   }
 
   private getDefaultNotifications(): SolisNotification[] {

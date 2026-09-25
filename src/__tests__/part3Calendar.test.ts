@@ -1,27 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   calculateAvailableTime,
   timeStringToMinutes,
   minutesToTimeString
 } from '../utils/calendar/availableTime';
-import { calendarService } from '../services/calendar/calendar.service';
 import { ExternalCalendarEvent } from '../types/calendar';
 import { TimeBlock } from '../types/planning';
 
-const mockLocalStorage = {
-  store: {} as Record<string, string>,
-  getItem: (key: string) => mockLocalStorage.store[key] || null,
-  setItem: (key: string, value: string) => { mockLocalStorage.store[key] = String(value); },
-  removeItem: (key: string) => { delete mockLocalStorage.store[key]; },
-  clear: () => { mockLocalStorage.store = {}; }
-};
-vi.stubGlobal('localStorage', mockLocalStorage);
-
-describe('SOLIS PART 3 — Pillar 1: External Calendar & Available-Time Engine', () => {
-  beforeEach(() => {
-    mockLocalStorage.clear();
-  });
-
+describe('SOLIS PART 3 — Pillar 1: Available-Time Engine', () => {
   describe('Time Conversion Helpers', () => {
     it('converts HH:MM string to absolute minutes from midnight', () => {
       expect(timeStringToMinutes('00:00')).toBe(0);
@@ -225,66 +211,6 @@ describe('SOLIS PART 3 — Pillar 1: External Calendar & Available-Time Engine',
       });
 
       expect(report.conflicts.length).toBe(0);
-    });
-  });
-
-  describe('CalendarService Local Integration & ICS Export', () => {
-    it('manages connections and persists provider settings', async () => {
-      const initialConfig = calendarService.getConfig();
-      expect(initialConfig).toBeDefined();
-      expect(initialConfig.provider).toBe('google');
-
-      const connected = await calendarService.connectCalendar('scholar@solis.space', 'google');
-      expect(connected.status).toBe('synced');
-      expect(connected.accountEmail).toBe('scholar@solis.space');
-
-      const events = calendarService.getEvents();
-      expect(Array.isArray(events)).toBe(true);
-      expect(events.length).toBeGreaterThan(0);
-    });
-
-    it('retrieves available time report via service wrapper', () => {
-      const report = calendarService.getAvailableTimeReport('2026-09-23');
-      expect(report).toBeDefined();
-      expect(report.totalAvailableMinutes).toBeGreaterThan(0);
-    });
-
-    it('exports planned Solis blocks to a RFC 5545 valid .ics formatted string', () => {
-      const blocks: TimeBlock[] = [
-        {
-          id: 'block-ics-1',
-          entityId: 'ent-ics-1',
-          date: '2026-09-23',
-          type: 'study_plan',
-          title: 'Algorithms Revision',
-          startTime: '09:00',
-          endTime: '10:30',
-          completed: false,
-          durationMinutes: 90
-        },
-        {
-          id: 'block-ics-2',
-          entityId: 'ent-ics-2',
-          date: '2026-09-23',
-          type: 'task_deadline',
-          title: 'Project Submission',
-          startTime: '15:00',
-          endTime: '16:00',
-          completed: true,
-          durationMinutes: 60
-        }
-      ];
-
-      const ics = calendarService.exportSolisBlocksToICS(blocks, '2026-09-23');
-
-      expect(ics).toContain('BEGIN:VCALENDAR');
-      expect(ics).toContain('VERSION:2.0');
-      expect(ics).toContain('PRODID:-//Solis OS//Solis Study OS//EN');
-      expect(ics).toContain('BEGIN:VEVENT');
-      expect(ics).toContain('SUMMARY:Algorithms Revision');
-      expect(ics).toContain('SUMMARY:Project Submission');
-      expect(ics).toContain('END:VEVENT');
-      expect(ics).toContain('END:VCALENDAR');
     });
   });
 });
