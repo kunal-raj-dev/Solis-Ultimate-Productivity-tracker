@@ -88,8 +88,8 @@ export class SupabaseHabitService implements IHabitService {
 
     if (error || !data) throw error || new Error('Failed to update habit');
 
-    const all = await this.getHabits();
     this.ctx.notify();
+    const all = await this.getHabits();
     return all.find((h) => h.id === id)!;
   };
 
@@ -147,8 +147,8 @@ export class SupabaseHabitService implements IHabitService {
         });
     }
 
-    const all = await this.getHabits();
     this.ctx.notify();
+    const all = await this.getHabits();
     return all.find((h) => h.id === id)!;
   };
 }

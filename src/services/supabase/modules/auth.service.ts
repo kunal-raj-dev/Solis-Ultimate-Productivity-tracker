@@ -1,5 +1,5 @@
 import { IAuthService } from '../../api.interface';
-import { UserProfile, LoginCredentials, SignupCredentials, AuthSession } from '../../../types/auth';
+import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials, AuthSession } from '../../../types/auth';
 import { mapProfile } from '../supabaseMappers';
 import { SupabaseServiceContext } from './types';
 
@@ -49,7 +49,15 @@ export class SupabaseAuthService implements IAuthService {
         };
       }
 
-      return mapProfile(profile);
+      const mapped = mapProfile(profile);
+      if (typeof window !== 'undefined' && mapped.preferences) {
+        try {
+          localStorage.setItem('solis_user_preferences', JSON.stringify(mapped.preferences));
+        } catch {
+          // Ignore storage errors
+        }
+      }
+      return mapped;
     } catch (err) {
       console.warn('[SupabaseAuthService] Session retrieval error or timeout:', err);
       return null;
@@ -168,5 +176,67 @@ export class SupabaseAuthService implements IAuthService {
 
     if (error) throw error;
     this.ctx.notify();
+  };
+
+  updateProfile = async (updates: {
+    name?: string;
+    email?: string;
+    focusField?: string;
+    preferences?: Partial<UserPreferences>;
+  }): Promise<UserProfile> => {
+    const currentUser = await this.getCurrentUser();
+    if (!currentUser) {
+      throw new Error('Must be authenticated to update profile.');
+    }
+
+    const nextName = updates.name !== undefined ? updates.name.trim() : currentUser.name;
+    const nextEmail = updates.email !== undefined ? updates.email.trim() : currentUser.email;
+    const nextFocusField = updates.focusField !== undefined ? updates.focusField.trim() : currentUser.focusField;
+    const nextPreferences: UserPreferences = {
+      ...currentUser.preferences,
+      ...(updates.preferences || {})
+    };
+    const nowIso = new Date().toISOString();
+
+    const { data: updatedRow, error } = await this.ctx.client
+      .from('profiles')
+      .upsert({
+        id: currentUser.id,
+        name: nextName,
+        email: nextEmail,
+        focus_field: nextFocusField,
+        preferences: nextPreferences,
+        updated_at: nowIso
+      })
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    // Best-effort sync to Supabase Auth user_metadata
+    this.ctx.client.auth.updateUser({
+      data: {
+        name: nextName,
+        focus_field: nextFocusField
+      }
+    }).catch(() => {});
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('solis_user_preferences', JSON.stringify(nextPreferences));
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
+    this.ctx.notify();
+    return updatedRow ? mapProfile(updatedRow) : {
+      ...currentUser,
+      name: nextName,
+      email: nextEmail,
+      focusField: nextFocusField,
+      preferences: nextPreferences,
+      updatedAt: nowIso
+    };
   };
 }

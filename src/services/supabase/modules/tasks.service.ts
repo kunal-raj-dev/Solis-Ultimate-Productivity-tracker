@@ -44,6 +44,8 @@ export class SupabaseTaskService implements ITaskService {
         result = result.filter((t) => isToday(t.dueDate));
       } else if (filter.timeFilter === 'upcoming') {
         result = result.filter((t) => isFuture(t.dueDate) && t.status !== 'completed');
+      } else if (filter.timeFilter === 'unscheduled') {
+        result = result.filter((t) => (!t.dueDate || t.dueDate === '') && t.status !== 'completed');
       } else if (filter.timeFilter === 'overdue') {
         result = result.filter((t) => isPast(t.dueDate) && t.status !== 'completed');
       } else if (filter.timeFilter === 'completed') {
@@ -95,7 +97,7 @@ export class SupabaseTaskService implements ITaskService {
       status: task.status || 'todo',
       priority: task.priority || 'medium',
       category: task.category || 'study',
-      due_date: task.dueDate || getISODateString(new Date()),
+      due_date: task.dueDate || null,
       due_time: task.dueTime || null,
       estimated_minutes: task.estimatedMinutes || 30,
       tags: task.tags || []
@@ -303,8 +305,8 @@ export class SupabaseTaskService implements ITaskService {
         .eq('user_id', userId);
     }
 
-    const task = await this.getTaskById(taskId);
     this.ctx.notify();
+    const task = await this.getTaskById(taskId);
     return task!;
   };
 
@@ -316,8 +318,8 @@ export class SupabaseTaskService implements ITaskService {
       .eq('id', subTaskId)
       .eq('user_id', userId);
 
-    const task = await this.getTaskById(taskId);
     this.ctx.notify();
+    const task = await this.getTaskById(taskId);
     return task!;
   };
 
@@ -333,8 +335,8 @@ export class SupabaseTaskService implements ITaskService {
       .eq('id', subTaskId)
       .eq('user_id', userId);
 
-    const task = await this.getTaskById(taskId);
     this.ctx.notify();
+    const task = await this.getTaskById(taskId);
     return task!;
   };
 

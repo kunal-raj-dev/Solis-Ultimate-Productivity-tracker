@@ -118,8 +118,8 @@ export class SupabaseGoalService implements IGoalService {
 
     if (error || !data) throw error || new Error('Failed to update goal');
 
-    const all = await this.getGoals();
     this.ctx.notify();
+    const all = await this.getGoals();
     return all.find((g) => g.id === id)!;
   };
 
@@ -154,10 +154,11 @@ export class SupabaseGoalService implements IGoalService {
 
     if (error) throw error;
 
+    queryCache.invalidate('goals_all');
     const all = await this.getGoals();
     const goal = all.find((g) => g.id === goalId)!;
-    if (goal.status === 'completed') {
-      await this.updateGoal(goalId, { status: 'active' });
+    if (goal && goal.status === 'completed') {
+      return this.updateGoal(goalId, { status: 'active' });
     }
 
     this.ctx.notify();
@@ -183,12 +184,13 @@ export class SupabaseGoalService implements IGoalService {
 
     if (error) throw error;
 
+    queryCache.invalidate('goals_all');
     const all = await this.getGoals();
     const goal = all.find((g) => g.id === goalId)!;
-    if (goal.progressPercentage === 100 && goal.status !== 'completed') {
-      await this.updateGoal(goalId, { status: 'completed' });
-    } else if (goal.progressPercentage < 100 && goal.status === 'completed') {
-      await this.updateGoal(goalId, { status: 'active' });
+    if (goal && goal.progressPercentage === 100 && goal.status !== 'completed') {
+      return this.updateGoal(goalId, { status: 'completed' });
+    } else if (goal && goal.progressPercentage < 100 && goal.status === 'completed') {
+      return this.updateGoal(goalId, { status: 'active' });
     }
 
     this.ctx.notify();
@@ -217,13 +219,14 @@ export class SupabaseGoalService implements IGoalService {
       .eq('id', milestoneId)
       .eq('user_id', userId);
 
+    queryCache.invalidate('goals_all');
     const all = await this.getGoals();
     const goal = all.find((g) => g.id === goalId)!;
 
-    if (goal.progressPercentage === 100 && goal.status !== 'completed') {
-      await this.updateGoal(goalId, { status: 'completed' });
-    } else if (goal.progressPercentage < 100 && goal.status === 'completed') {
-      await this.updateGoal(goalId, { status: 'active' });
+    if (goal && goal.progressPercentage === 100 && goal.status !== 'completed') {
+      return this.updateGoal(goalId, { status: 'completed' });
+    } else if (goal && goal.progressPercentage < 100 && goal.status === 'completed') {
+      return this.updateGoal(goalId, { status: 'active' });
     }
 
     this.ctx.notify();
@@ -239,13 +242,14 @@ export class SupabaseGoalService implements IGoalService {
       .eq('id', milestoneId)
       .eq('user_id', userId);
 
+    queryCache.invalidate('goals_all');
     const all = await this.getGoals();
     const goal = all.find((g) => g.id === goalId)!;
 
-    if (goal.milestones.length > 0 && goal.progressPercentage === 100 && goal.status !== 'completed') {
-      await this.updateGoal(goalId, { status: 'completed' });
-    } else if (goal.progressPercentage < 100 && goal.status === 'completed') {
-      await this.updateGoal(goalId, { status: 'active' });
+    if (goal && goal.milestones.length > 0 && goal.progressPercentage === 100 && goal.status !== 'completed') {
+      return this.updateGoal(goalId, { status: 'completed' });
+    } else if (goal && goal.progressPercentage < 100 && goal.status === 'completed') {
+      return this.updateGoal(goalId, { status: 'active' });
     }
 
     this.ctx.notify();

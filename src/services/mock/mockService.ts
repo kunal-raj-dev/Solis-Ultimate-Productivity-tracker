@@ -56,7 +56,7 @@ import {
 } from '../../types/room';
 
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
-import { UserProfile, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
+import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
 import { isToday, isPast, isFuture, getISODateString, isThisWeek } from '../../utils/date';
 import { spawnNextRecurringOccurrence } from '../../utils/tasks/recurrenceEngine';
 import { calculateStreaks } from '../../utils/streaks';
@@ -86,6 +86,23 @@ export class MockDataService implements IDataService {
         if (sessionStorage.getItem('solis_mock_logged_out') === 'true') {
           return null;
         }
+        const savedProfile = localStorage.getItem('solis_user_profile');
+        const savedPrefs = localStorage.getItem('solis_user_preferences');
+        let baseUser = { ...MOCK_USER, preferences: { ...MOCK_USER.preferences } };
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile);
+          baseUser = {
+            ...baseUser,
+            name: parsedProfile.name || baseUser.name,
+            email: parsedProfile.email || baseUser.email,
+            focusField: parsedProfile.focusField || baseUser.focusField
+          };
+        }
+        if (savedPrefs) {
+          const parsedPrefs = JSON.parse(savedPrefs);
+          baseUser.preferences = { ...baseUser.preferences, ...parsedPrefs };
+        }
+        return baseUser;
       } catch {}
     }
     return MOCK_USER;
@@ -371,6 +388,47 @@ export class MockDataService implements IDataService {
         this._user = { ...this._user, updatedAt: new Date().toISOString() };
       }
       this.notify();
+    },
+
+    updateProfile: async (updates: {
+      name?: string;
+      email?: string;
+      focusField?: string;
+      preferences?: Partial<UserPreferences>;
+    }): Promise<UserProfile> => {
+      await delay(40);
+      const current = this._user || { ...MOCK_USER, preferences: { ...MOCK_USER.preferences } };
+      const nextName = updates.name !== undefined ? updates.name.trim() : current.name;
+      const nextEmail = updates.email !== undefined ? updates.email.trim() : current.email;
+      const nextFocusField = updates.focusField !== undefined ? updates.focusField.trim() : current.focusField;
+      const nextPreferences: UserPreferences = {
+        ...current.preferences,
+        ...(updates.preferences || {})
+      };
+
+      this._user = {
+        ...current,
+        name: nextName,
+        email: nextEmail,
+        focusField: nextFocusField,
+        preferences: nextPreferences,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(
+            'solis_user_profile',
+            JSON.stringify({ name: nextName, email: nextEmail, focusField: nextFocusField })
+          );
+          localStorage.setItem('solis_user_preferences', JSON.stringify(nextPreferences));
+        } catch {
+          // Ignore storage errors
+        }
+      }
+
+      this.notify();
+      return { ...this._user, preferences: { ...this._user.preferences } };
     }
   };
 
@@ -396,6 +454,8 @@ export class MockDataService implements IDataService {
           list = list.filter((t) => isToday(t.dueDate));
         } else if (filter.timeFilter === 'upcoming') {
           list = list.filter((t) => isFuture(t.dueDate) && t.status !== 'completed');
+        } else if (filter.timeFilter === 'unscheduled') {
+          list = list.filter((t) => (!t.dueDate || t.dueDate === '') && t.status !== 'completed');
         } else if (filter.timeFilter === 'overdue') {
           list = list.filter((t) => isPast(t.dueDate) && t.status !== 'completed');
         } else if (filter.timeFilter === 'completed') {
@@ -435,7 +495,7 @@ export class MockDataService implements IDataService {
         status: task.status || 'todo',
         priority: task.priority || 'medium',
         category: task.category || 'study',
-        dueDate: task.dueDate !== undefined ? task.dueDate : getISODateString(new Date()),
+        dueDate: task.dueDate !== undefined ? task.dueDate : undefined,
         dueTime: task.dueTime || undefined,
         estimatedMinutes: task.estimatedMinutes || 30,
         completedMinutes: task.completedMinutes || 0,
@@ -620,6 +680,14 @@ export class MockDataService implements IDataService {
       const blocks = this._timeBlocks
         .filter((b) => b.date === date)
         .sort((a, b) => a.startHour - b.startHour || (a.startMinute || 0) - (b.startMinute || 0));
+      return JSON.parse(JSON.stringify(blocks));
+    },
+
+    getAllTimeBlocks: async (): Promise<TaskTimeBlock[]> => {
+      await delay(15);
+      const blocks = [...this._timeBlocks].sort(
+        (a, b) => a.date.localeCompare(b.date) || a.startHour - b.startHour || (a.startMinute || 0) - (b.startMinute || 0)
+      );
       return JSON.parse(JSON.stringify(blocks));
     },
 

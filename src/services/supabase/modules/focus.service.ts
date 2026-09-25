@@ -37,33 +37,50 @@ export class SupabaseFocusService implements IFocusService {
 
   saveFocusSession = async (session: Partial<FocusSession>): Promise<FocusSession> => {
     const userId = await this.ctx.getUserId();
-    const { data, error } = await this.ctx.client
+    const insertPayload: Record<string, any> = {
+      user_id: userId,
+      mode: session.mode || 'pomodoro',
+      duration_minutes: session.durationMinutes || 25,
+      break_duration_minutes: session.breakDurationMinutes || null,
+      task_id: session.taskId || null,
+      subject_id: session.subjectId || null,
+      plan_item_id: session.planItemId || null,
+      topic: session.topic?.trim() || null,
+      title: session.title || 'Deep Focus Pod Session',
+      completed: session.completed ?? true,
+      interruptions_count: session.interruptionsCount || 0,
+      flow_quality: session.flowQuality || null,
+      soundscape_type: session.soundscapeType || null,
+      target_outcome: session.targetOutcome?.trim() || null,
+      notes: session.notes?.trim() || null,
+      parked_thoughts: session.parkedThoughts || []
+    };
+
+    let { data, error } = await this.ctx.client
       .from('focus_sessions')
-      .insert({
-        user_id: userId,
-        mode: session.mode || 'pomodoro',
-        duration_minutes: session.durationMinutes || 25,
-        break_duration_minutes: session.breakDurationMinutes || null,
-        task_id: session.taskId || null,
-        subject_id: session.subjectId || null,
-        plan_item_id: session.planItemId || null,
-        topic: session.topic?.trim() || null,
-        title: session.title || 'Deep Focus Pod Session',
-        completed: session.completed ?? true,
-        interruptions_count: session.interruptionsCount || 0,
-        flow_quality: session.flowQuality || null,
-        soundscape_type: session.soundscapeType || null,
-        target_outcome: session.targetOutcome?.trim() || null,
-        notes: session.notes?.trim() || null,
-        parked_thoughts: session.parkedThoughts || []
-      })
+      .insert(insertPayload)
       .select()
       .single();
+
+    if (error && (error.code === 'PGRST204' || error.message?.includes('task_id'))) {
+      const { task_id: _omitted, ...fallbackPayload } = insertPayload;
+      const retry = await this.ctx.client
+        .from('focus_sessions')
+        .insert(fallbackPayload)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error || !data) throw error || new Error('Failed to save focus session');
 
     this.ctx.notify();
-    return mapFocusSession(data, session.subjectName);
+    const mapped = mapFocusSession(data, session.subjectName);
+    return {
+      ...mapped,
+      taskId: mapped.taskId || session.taskId || undefined
+    };
   };
 
   getTodayFocusMinutes = async (): Promise<number> => {
