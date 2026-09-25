@@ -8,6 +8,28 @@ export interface WorkloadCalculatorOptions {
   dailyCapacityMinutes?: number; // e.g. 360m (6 hours)
 }
 
+export const DEFAULT_DAILY_CAPACITY_MINUTES = 360; // Standard 6.0-hour deep work capacity ceiling
+
+export function getDefaultDailyCapacityMinutes(): number {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('solis_user_preferences');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.dailyGoalMinutes === 'number' && parsed.dailyGoalMinutes > 0) {
+          return parsed.dailyGoalMinutes;
+        }
+        if (typeof parsed.dailyStudyGoalMinutes === 'number' && parsed.dailyStudyGoalMinutes > 0) {
+          return parsed.dailyStudyGoalMinutes;
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }
+  return DEFAULT_DAILY_CAPACITY_MINUTES;
+}
+
 /**
  * Evaluates daily workload vs available focused capacity.
  * Detects overcommitment calmly with actionable adjustment suggestions.
@@ -16,7 +38,7 @@ export function calculateWorkload({
   date = getISODateString(new Date()),
   tasks,
   timeBlocks,
-  dailyCapacityMinutes = 360 // Standard 6-hour deep focus capacity
+  dailyCapacityMinutes = getDefaultDailyCapacityMinutes()
 }: WorkloadCalculatorOptions): WorkloadSummary {
   // 1. Time blocks scheduled for this date
   const dayBlocks = timeBlocks.filter(

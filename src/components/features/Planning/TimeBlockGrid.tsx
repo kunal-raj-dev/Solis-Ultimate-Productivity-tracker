@@ -109,6 +109,10 @@ export const TimeBlockGrid: React.FC<TimeBlockGridProps> = ({
                           ? 'coral'
                           : block.type === 'focus_session'
                           ? 'lavender'
+                          : block.type === 'task_block'
+                          ? 'sage'
+                          : block.type === 'routine'
+                          ? 'amber'
                           : 'amber'
                       }
                     >
@@ -116,6 +120,10 @@ export const TimeBlockGrid: React.FC<TimeBlockGridProps> = ({
                         ? 'Study Block'
                         : block.type === 'focus_session'
                         ? 'Focus Log'
+                        : block.type === 'task_block'
+                        ? 'Scheduled Block'
+                        : block.type === 'routine'
+                        ? 'Routine'
                         : 'Task Due'}
                     </Badge>
                   </div>

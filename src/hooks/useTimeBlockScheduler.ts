@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { TaskTimeBlock } from '../types/task';
 import { getISODateString } from '../utils/date';
-import {
-  notifyTimeBlockStart,
-  notifyHourReviewPrompt
-} from '../utils/notifications';
+import { notificationService } from '../services/notifications/notification.service';
 
 interface UseTimeBlockSchedulerOptions {
   timeBlocks: TaskTimeBlock[];
@@ -68,7 +65,7 @@ export function useTimeBlockScheduler({
           block.status === 'planned'
         ) {
           globalNotifiedStarts.add(blockKey);
-          notifyTimeBlockStart(
+          notificationService.notifyTimeBlockStart(
             block.taskTitle,
             block.durationMinutes,
             onFallbackNoticeRef.current
@@ -85,7 +82,7 @@ export function useTimeBlockScheduler({
           !globalNotifiedReviews.has(blockKey)
         ) {
           globalNotifiedReviews.add(blockKey);
-          notifyHourReviewPrompt(
+          notificationService.notifyHourReviewPrompt(
             blockEndHour,
             block.taskTitle,
             onFallbackNoticeRef.current
