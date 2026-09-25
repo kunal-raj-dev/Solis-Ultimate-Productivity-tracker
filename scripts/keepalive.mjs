@@ -51,9 +51,9 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL || 'https://tmxrupqgttaxlcrrcubt.supabase.co';
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || 'sb_publishable_-vxrkvw_6Ef3rwFd957ymw_gfmM99Co';
-const siteUrl = env.SITE_URL || env.VITE_SITE_URL || 'https://solis-ultimate-productivity-tracker.vercel.app';
+const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL || '';
+const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || '';
+const siteUrl = env.SITE_URL || env.VITE_SITE_URL || '';
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('☀️  SOLIS SYSTEM KEEPALIVE & UPTIME MONITOR');
@@ -61,8 +61,8 @@ console.log('━━━━━━━━━━━━━━━━━━━━━━�
 console.log(`[Timestamp] : ${new Date().toISOString()}`);
 
 async function pingSupabase() {
-  if (!supabaseUrl || supabaseUrl.includes('your-project-id')) {
-    console.log('⚠️  VITE_SUPABASE_URL is missing or using placeholder in .env.');
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project-id')) {
+    console.log('⚠️  VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing or using placeholder in .env.');
     console.log('   Skipping Supabase ping. Solis is currently running in local Mock mode.');
     return { success: true, skipped: true, reason: 'unconfigured_local_mock' };
   }

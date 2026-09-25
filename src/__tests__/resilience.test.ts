@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  notificationService,
   isWithinQuietHours,
-  loadNotificationPreferences,
-  DEFAULT_NOTIFICATION_PREFERENCES
-} from '../utils/notifications';
+  DEFAULT_SMART_NOTIFICATION_PREFERENCES
+} from '../services/notifications/notification.service';
 
 describe('Solis Resilience & Notification Suite', () => {
   it('identifies daytime within standard daytime range', () => {
@@ -33,9 +33,9 @@ describe('Solis Resilience & Notification Suite', () => {
   });
 
   it('provides default notification preferences safely', () => {
-    const prefs = loadNotificationPreferences();
+    const prefs = notificationService.getPreferences();
     expect(prefs).toBeDefined();
-    expect(prefs.studyReminders).toBe(DEFAULT_NOTIFICATION_PREFERENCES.studyReminders);
+    expect(prefs.studyReminders).toBe(DEFAULT_SMART_NOTIFICATION_PREFERENCES.studyReminders);
     expect(prefs.quietHoursEnabled).toBe(true);
   });
 });

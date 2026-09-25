@@ -29,18 +29,18 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const supabaseUrl = env.VITE_SUPABASE_URL || 'https://tmxrupqgttaxlcrrcubt.supabase.co';
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL || '';
+const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || '';
 
-console.log('Testing Supabase Connection to:', supabaseUrl);
+console.log('Testing Supabase Connection to:', supabaseUrl || '(not configured)');
 console.log('Using Anon Key:', supabaseAnonKey ? `${supabaseAnonKey.slice(0, 16)}...` : 'NONE');
 
-if (!supabaseAnonKey || supabaseAnonKey.includes('your-browser-safe-anon-key')) {
-  console.log('\n💡 Note: VITE_SUPABASE_ANON_KEY is currently a placeholder in .env.');
+if (!supabaseUrl || !supabaseAnonKey || supabaseAnonKey.includes('your-browser-safe-anon-key')) {
+  console.log('\n💡 Note: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not configured in .env.');
   console.log('   Solis defaults to MockDataService locally (all features, tasks, focus work out of the box).');
-  console.log('   To connect to live cloud Supabase, retrieve your browser-safe anon key from:');
-  console.log(`   https://supabase.com/dashboard/project/tmxrupqgttaxlcrrcubt/settings/api`);
-  console.log('   and paste it into .env (VITE_SUPABASE_ANON_KEY=eyJ...).\n');
+  console.log('   To connect to live cloud Supabase, retrieve your project URL and browser-safe anon key from');
+  console.log('   your Supabase Dashboard -> Settings -> API and paste them into .env.\n');
+  process.exit(0);
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);

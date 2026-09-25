@@ -13,14 +13,14 @@ export const config = {
 
 export default async function handler(request: Request) {
   const startTime = Date.now();
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://tmxrupqgttaxlcrrcubt.supabase.co';
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_-vxrkvw_6Ef3rwFd957ymw_gfmM99Co';
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
   let supabaseStatus = 'unknown';
   let latencyMs = 0;
   let isAlive = false;
 
-  if (supabaseUrl && !supabaseUrl.includes('your-project-id')) {
+  if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('your-project-id')) {
     try {
       const cleanUrl = supabaseUrl.replace(/\/+$/, '');
       // Query actual table with limit=1 to trigger real PostgreSQL SELECT query

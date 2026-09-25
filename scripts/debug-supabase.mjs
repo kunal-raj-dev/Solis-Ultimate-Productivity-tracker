@@ -29,8 +29,13 @@ function loadEnv() {
 }
 
 const env = loadEnv();
-const supabaseUrl = env.VITE_SUPABASE_URL || 'https://tmxrupqgttaxlcrrcubt.supabase.co';
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || 'placeholder';
+const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in environment.');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
