@@ -85,15 +85,15 @@ export function generateSolisIntelligenceReport(
   const mastery = computeTopicMastery(data, referenceDate);
   const attention = computeAttentionIntelligence(data, window, referenceDate);
 
-  // Derive new learning snapshot
+  // Derive new learning snapshot with real learning entities
   const rawRecords: RawLearningRecords = {
     subjects: data.subjects,
     topics: data.topics,
     sessions: data.sessions,
-    flashcards: [],
-    reviews: [],
-    notes: [],
-    resources: [],
+    flashcards: data.flashcards || [],
+    reviews: data.reviews || [],
+    notes: data.notes || [],
+    resources: data.resources || [],
     planItems: data.planItems,
     referenceDate
   };
@@ -111,6 +111,7 @@ export function generateSolisIntelligenceReport(
     mastery,
     attention,
     recommendations: snapshot.recommendations as any,
+    snapshot,
     hasOverallSufficientData
   };
 }

@@ -100,11 +100,11 @@ export function deriveTopicHistories(
     }
   }
 
-  // 6. Pre-index Notes by Topic ID (via planItem, tag, or session)
+  // 6. Pre-index Notes by Topic ID (via direct topicId, planItem, or session)
   const notesByTopic = new Map<ID, Note[]>();
   for (const n of notes) {
-    let resolvedTopicId: ID | undefined = undefined;
-    if (n.planItemId && planItemToTopicMap.has(n.planItemId)) {
+    let resolvedTopicId: ID | undefined = n.topicId;
+    if (!resolvedTopicId && n.planItemId && planItemToTopicMap.has(n.planItemId)) {
       resolvedTopicId = planItemToTopicMap.get(n.planItemId);
     }
     if (resolvedTopicId) {

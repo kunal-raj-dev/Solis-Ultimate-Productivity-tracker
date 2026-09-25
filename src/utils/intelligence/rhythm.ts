@@ -12,6 +12,7 @@ import {
   TimeOfDayBucket,
   TimeOfDayDistribution
 } from './types';
+import { getISODateString } from '../date';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -37,7 +38,8 @@ export function calculateDateWindow(scope: 'today' | 'this_week' | '28_days', re
     daysCount = 28;
   }
 
-  const formatDate = (d: Date) => d.toISOString().split('T')[0];
+  // Local-timezone-safe date keys (master.md §16.2) — never UTC slices
+  const formatDate = (d: Date) => getISODateString(d);
   return {
     startDate: formatDate(start),
     endDate: formatDate(end),

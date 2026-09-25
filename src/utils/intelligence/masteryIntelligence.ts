@@ -1,9 +1,12 @@
 import { Goal } from '../../types/goal';
-import { StudyTopic } from '../../types/study';
+import { StudyTopic, StudySession } from '../../types/study';
 import { Flashcard } from '../../types/learning';
 import { Habit } from '../../types/habit';
 import { FocusSession } from '../../types/focus';
 import { DailyReflection } from '../../types/reflection';
+import { TopicLearningHistory } from '../../types/learningIntelligence';
+import { evaluateTopicMastery } from './masteryEngine';
+import { deriveTopicHistories } from './topicHistory';
 
 export interface ExamReadinessResult {
   readinessScore: number; // 0 to 100
@@ -51,20 +54,45 @@ export function calculateExamReadiness(params: {
   topics: StudyTopic[];
   flashcards: Flashcard[];
   habits: Habit[];
+  studySessions?: StudySession[];
 }): ExamReadinessResult {
-  const { goal, topics, flashcards, habits } = params;
+  const { goal, topics, flashcards, habits, studySessions } = params;
 
-  // 1. Topics Mastery Score (35%)
+  // 1. Topics Mastery Score (35%) — Evaluated via canonical MasteryEngine
   const subjectTopics = goal.subjectId ? topics.filter((t) => t.subjectId === goal.subjectId) : topics;
+  const relevantCards = goal.subjectId ? flashcards.filter((c) => c.subjectId === goal.subjectId) : flashcards;
   let topicsScore = 0;
   if (subjectTopics.length > 0) {
     const scoreMap: Record<string, number> = { mastered: 100, learning: 60, unstudied: 20 };
-    const totalMastery = subjectTopics.reduce((acc, t) => acc + (scoreMap[t.masteryLevel] || 50), 0);
-    topicsScore = Math.round(totalMastery / subjectTopics.length);
+    if (studySessions && studySessions.length > 0) {
+      const histories = deriveTopicHistories({
+        subjects: [],
+        topics: subjectTopics,
+        sessions: studySessions,
+        flashcards: relevantCards,
+        reviews: [],
+        notes: [],
+        resources: [],
+        planItems: []
+      });
+      const topicScores = subjectTopics.map((t) => {
+        const hist = histories.get(t.id);
+        if (hist && (hist.totalSessionsCount > 0 || hist.totalRecallAttempts > 0)) {
+          const evaluated = evaluateTopicMastery(hist);
+          if (evaluated.state === 'STRONG') return 100;
+          if (evaluated.state === 'STABLE') return 80;
+          if (evaluated.state === 'DEVELOPING') return 60;
+          if (evaluated.state === 'EMERGING') return 40;
+          return scoreMap[t.masteryLevel] || 20;
+        }
+        return scoreMap[t.masteryLevel] || 50;
+      });
+      topicsScore = Math.round(topicScores.reduce((acc, s) => acc + s, 0) / subjectTopics.length);
+    } else {
+      const totalMastery = subjectTopics.reduce((acc, t) => acc + (scoreMap[t.masteryLevel] || 50), 0);
+      topicsScore = Math.round(totalMastery / subjectTopics.length);
+    }
   }
-
-  // 2. SM-2 Flashcard Retention Score (30%)
-  const relevantCards = goal.subjectId ? flashcards.filter((c) => c.subjectId === goal.subjectId) : flashcards;
   let retentionScore = 0;
   if (relevantCards.length > 0) {
     const now = new Date().getTime();
@@ -272,10 +300,22 @@ export function evaluateCognitiveLoad(params: {
  * Deterministic Forgetting Curve Decay Forecast
  * R(t) = exp(-t / S)
  */
-export function calculateTopicRetentionForecast(topic: StudyTopic, flashcards: Flashcard[]): RetentionForecast {
+export function calculateTopicRetentionForecast(
+  topic: StudyTopic,
+  flashcards: Flashcard[],
+  history?: TopicLearningHistory
+): RetentionForecast {
   const topicCards = flashcards.filter((c) => c.topicId === topic.id);
   const scoreMap: Record<string, number> = { mastered: 95, learning: 65, unstudied: 25 };
-  const baseMastery = scoreMap[topic.masteryLevel] || 60;
+  let baseMastery = scoreMap[topic.masteryLevel] || 60;
+
+  if (history && (history.totalSessionsCount > 0 || history.totalRecallAttempts > 0)) {
+    const evaluation = evaluateTopicMastery(history);
+    if (evaluation.state === 'STRONG') baseMastery = 95;
+    else if (evaluation.state === 'STABLE') baseMastery = 80;
+    else if (evaluation.state === 'DEVELOPING') baseMastery = 65;
+    else if (evaluation.state === 'EMERGING') baseMastery = 45;
+  }
 
   // Derive stability factor S from SM-2 intervals and repetitions
   let avgInterval = 4; // Days

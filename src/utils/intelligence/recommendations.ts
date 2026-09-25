@@ -86,23 +86,34 @@ export function computeExplainableRecommendations(
       history.totalSessionsCount
     } sessions logged, with an average retention rating of ${history.averageRetentionRating ?? 'unrated'}/5.`;
     
-    if (history.totalRecallAttempts > 0) {
+    if (history.dueFlashcardsCount > 0) {
+      evidence += ` ${history.dueFlashcardsCount} flashcard${history.dueFlashcardsCount > 1 ? 's are' : ' is'} currently due for review.`;
+    } else if (history.totalRecallAttempts > 0) {
       evidence += ` Flashcard recall accuracy: ${Math.round((history.recallAccuracyRate || 0) * 100)}% across ${history.totalRecallAttempts} attempts.`;
     }
 
     const whyExplanation = retention.whyExplanation;
 
+    const actionText = history.dueFlashcardsCount > 0
+      ? `Drill ${history.dueFlashcardsCount} Due Flashcard${history.dueFlashcardsCount > 1 ? 's' : ''} (15m)`
+      : hasFlashcards
+      ? `Drill ${history.flashcardsCount} Flashcards (15m)`
+      : `Start ${duration}m Retrieval Focus`;
+
     candidates.push({
       id: `rec-retention-${history.topicId}`,
       type: 'spaced_retrieval',
       priority: 'primary',
-      weight: RECOMMENDATION.BASE_SPACED_REVIEW_WEIGHT + (retention.signal === 'OVERDUE' ? 25 : retention.signal === 'NEEDS_ATTENTION' ? 15 : 5),
+      weight:
+        RECOMMENDATION.BASE_SPACED_REVIEW_WEIGHT +
+        (retention.signal === 'OVERDUE' ? 25 : retention.signal === 'NEEDS_ATTENTION' ? 15 : 5) +
+        (history.dueFlashcardsCount > 0 ? Math.min(20, history.dueFlashcardsCount * 3) : 0),
       title,
       signal,
       evidence,
       whyExplanation,
-      action: hasFlashcards ? `Drill ${history.flashcardsCount} Flashcards (15m)` : `Start ${duration}m Retrieval Focus`,
-      actionLabel: hasFlashcards ? `Drill ${history.flashcardsCount} Flashcards (15m)` : `Start ${duration}m Retrieval Focus`,
+      action: actionText,
+      actionLabel: actionText,
       actionPayload: {
         type: actionType,
         subjectId: history.subjectId,
@@ -263,10 +274,10 @@ export function computeRecommendations(
     subjects: data.subjects || [],
     topics: data.topics || [],
     sessions: data.sessions || [],
-    flashcards: [],
-    reviews: [],
-    notes: [],
-    resources: [],
+    flashcards: data.flashcards || [],
+    reviews: data.reviews || [],
+    notes: data.notes || [],
+    resources: data.resources || [],
     planItems: data.planItems || []
   };
 

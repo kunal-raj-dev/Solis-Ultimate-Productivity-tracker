@@ -4,6 +4,7 @@ import { FocusSession } from '../types/focus';
 import { Habit } from '../types/habit';
 import { DailySummary } from '../types/analytics';
 import { isToday, getISODateString } from './date';
+import { DEFAULT_DAILY_CAPACITY_MINUTES } from './tasks/workloadCalculator';
 
 /**
  * Solis - Productivity Engine & Momentum Scoring Algorithm
@@ -23,7 +24,7 @@ export function calculateDailySummary({
   studySessions,
   focusSessions,
   habits,
-  dailyStudyGoalMinutes = 180,
+  dailyStudyGoalMinutes = DEFAULT_DAILY_CAPACITY_MINUTES,
   targetFocusMinutes = 120
 }: {
   tasks: Task[];

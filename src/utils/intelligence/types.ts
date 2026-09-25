@@ -8,6 +8,10 @@ import { StudySession, StudyPlanItem, StudySubject, StudyTopic } from '../../typ
 import { FocusSession } from '../../types/focus';
 import { Task } from '../../types/task';
 import { Habit } from '../../types/habit';
+import { Flashcard, ReviewQueueItem } from '../../types/learning';
+import { Note } from '../../types/note';
+import { StudyResource } from '../../types/resource';
+import type { LearningIntelligenceSnapshot } from '../../types/learningIntelligence';
 
 export type TimeRangeScope = 'today' | 'this_week' | '28_days';
 
@@ -200,6 +204,7 @@ export interface SolisIntelligenceReport {
   attention: AttentionIntelligenceInsight;
   recommendations: StudyRecommendation[];
   hasOverallSufficientData: boolean;
+  snapshot?: LearningIntelligenceSnapshot;
 }
 
 // Raw source context passed into intelligence calculation
@@ -211,5 +216,9 @@ export interface IntelligenceSourceData {
   focusSessions: FocusSession[];
   tasks: Task[];
   habits: Habit[];
+  flashcards?: Flashcard[];
+  reviews?: ReviewQueueItem[];
+  notes?: Note[];
+  resources?: StudyResource[];
   currentDate?: Date;
 }

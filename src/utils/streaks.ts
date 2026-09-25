@@ -1,4 +1,5 @@
-import { getISODateString } from './date';
+import { getISODateString, addDays } from './date';
+import { Habit } from '../types/habit';
 
 /**
  * Solis - Deterministic Streak Calculation Engine
@@ -22,22 +23,21 @@ export function calculateStreaks(
 
   // 1. Calculate Current Streak
   let currentStreak = 0;
-
   const todayCompleted = history[todayStr] === true;
 
-  // Start evaluating from either today (if done) or yesterday (if today is not yet done)
-  let checkDate = new Date(`${todayStr}T00:00:00Z`);
+  // Use noon local time to avoid any timezone/DST transitions
+  let checkDate = new Date(`${todayStr}T12:00:00`);
 
   if (!todayCompleted) {
     // Check if yesterday was completed
-    checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+    checkDate = addDays(checkDate, -1);
   }
 
   while (true) {
-    const checkDateStr = checkDate.toISOString().split('T')[0];
+    const checkDateStr = getISODateString(checkDate);
     if (history[checkDateStr] === true) {
       currentStreak++;
-      checkDate.setUTCDate(checkDate.getUTCDate() - 1);
+      checkDate = addDays(checkDate, -1);
     } else {
       break;
     }
@@ -58,8 +58,8 @@ export function calculateStreaks(
   let currentRun = 1;
 
   for (let i = 1; i < completedDates.length; i++) {
-    const prevDate = new Date(`${completedDates[i - 1]}T00:00:00Z`);
-    const currDate = new Date(`${completedDates[i]}T00:00:00Z`);
+    const prevDate = new Date(`${completedDates[i - 1]}T12:00:00`);
+    const currDate = new Date(`${completedDates[i]}T12:00:00`);
 
     const diffDays = Math.round(
       (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -85,4 +85,32 @@ export function calculateStreaks(
     currentStreak,
     longestStreak
   };
+}
+
+/**
+ * Calculates overall active habit streak across a collection of habits.
+ */
+export function calculateOverallHabitStreak(habits: Habit[]): number {
+  if (!habits || habits.length === 0) return 0;
+  return Math.max(...habits.map((h) => h.currentStreak || 0), 0);
+}
+
+/**
+ * Calculates consecutive daily study streak from study sessions.
+ */
+export function calculateStudyStreak(
+  sessions: Array<{ completedAt?: string; createdAt?: string }>,
+  referenceDateStr?: string
+): number {
+  const datesSet: Record<string, boolean> = {};
+  for (const s of sessions) {
+    const raw = s.completedAt || s.createdAt;
+    if (raw) {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        datesSet[getISODateString(d)] = true;
+      }
+    }
+  }
+  return calculateStreaks(datesSet, referenceDateStr).currentStreak;
 }

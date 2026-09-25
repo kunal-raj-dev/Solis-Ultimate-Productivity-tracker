@@ -13,6 +13,7 @@ import {
   ExplainableRecommendation,
   LearningIntelligenceSnapshot
 } from '../../types/learningIntelligence';
+import { DEFAULT_DAILY_CAPACITY_MINUTES } from '../tasks/workloadCalculator';
 
 export type CircadianPhase = 'dawn' | 'zenith' | 'dusk' | 'night';
 
@@ -133,7 +134,7 @@ export function synthesizeCircadianResonance(
   const now = input.currentDate || new Date();
   const { phase, elevationDegrees, solarTimestamp } = calculateSolarPhase(now);
 
-  const dailyCapacity = input.workload.dailyCapacityMinutes || 330; // 5.5 hours standard limit
+  const dailyCapacity = input.workload.dailyCapacityMinutes || DEFAULT_DAILY_CAPACITY_MINUTES; // 360m (6 hours) canonical limit
   const totalPlanned = input.workload.totalPlannedMinutes ?? input.workload.totalEstimatedMinutes ?? 0;
   const remainingCapacity = Math.max(0, dailyCapacity - totalPlanned);
   const capacityPercentUsed = Math.min(100, Math.round((totalPlanned / dailyCapacity) * 100));
