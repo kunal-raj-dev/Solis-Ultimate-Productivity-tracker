@@ -40,7 +40,7 @@ export class AIService {
   private async generateContent(
     prompt: string,
     systemInstruction?: string,
-    model: 'gemini-1.5-flash' | 'gemini-1.5-pro' = 'gemini-1.5-flash'
+    model: 'gemini-2.5-flash' = 'gemini-2.5-flash'
   ): Promise<string> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
@@ -48,7 +48,7 @@ export class AIService {
     }
 
     const startTime = performance.now();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
     const payload: any = {
       contents: [{ parts: [{ text: prompt }] }]
@@ -65,6 +65,7 @@ export class AIService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
         },
         body: JSON.stringify(payload)
       });
@@ -143,7 +144,8 @@ export class AIService {
   }
 
   /**
-   * Production Hybrid RAG Search (Dense Vector + BM25 Sparse with Reciprocal Rank Fusion k=60)
+   * Deterministic local retrieval: BM25 keyword scoring plus hashed token/trigram
+   * similarity, fused with Reciprocal Rank Fusion (k=60). No embeddings involved.
    */
   public retrieveRelevantNotes(
     query: string,
@@ -166,17 +168,17 @@ export class AIService {
 
     if (allChunks.length === 0) return [];
 
-    // 2. Index into BM25 and Dense Semantic Vector stores
+    // 2. Index into BM25 and deterministic hashed token/trigram similarity stores
     const bm25 = new BM25Index(1.5, 0.75);
     bm25.indexChunks(allChunks);
     const bm25Results = bm25.search(query, 15);
 
-    const dense = new DenseSemanticIndex();
-    dense.indexChunks(allChunks);
-    const denseResults = dense.search(query, 15);
+    const ngram = new DenseSemanticIndex();
+    ngram.indexChunks(allChunks);
+    const ngramResults = ngram.search(query, 15);
 
     // 3. Reciprocal Rank Fusion (k=60)
-    const fused = reciprocalRankFusion([denseResults, bm25Results], 60, 15);
+    const fused = reciprocalRankFusion([ngramResults, bm25Results], 60, 15);
 
     // 4. Precision Reranker (boosts title exact matches & query density)
     return rerankCandidates(query, fused, topK);
@@ -231,7 +233,7 @@ ${JSON.stringify(studyData, null, 2)}`;
     return this.parseJsonFromLLM(responseText);
   }
 
-  // 4. Production RAG Ask Solis / Semantic Search with RRF Fusion and Citations
+  // 4. Ask Solis: deterministic local retrieval (BM25 + hashed trigram similarity, RRF fusion) with citations
   async askSolis(query: string, knowledgeContext: any[]): Promise<string> {
     // 1. Guardrail & Prompt Injection Gate
     const securityCheck = detectPromptInjection(query);
@@ -242,7 +244,7 @@ ${JSON.stringify(studyData, null, 2)}`;
     // Sanitize input for log safety (result used implicitly by guardrail gate above)
     sanitizeAndDelimitUserInput(query, 'user_query');
 
-    // 2. Hybrid RAG Retrieval (Dense + BM25 + RRF + Reranker)
+    // 2. Deterministic Retrieval (BM25 + hashed n-gram similarity + RRF + Reranker)
     const rankedChunks = this.retrieveRelevantNotes(query, knowledgeContext, 5);
 
     // 3. Assemble Context & Citations

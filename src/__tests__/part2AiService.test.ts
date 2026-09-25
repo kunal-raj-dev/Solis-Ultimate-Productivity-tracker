@@ -62,14 +62,19 @@ describe('SOLIS PART 2 — AI Service & Local Intelligence Suite (AIService)', (
       expect(result).toHaveLength(1);
       expect(result[0].front).toBe('Q');
 
-      // Verify that URL contains key query parameter
+      // Verify the key resolved from storage is sent via the x-goog-api-key header,
+      // and is never exposed in the URL query string
+      const resolvedKey = mockStorage['solis_gemini_api_key'] as string;
+      expect(resolvedKey).toBeTruthy();
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('key=AIzaSyTestApiKeyFromStorage'),
-        expect.any(Object)
+        expect.not.stringContaining('key='),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-goog-api-key': resolvedKey })
+        })
       );
     });
 
-    it('uses the v1beta endpoint and gemini-1.5-flash model by default', async () => {
+    it('uses the v1beta endpoint and gemini-2.5-flash model by default', async () => {
       mockStorage['solis_gemini_api_key'] = 'AIzaSyFlashKey';
 
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
@@ -89,7 +94,7 @@ describe('SOLIS PART 2 — AI Service & Local Intelligence Suite (AIService)', (
 
       await aiService.generateFlashcards('Sample note');
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/v1beta/models/gemini-1.5-flash:generateContent'),
+        expect.stringContaining('/v1beta/models/gemini-2.5-flash:generateContent'),
         expect.any(Object)
       );
     });

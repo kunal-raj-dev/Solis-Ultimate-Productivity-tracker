@@ -1,6 +1,6 @@
 import { BaseEntity, ID } from './common';
 
-export type TimeBlockType = 'study_plan' | 'focus_session' | 'task_deadline' | 'routine';
+export type TimeBlockType = 'study_plan' | 'focus_session' | 'task_deadline' | 'routine' | 'task_block';
 
 export interface TimeBlock {
   id: string;

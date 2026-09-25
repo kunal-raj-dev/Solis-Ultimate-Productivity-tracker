@@ -5,7 +5,7 @@ import { FocusSession } from '../types/focus';
 import { Habit } from '../types/habit';
 import { Goal, GoalMilestone } from '../types/goal';
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../types/analytics';
-import { UserProfile, LoginCredentials, SignupCredentials, AuthSession } from '../types/auth';
+import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials, AuthSession } from '../types/auth';
 import { Flashcard, CardRating, ReviewQueueItem } from '../types/learning';
 import { RecurringStudyRoutine } from '../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../types/resource';
@@ -29,6 +29,12 @@ export interface IAuthService {
   logout(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
+  updateProfile(updates: {
+    name?: string;
+    email?: string;
+    focusField?: string;
+    preferences?: Partial<UserPreferences>;
+  }): Promise<UserProfile>;
 }
 
 export interface ITaskService {
@@ -45,6 +51,8 @@ export interface ITaskService {
 
   // Time-Blocking & Hourly Planner Engine
   getTimeBlocks(date: string): Promise<TaskTimeBlock[]>;
+  /** Optional exhaustive fetch for backup/export (not all backends support it). */
+  getAllTimeBlocks?(): Promise<TaskTimeBlock[]>;
   createTimeBlock(block: Partial<TaskTimeBlock>): Promise<TaskTimeBlock>;
   updateTimeBlock(id: string, updates: Partial<TaskTimeBlock>): Promise<TaskTimeBlock>;
   deleteTimeBlock(id: string): Promise<boolean>;

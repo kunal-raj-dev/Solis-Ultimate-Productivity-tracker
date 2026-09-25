@@ -4,7 +4,7 @@ export type TaskStatus = 'todo' | 'in_progress' | 'completed' | 'partial' | 'mis
 
 export type TaskCategory = 'study' | 'project' | 'review' | 'admin' | 'deep_work';
 
-export type TaskTimeFilter = 'all' | 'today' | 'upcoming' | 'overdue' | 'completed';
+export type TaskTimeFilter = 'all' | 'today' | 'upcoming' | 'unscheduled' | 'overdue' | 'completed';
 
 export type TaskSortField = 'priority' | 'dueDate' | 'createdAt' | 'title' | 'status';
 
@@ -12,7 +12,7 @@ export type TaskSortOrder = 'asc' | 'desc';
 
 export type TimeBlockStatus = 'planned' | 'active' | 'completed' | 'partial' | 'missed';
 
-export type TaskViewMode = 'today' | 'timeline' | 'inbox' | 'matrix' | 'review';
+export type TaskViewMode = 'list' | 'schedule' | 'matrix' | 'today' | 'timeline' | 'inbox' | 'review';
 
 export interface SubTask {
   id: ID;

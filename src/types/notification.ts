@@ -7,6 +7,12 @@ export type NotificationCategory = 'task' | 'study' | 'room' | 'calendar' | 'hab
 
 export type NotificationPriority = 'urgent' | 'high' | 'normal' | 'low';
 
+/**
+ * Acoustic chime variants for notification fallbacks.
+ * Synthesis lives exclusively in `src/utils/focus/hapticsEngine.ts` (master.md §6 audio row).
+ */
+export type NotificationChimeType = 'start' | 'transition' | 'chime';
+
 export interface SolisNotification {
   id: string;
   category: NotificationCategory;
@@ -36,4 +42,14 @@ export interface SmartNotificationPreferences {
     intelligence: boolean;
   };
   minimumPriority: NotificationPriority;
+  // Reminder toggles absorbed from the former duplicate `solis_notification_preferences` store.
+  studyReminders: boolean;
+  focusReminders: boolean;
+  habitReminders: boolean;
+  goalReminders: boolean;
+  timeBlockReminders: boolean;
+  hourReviewReminders: boolean;
+  roomAlerts: boolean;
+  // Audible chime for notification fallbacks.
+  soundEnabled: boolean;
 }

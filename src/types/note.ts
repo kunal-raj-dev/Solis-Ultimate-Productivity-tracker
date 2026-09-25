@@ -13,6 +13,7 @@ export interface Note extends BaseEntity {
   userId?: ID;
   subjectId?: ID;
   subjectName?: string;
+  topicId?: ID;
   planItemId?: ID;
   studySessionId?: ID;
   title: string;
