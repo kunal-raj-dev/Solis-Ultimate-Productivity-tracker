@@ -89,7 +89,7 @@ Generates NADH and FADH2 electron carriers.`;
   describe('Quick Flashcard Atomization from Lecture Selection', () => {
     it('creates a flashcard linked to subject and lecture page citation', async () => {
       // 1. Create a subject
-      const subject = await dataService.study.createSubject({
+      const subject = await service.study.createSubject({
         name: 'Neuroscience 301',
         code: 'NEUR301',
         targetHoursPerWeek: 12
@@ -97,7 +97,7 @@ Generates NADH and FADH2 electron carriers.`;
 
       // 2. Simulate text selection and atomization into a card
       const selectedConcept = 'Long-term potentiation (LTP) strengthens synaptic transmission through NMDA receptors.';
-      const card = await dataService.flashcards.createFlashcard({
+      const card = await service.flashcards.createFlashcard({
         subjectId: subject.id,
         frontPrompt: `Explain the mechanism: ${selectedConcept}`,
         backAnswer: `NMDA receptor calcium influx triggers AMPA receptor insertion. [Lecture p. 5, Synaptic Plasticity]`,
@@ -115,7 +115,7 @@ Generates NADH and FADH2 electron carriers.`;
       const isCloze = clozeText.includes('{{') || clozeText.includes('[c1:');
       expect(isCloze).toBe(true);
 
-      const card = await dataService.flashcards.createFlashcard({
+      const card = await service.flashcards.createFlashcard({
         subjectId: 'sub_test',
         frontPrompt: clozeText,
         backAnswer: 'Scaled dot-product attention [Lecture p. 3, Transformers]',
@@ -133,7 +133,7 @@ Generates NADH and FADH2 electron carriers.`;
       const currentPage = 7;
 
       const taskTitle = `Review: ${selectedProof.slice(0, 48).trim()}…`;
-      const task = await dataService.tasks.createTask({
+      const task = await service.tasks.createTask({
         title: taskTitle,
         category: 'study',
         priority: 'medium',
@@ -151,7 +151,7 @@ Generates NADH and FADH2 electron carriers.`;
 
   describe('Lecture Note Persistence to Sanctuary', () => {
     it('persists structured lecture note with annotations to NoteService', async () => {
-      const subject = await dataService.study.createSubject({
+      const subject = await service.study.createSubject({
         name: 'Distributed Systems',
         code: 'CS244B',
         targetHoursPerWeek: 10
@@ -162,7 +162,7 @@ Generates NADH and FADH2 electron carriers.`;
         `> — *CS244B Lecture Slides*, Page 1\n\n` +
         `## Invariants\n- Leaders never overwrite log entries in their own log.`;
 
-      const savedNote = await dataService.notes.createNote({
+      const savedNote = await service.notes.createNote({
         title: 'CS244B: Raft Consensus Synthesis',
         content: noteContent,
         subjectId: subject.id,
