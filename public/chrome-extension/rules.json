@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "url": "http://localhost:5173/app/focus?shield=intercepted"
+      }
+    },
+    "condition": {
+      "urlFilter": "||youtube.com^",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "url": "http://localhost:5173/app/focus?shield=intercepted"
+      }
+    },
+    "condition": {
+      "urlFilter": "||reddit.com^",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "url": "http://localhost:5173/app/focus?shield=intercepted"
+      }
+    },
+    "condition": {
+      "urlFilter": "||x.com^",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]

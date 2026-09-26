@@ -7,6 +7,12 @@ import { CustomSelect } from '../../ui/Select/CustomSelect';
 import { SegmentedControl } from '../../ui/SegmentedControl/SegmentedControl';
 import { validateSolisBackup, executeWorkspaceImport, ImportConflictStrategy, BackupValidationResult } from '../../../utils/import';
 import { DeckImportResult, parseDeckFile } from '../../../utils/import/deckImporter';
+import {
+  LmsImportResult,
+  parseLmsImportPayload,
+  executeLmsImport,
+  getSampleCanvasExportJson
+} from '../../../utils/import/lmsImporter';
 import { dataService } from '../../../services/dataService';
 import { formatErrorMessage } from '../../../utils/errors';
 import { StudySubject } from '../../../types/study';
@@ -21,7 +27,7 @@ export interface ImportModalProps {
   initialMode?: ImportMode;
 }
 
-export type ImportMode = 'workspace' | 'deck';
+export type ImportMode = 'workspace' | 'deck' | 'lms';
 
 export const ImportModal: React.FC<ImportModalProps> = ({
   isOpen,
@@ -32,6 +38,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const deckInputRef = useRef<HTMLInputElement>(null);
+  const lmsInputRef = useRef<HTMLInputElement>(null);
 
   const [mode, setMode] = useState<ImportMode>(initialMode);
   const [validation, setValidation] = useState<BackupValidationResult | null>(null);
@@ -47,6 +54,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [isImportingDeck, setIsImportingDeck] = useState(false);
   const [autoCreateTopics, setAutoCreateTopics] = useState(true);
+
+  // Feature 4.1: Canvas / Blackboard LMS & Syllabus Importer state
+  const [lmsRawText, setLmsRawText] = useState('');
+  const [lmsResult, setLmsResult] = useState<LmsImportResult | null>(null);
+  const [isImportingLms, setIsImportingLms] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -262,6 +274,70 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
   };
 
+  // ── Feature 4.1: Canvas / Blackboard LMS & Syllabus Import ───────────────────
+
+  const handleLmsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = (event.target?.result as string) || '';
+      setLmsRawText(text);
+      const parsed = parseLmsImportPayload(text, file.name);
+      setLmsResult(parsed);
+      if (parsed.courses.length === 0 && parsed.topics.length === 0 && parsed.assignments.length === 0) {
+        addToast({
+          title: 'No LMS Items Detected',
+          description: parsed.warnings[0] || 'Could not detect courses, syllabus modules, or assignments.',
+          type: 'warning'
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleParseLmsText = () => {
+    const parsed = parseLmsImportPayload(lmsRawText);
+    setLmsResult(parsed);
+    if (parsed.courses.length === 0 && parsed.topics.length === 0 && parsed.assignments.length === 0) {
+      addToast({
+        title: 'No LMS Items Detected',
+        description: parsed.warnings[0] || 'Check the format of your pasted syllabus or LMS export.',
+        type: 'warning'
+      });
+    }
+  };
+
+  const handleLoadSampleCanvas = () => {
+    const sample = getSampleCanvasExportJson();
+    setLmsRawText(sample);
+    setLmsResult(parseLmsImportPayload(sample, 'canvas-course-export.json'));
+  };
+
+  const handleExecuteLmsImport = async () => {
+    if (!lmsResult) return;
+    setIsImportingLms(true);
+    try {
+      const summary = await executeLmsImport(lmsResult, dataService);
+      addToast({
+        title: 'LMS & Syllabus Imported',
+        description: `Added ${summary.subjectsCreated} course(s), ${summary.topicsCreated} syllabus module(s), and ${summary.assignmentsCreated} assignment task(s).`,
+        type: 'success'
+      });
+      handleClose();
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      addToast({
+        title: 'LMS Import Failed',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
+    } finally {
+      setIsImportingLms(false);
+    }
+  };
+
   const handleClose = () => {
     setValidation(null);
     setStrategy('merge_skip');
@@ -273,11 +349,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     setDeckSubjectId('');
     setIsImportingDeck(false);
     setAutoCreateTopics(true);
+    setLmsRawText('');
+    setLmsResult(null);
+    setIsImportingLms(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     if (deckInputRef.current) {
       deckInputRef.current.value = '';
+    }
+    if (lmsInputRef.current) {
+      lmsInputRef.current.value = '';
     }
     onClose();
   };
@@ -286,7 +368,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={mode === 'deck' ? 'Import Flashcard Deck' : 'Restore & Import Workspace Data'}
+      title={
+        mode === 'deck'
+          ? 'Import Flashcard Deck'
+          : mode === 'lms'
+          ? 'Import Canvas / Blackboard LMS & Syllabus'
+          : 'Restore & Import Workspace Data'
+      }
       className="solis-import-modal"
     >
       <div className="solis-import-content">
@@ -297,11 +385,156 @@ export const ImportModal: React.FC<ImportModalProps> = ({
           onChange={setMode}
           options={[
             { value: 'workspace', label: 'Workspace Backup' },
-            { value: 'deck', label: 'Flashcard Deck' }
+            { value: 'deck', label: 'Flashcard Deck' },
+            { value: 'lms', label: 'LMS / Syllabus' }
           ]}
         />
 
-        {mode === 'deck' ? (
+        {mode === 'lms' ? (
+          !lmsResult || (lmsResult.courses.length === 0 && lmsResult.topics.length === 0 && lmsResult.assignments.length === 0) ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="solis-import-dropzone" onClick={() => lmsInputRef.current?.click()}>
+                <input
+                  ref={lmsInputRef}
+                  type="file"
+                  accept=".json,.csv,.txt,.md"
+                  onChange={handleLmsFileChange}
+                  style={{ display: 'none' }}
+                />
+                <div className="solis-import-dropzone__icon">
+                  <Upload size={28} />
+                </div>
+                <h4 className="solis-import-dropzone__title">
+                  Upload Canvas / Blackboard Export (.json, .csv) or Syllabus (.txt, .md)
+                </h4>
+                <p className="solis-import-dropzone__subtitle">
+                  Automatically maps LMS courses to Subjects, syllabus modules to Topics, and deadlines to prioritized Tasks.
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }} onClick={(e) => e.stopPropagation()}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => lmsInputRef.current?.click()}>
+                    Choose LMS File
+                  </Button>
+                  <Button type="button" variant="subtle" size="sm" onClick={handleLoadSampleCanvas}>
+                    Load Sample Canvas Course
+                  </Button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Or Paste Course Syllabus / Assignment Outline Directly
+                </label>
+                <textarea
+                  value={lmsRawText}
+                  onChange={(e) => setLmsRawText(e.target.value)}
+                  rows={5}
+                  placeholder={`Course: CS-301 Operating Systems\nWeek 1: Processes & Threads\nWeek 2: Concurrency & Locks\nAssignment: Kernel Lab 1 - Due 2026-10-15 (100 pts)`}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-surface-secondary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--text-caption)',
+                    fontFamily: 'var(--font-mono, monospace)',
+                    resize: 'vertical'
+                  }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={!lmsRawText.trim()}
+                    onClick={handleParseLmsText}
+                  >
+                    Parse Syllabus & Deadlines
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="solis-import-preview">
+              <div className="solis-import-preview__header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={18} color="var(--status-success)" />
+                  <span style={{ fontWeight: 600, fontSize: 'var(--text-body)' }}>
+                    LMS & Syllabus Structure Parsed
+                  </span>
+                </div>
+                <Badge variant="coral">
+                  {lmsResult.sourceFormat === 'canvas_json'
+                    ? 'Canvas JSON'
+                    : lmsResult.sourceFormat === 'lms_csv'
+                    ? 'LMS CSV'
+                    : 'Structured Syllabus'}
+                </Badge>
+              </div>
+
+              <div className="solis-import-grid">
+                <div className="solis-import-stat">
+                  <span className="solis-import-stat__num">{lmsResult.courses.length}</span>
+                  <span className="solis-import-stat__label">Courses</span>
+                </div>
+                <div className="solis-import-stat">
+                  <span className="solis-import-stat__num">{lmsResult.topics.length}</span>
+                  <span className="solis-import-stat__label">Syllabus Modules</span>
+                </div>
+                <div className="solis-import-stat">
+                  <span className="solis-import-stat__num">{lmsResult.assignments.length}</span>
+                  <span className="solis-import-stat__label">Assignments / Exams</span>
+                </div>
+              </div>
+
+              {lmsResult.assignments.length > 0 && (
+                <div
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-surface-secondary)',
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                    Detected Deadlines Preview
+                  </span>
+                  {lmsResult.assignments.slice(0, 8).map((a, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-caption)' }}>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                        [{a.courseCode}] {a.title}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>
+                        {a.dueDate ? `Due ${a.dueDate}` : 'Unscheduled'} • {a.priority.toUpperCase()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="solis-import-actions">
+                <Button type="button" variant="outline" size="md" onClick={() => setLmsResult(null)}>
+                  Edit / Choose Another
+                </Button>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="md"
+                  leftIcon={isImportingLms ? <RefreshCw className="solis-spin" size={16} /> : <ArrowRight size={16} />}
+                  onClick={handleExecuteLmsImport}
+                  isLoading={isImportingLms}
+                >
+                  Import into Solis
+                </Button>
+              </div>
+            </div>
+          )
+        ) : mode === 'deck' ? (
           !deckResult || deckResult.cards.length === 0 ? (
             <div className="solis-import-dropzone" onClick={() => deckInputRef.current?.click()}>
               <input

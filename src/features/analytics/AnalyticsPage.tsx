@@ -8,7 +8,8 @@ import {
   Calendar,
   BookOpen,
   ArrowRight,
-  Flame
+  Flame,
+  Award
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge/Badge';
 import { Button } from '../../components/ui/Button/Button';
@@ -22,6 +23,7 @@ import {
   ThermalDifficultyMatrix,
   buildThermalDifficultyPoints
 } from '../../components/features/Analytics/ThermalDifficultyMatrix';
+import { ScholarReportModal } from '../../components/features/Analytics/ScholarReportModal';
 import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
@@ -53,6 +55,7 @@ export const AnalyticsPage: React.FC = () => {
   const navigate = useNavigate();
   const { openGuide } = useGuide();
   const [scope, setScope] = useState<TimeRangeScope>('this_week');
+  const [isScholarReportOpen, setIsScholarReportOpen] = useState(false);
 
   const cachedSubjects = queryCache.get<StudySubject[]>('subjects:false');
   const cachedSessions = queryCache.get<StudySession[]>('study_sessions_recent');
@@ -347,7 +350,16 @@ export const AnalyticsPage: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Award size={14} />}
+            onClick={() => setIsScholarReportOpen(true)}
+            title="Export verified Semester Reflection & Proof-of-Study Artifact"
+          >
+            Proof-of-Study
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -869,6 +881,14 @@ export const AnalyticsPage: React.FC = () => {
           </div>
         </section>
       )}
+
+      {/* Feature 4.3: Exportable Semester Reflection & Proof-of-Study Artifact Modal */}
+      <ScholarReportModal
+        isOpen={isScholarReportOpen}
+        onClose={() => setIsScholarReportOpen(false)}
+        report={report}
+        consistencyStreakDays={calculateOverallHabitStreak(habits)}
+      />
     </div>
   );
 };

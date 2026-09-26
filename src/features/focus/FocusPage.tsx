@@ -40,6 +40,13 @@ import { PostFocusReflectionModal } from '../../components/features/Focus/PostFo
 import { CognitiveDriftPad } from '../../components/features/Focus/CognitiveDriftPad';
 import { CenteringSanctuaryModal } from '../../components/features/Focus/CenteringSanctuaryModal';
 import { AnalogPieTimer } from '../../components/features/Focus/AnalogPieTimer';
+import { TabDefenseModal } from '../../components/features/Focus/TabDefenseModal';
+import {
+  TabDefenseConfig,
+  TabDriftEvent,
+  loadTabDefenseConfig,
+  saveTabDefenseConfig
+} from '../../utils/focus/tabDefense';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { useFocus, FocusPreset } from '../../context/FocusContext';
@@ -144,6 +151,62 @@ export const FocusPage: React.FC = () => {
   const [isZenMode, setIsZenMode] = useState(false);
   // Plan §5.3: toggle between digital numerals and the analog pie sweep.
   const [timerDisplayStyle, setTimerDisplayStyle] = useState<'digital' | 'analog'>('digital');
+
+  // Feature 4.2: Companion Chrome Extension & Focus Mode Tab Defense
+  const [isTabDefenseOpen, setIsTabDefenseOpen] = useState(false);
+  const [tabDefenseConfig, setTabDefenseConfig] = useState<TabDefenseConfig>(() => loadTabDefenseConfig());
+  const [tabDriftEvents, setTabDriftEvents] = useState<TabDriftEvent[]>([]);
+  const [recentTabReturnNotice, setRecentTabReturnNotice] = useState<string | null>(null);
+  const tabHiddenAtRef = React.useRef<number | null>(null);
+
+  const handleUpdateTabDefenseConfig = (next: TabDefenseConfig) => {
+    setTabDefenseConfig(next);
+    saveTabDefenseConfig(next);
+  };
+
+  useEffect(() => {
+    if (status === 'idle') {
+      setTabDriftEvents([]);
+      setRecentTabReturnNotice(null);
+      tabHiddenAtRef.current = null;
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status !== 'running' || !tabDefenseConfig.enabled) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        tabHiddenAtRef.current = Date.now();
+      } else if (document.visibilityState === 'visible' && tabHiddenAtRef.current !== null) {
+        const returnedAt = Date.now();
+        const awaySec = Math.max(1, Math.round((returnedAt - tabHiddenAtRef.current) / 1000));
+        const leftAt = tabHiddenAtRef.current;
+        tabHiddenAtRef.current = null;
+
+        if (awaySec >= 5) {
+          setTabDriftEvents((prev) => [
+            ...prev,
+            {
+              id: `drift-${returnedAt}`,
+              leftAtMs: leftAt,
+              returnedAtMs: returnedAt,
+              awayDurationSeconds: awaySec
+            }
+          ]);
+          setRecentTabReturnNotice(
+            `Welcome back to your Focus Sanctuary (${awaySec}s off-tab). Take a breath and resume where you left off.`
+          );
+          if (tabDefenseConfig.autoLogDriftOnTabLeave) {
+            recordInterruption('internal');
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [status, tabDefenseConfig.enabled, tabDefenseConfig.autoLogDriftOnTabLeave, recordInterruption]);
 
   // Keyboard shortcut listener:
   // Alt+D or Ctrl+Shift+D opens Drift Pad during active flow
@@ -438,6 +501,16 @@ export const FocusPage: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  leftIcon={<Shield size={14} />}
+                  onClick={() => setIsTabDefenseOpen(true)}
+                  style={{ color: tabDefenseConfig.enabled ? 'var(--color-emerald-400, #34d399)' : 'rgba(255, 255, 255, 0.7)' }}
+                  title="Configure Tab Defense & Chrome Companion Shield"
+                >
+                  Tab Shield {tabDriftEvents.length > 0 ? `(${tabDriftEvents.length})` : ''}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   leftIcon={isZenMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                   onClick={() => setIsZenMode((prev) => !prev)}
                   style={{ color: isZenMode ? 'var(--color-coral-400)' : 'rgba(255, 255, 255, 0.7)' }}
@@ -468,6 +541,44 @@ export const FocusPage: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {recentTabReturnNotice && (
+              <div
+                style={{
+                  width: '100%',
+                  marginBottom: '12px',
+                  padding: '8px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(16, 185, 129, 0.14)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: 'var(--color-ivory-100)',
+                  fontSize: 'var(--text-caption)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px'
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={14} color="var(--color-emerald-400, #34d399)" />
+                  {recentTabReturnNotice}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRecentTabReturnNotice(null)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.7)',
+                    cursor: 'pointer',
+                    padding: '2px'
+                  }}
+                  aria-label="Dismiss notice"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
 
             {/* Soundscape Synthesizer Bar */}
             <div className="solis-soundscape-bar solis-focus-peripheral">
@@ -1095,6 +1206,15 @@ export const FocusPage: React.FC = () => {
         confirmLabel="Abort Session"
         cancelLabel="Continue Flow"
         variant="danger"
+      />
+
+      {/* Feature 4.2: Tab Defense & Companion Chrome Extension Modal */}
+      <TabDefenseModal
+        isOpen={isTabDefenseOpen}
+        onClose={() => setIsTabDefenseOpen(false)}
+        config={tabDefenseConfig}
+        onChangeConfig={handleUpdateTabDefenseConfig}
+        driftEvents={tabDriftEvents}
       />
     </div>
   );

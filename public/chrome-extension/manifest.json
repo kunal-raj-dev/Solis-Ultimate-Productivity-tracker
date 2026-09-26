@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Solis Focus Sanctuary — Tab Defense Companion",
+  "version": "1.0.0",
+  "description": "Calm, non-punitive distraction shield that protects deep work sessions in Solis Study OS.",
+  "permissions": ["declarativeNetRequest", "storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "solis_focus_shield_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}

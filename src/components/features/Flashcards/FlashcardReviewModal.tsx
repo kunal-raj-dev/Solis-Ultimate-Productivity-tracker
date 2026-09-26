@@ -20,7 +20,11 @@ import {
   updateCardLapseTelemetry,
   AtomizedCardPair
 } from '../../../utils/learning/leechDetector';
-import { Sparkles, RotateCw, CheckCircle2, BookOpen, Scissors, AlertTriangle } from 'lucide-react';
+import {
+  evaluateFeynmanExplanation,
+  FeynmanEvaluationResult
+} from '../../../utils/learning/feynmanEvaluator';
+import { Sparkles, RotateCw, CheckCircle2, BookOpen, Scissors, AlertTriangle, MessageSquare } from 'lucide-react';
 import './FlashcardReviewModal.css';
 
 export interface FlashcardReviewModalProps {
@@ -68,6 +72,11 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
   const [atomizedP2, setAtomizedP2] = useState({ prompt: '', answer: '' });
   const [isAtomizing, setIsAtomizing] = useState(false);
 
+  // Feature 3.2: Socratic "Feynman Mode" Active-Recall Tutoring
+  const [isFeynmanOpen, setIsFeynmanOpen] = useState(false);
+  const [feynmanInput, setFeynmanInput] = useState('');
+  const [feynmanResult, setFeynmanResult] = useState<FeynmanEvaluationResult | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       setActiveQueue(cards.map((card) => card.id));
@@ -75,6 +84,9 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
       setPresentedSinceLearning(0);
       setIsFlipped(false);
       setIsFinished(false);
+      setIsFeynmanOpen(false);
+      setFeynmanInput('');
+      setFeynmanResult(null);
     }
   }, [isOpen, cards]);
 
@@ -85,6 +97,24 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
   const currentCardId = presentationOrder[0];
   const currentCard = cards.find((card) => card.id === currentCardId);
   const isRepresenting = currentCardId !== undefined && learningQueue.includes(currentCardId);
+
+  useEffect(() => {
+    setFeynmanInput('');
+    setFeynmanResult(null);
+  }, [currentCardId]);
+
+  const handleEvaluateFeynman = () => {
+    if (!currentCard) return;
+    const evaluation = evaluateFeynmanExplanation(
+      currentCard.frontPrompt,
+      currentCard.backAnswer,
+      feynmanInput
+    );
+    setFeynmanResult(evaluation);
+    if (!isFlipped) {
+      setIsFlipped(true);
+    }
+  };
 
   const cardIsLeech = currentCard ? isCardLeech(currentCard) : false;
 
@@ -345,6 +375,17 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
                     </Button>
                   </div>
                 )}
+                <Button
+                  variant={isFeynmanOpen ? 'accent' : 'outline'}
+                  size="sm"
+                  className="min-touch-target"
+                  leftIcon={<MessageSquare size={12} />}
+                  onClick={() => setIsFeynmanOpen((prev) => !prev)}
+                  title="Toggle Socratic Feynman Tutor — explain the concept from first principles"
+                  style={{ height: '24px', padding: '0 10px', fontSize: '11px' }}
+                >
+                  Feynman Tutor
+                </Button>
               </div>
               <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>
                 Card {Math.min(resolvedCount + 1, totalCards)} of {totalCards}
@@ -471,6 +512,157 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Feature 3.2: Socratic Feynman Mode Active-Recall Panel */}
+            {isFeynmanOpen && (
+              <div
+                style={{
+                  marginTop: 'var(--space-md)',
+                  padding: '14px 16px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-surface-secondary)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <MessageSquare size={14} color="var(--color-coral-500)" />
+                    Socratic Feynman Tutor — Explain from First Principles
+                  </span>
+                  {feynmanResult && (
+                    <Badge
+                      variant={
+                        feynmanResult.comprehensionScore >= 85
+                          ? 'sage'
+                          : feynmanResult.comprehensionScore >= 65
+                          ? 'lavender'
+                          : feynmanResult.comprehensionScore >= 40
+                          ? 'amber'
+                          : 'coral'
+                      }
+                    >
+                      {feynmanResult.comprehensionScore}% Comprehension
+                    </Badge>
+                  )}
+                </div>
+
+                <textarea
+                  value={feynmanInput}
+                  onChange={(e) => setFeynmanInput(e.target.value)}
+                  placeholder="Type your explanation in plain language, as if teaching a peer who has never seen this concept..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-subtle)',
+                    background: 'var(--bg-surface-primary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--text-body-sm)',
+                    fontFamily: 'var(--font-interface)',
+                    resize: 'vertical'
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={handleEvaluateFeynman}
+                  >
+                    Evaluate Explanation
+                  </Button>
+
+                  {feynmanResult && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRating(feynmanResult.recommendedRating)}
+                    >
+                      Apply Recommended Rating ({feynmanResult.recommendedRating.toUpperCase()})
+                    </Button>
+                  )}
+                </div>
+
+                {feynmanResult && (
+                  <div
+                    style={{
+                      marginTop: '4px',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      background: 'var(--bg-surface-primary)',
+                      border: '1px solid var(--border-subtle)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: 'var(--text-caption)', color: 'var(--text-primary)', fontWeight: 500 }}>
+                      {feynmanResult.summaryFeedback}
+                    </p>
+
+                    {feynmanResult.capturedConcepts.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-sage-600)', fontWeight: 600 }}>Captured:</span>
+                        {feynmanResult.capturedConcepts.map((c) => (
+                          <span
+                            key={c}
+                            style={{
+                              fontSize: '11px',
+                              padding: '1px 7px',
+                              borderRadius: '99px',
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              color: 'var(--color-sage-600)'
+                            }}
+                          >
+                            ✓ {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {feynmanResult.missingMechanisms.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-amber-600, #d97706)', fontWeight: 600 }}>Omitted Mechanisms:</span>
+                        {feynmanResult.missingMechanisms.map((m) => (
+                          <span
+                            key={m}
+                            style={{
+                              fontSize: '11px',
+                              padding: '1px 7px',
+                              borderRadius: '99px',
+                              background: 'rgba(245, 158, 11, 0.14)',
+                              color: 'var(--color-amber-600, #d97706)'
+                            }}
+                          >
+                            • {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        background: 'rgba(235, 94, 40, 0.08)',
+                        borderLeft: '3px solid var(--color-coral-500)',
+                        fontSize: 'var(--text-caption)',
+                        color: 'var(--text-primary)'
+                      }}
+                    >
+                      <strong>Socratic Follow-Up: </strong>
+                      {feynmanResult.socraticFollowUp}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Difficulty Rating Actions (FSRS-5 Spaced Retrieval) */}
             {isFlipped && (
