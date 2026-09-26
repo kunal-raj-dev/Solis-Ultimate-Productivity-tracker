@@ -83,27 +83,45 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
     }
   }, [propTopics, examGoals]);
 
-  if (examGoals.length === 0) {
-    return null;
-  }
-
-  const activeGoal = examGoals[Math.min(activeGoalIndex, examGoals.length - 1)];
-  if (!activeGoal) return null;
+  const activeGoal = examGoals.length > 0
+    ? examGoals[Math.min(activeGoalIndex, examGoals.length - 1)]
+    : null;
 
   const allTopics = propTopics || internalTopics;
   const allCards = propFlashcards || internalCards;
   const allHabits = propHabits || internalHabits;
 
+  const subjectTopics = useMemo(() => {
+    if (!activeGoal) return [];
+    return activeGoal.subjectId
+      ? allTopics.filter((t) => t.subjectId === activeGoal.subjectId)
+      : allTopics;
+  }, [activeGoal, allTopics]);
+
+  const subjectCards = useMemo(() => {
+    if (!activeGoal) return [];
+    return activeGoal.subjectId
+      ? allCards.filter((c) => c.subjectId === activeGoal.subjectId)
+      : allCards;
+  }, [activeGoal, allCards]);
+
+  const cushion = useMemo(() => {
+    if (!activeGoal) return null;
+    return calculateTimeCushion({
+      examDate: activeGoal.targetDate,
+      subjectId: activeGoal.subjectId || '',
+      topics: subjectTopics,
+      dailyCapacityMinutes: dailyCapacity ?? 360
+    });
+  }, [activeGoal, subjectTopics, dailyCapacity]);
+
+  if (!activeGoal || !cushion) {
+    return null;
+  }
+
   const targetDateObj = new Date(activeGoal.targetDate);
   const diffDays = Math.max(0, Math.ceil((targetDateObj.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
   const isUrgent = diffDays <= 7;
-
-  const subjectTopics = activeGoal.subjectId
-    ? allTopics.filter((t) => t.subjectId === activeGoal.subjectId)
-    : allTopics;
-  const subjectCards = activeGoal.subjectId
-    ? allCards.filter((c) => c.subjectId === activeGoal.subjectId)
-    : allCards;
 
   const readiness = calculateExamReadiness({
     goal: activeGoal,
@@ -111,15 +129,6 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
     flashcards: subjectCards,
     habits: allHabits
   });
-
-  const cushion = useMemo(() => {
-    return calculateTimeCushion({
-      examDate: activeGoal.targetDate,
-      subjectId: activeGoal.subjectId || '',
-      topics: subjectTopics,
-      dailyCapacityMinutes: dailyCapacity ?? 360
-    });
-  }, [activeGoal.targetDate, activeGoal.subjectId, subjectTopics, dailyCapacity]);
 
   const masteredTopicsCount = subjectTopics.filter((t) => t.masteryLevel === 'mastered').length;
   const totalTopicsCount = subjectTopics.length;

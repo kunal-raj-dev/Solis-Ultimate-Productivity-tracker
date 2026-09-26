@@ -56,4 +56,26 @@ describe('React Hook & Data Layer Stability Suite', () => {
     expect(report1.rhythm.activeStudyDaysCount).toBe(report2.rhythm.activeStudyDaysCount);
     expect(report1.execution.planAdherenceRate).toBe(report2.execution.planAdherenceRate);
   });
+
+  it('guarantees ExamHorizonBar calls all hooks before any early returns', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const content = fs.readFileSync(
+      path.resolve(__dirname, '../components/features/Goals/ExamHorizonBar.tsx'),
+      'utf8'
+    );
+
+    // Verify useMemo for cushion and topics appear BEFORE early return statements
+    const firstEarlyReturn = content.indexOf('return null;');
+    expect(firstEarlyReturn).toBeGreaterThan(-1);
+
+    const cushionMemoIndex = content.indexOf('const cushion = useMemo');
+    expect(cushionMemoIndex).toBeGreaterThan(-1);
+    expect(cushionMemoIndex).toBeLessThan(firstEarlyReturn);
+
+    const subjectTopicsMemoIndex = content.indexOf('const subjectTopics = useMemo');
+    expect(subjectTopicsMemoIndex).toBeGreaterThan(-1);
+    expect(subjectTopicsMemoIndex).toBeLessThan(firstEarlyReturn);
+  });
 });
+
