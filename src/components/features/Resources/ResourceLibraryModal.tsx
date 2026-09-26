@@ -61,7 +61,8 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
   onUpdateStatus,
   onDeleteResource,
   onStudyResource,
-  onSynthesizeNote
+  onSynthesizeNote,
+  onOpenLectureReader
 }) => {
   const [filterSubjectId, setFilterSubjectId] = useState<string>(selectedSubjectId || 'all');
   const [filterType, setFilterType] = useState<string>('all');
