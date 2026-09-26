@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, BookOpen, Sun, Moon, Bell, Sparkles, Radio } from 'lucide-react';
+import { Search, BookOpen, Sun, Moon, Bell, Sparkles, Radio, Target } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AccountMenu } from '../AccountMenu/AccountMenu';
 import { useGuide } from '../../../context/GuideContext';
@@ -9,14 +9,31 @@ import { notificationService } from '../../../services/notifications/notificatio
 import { NotificationCenterDrawer } from '../NotificationCenter/NotificationCenterDrawer';
 import { dataService } from '../../../services/dataService';
 import { countScholarsFocusingNow } from '../../../types/studyPact';
+import { Goal } from '../../../types/goal';
+import {
+  TimeCushionAnalysis,
+  TIME_CUSHION_STATUS_META,
+  formatCushionHours
+} from '../../../utils/planning/timeCushion';
 import './AppHeader.css';
 
 export interface AppHeaderProps {
   onOpenSearch?: () => void;
   onOpenAskSolis?: () => void;
+  examGoal?: Goal | null;
+  examCushion?: TimeCushionAnalysis | null;
+  isExamCushionReady?: boolean;
+  onOpenExamWorkspace?: () => void;
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSolis }) => {
+export const AppHeader: React.FC<AppHeaderProps> = ({
+  onOpenSearch,
+  onOpenAskSolis,
+  examGoal,
+  examCushion,
+  isExamCushionReady,
+  onOpenExamWorkspace
+}) => {
   const location = useLocation();
   const { openGuide } = useGuide();
   const { isDark, toggleTheme } = useTheme();
@@ -114,6 +131,46 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
           <span className="solis-app-header__time">{formattedTime}</span>
         </div>
       </div>
+
+      {examGoal && examCushion && (
+        <div className="solis-app-header__center">
+          <button
+            type="button"
+            className="solis-app-header__dday-btn tactile-press"
+            onClick={onOpenExamWorkspace}
+            aria-label={`Open exam workspace for ${examGoal.title}`}
+            title={`${examGoal.title}: D-${examCushion.daysRemaining} • ${TIME_CUSHION_STATUS_META[examCushion.status].label} (${examCushion.cushionHours >= 0 ? '+' : '-'}${formatCushionHours(examCushion.cushionHours)}h)`}
+            data-cursor="action"
+          >
+            <Target
+              size={12}
+              style={{
+                color: TIME_CUSHION_STATUS_META[examCushion.status].colorToken,
+                flexShrink: 0
+              }}
+              aria-hidden="true"
+            />
+            <span className="solis-app-header__dday-title">
+              <span className="solis-app-header__dday-goal-name">{examGoal.title}:</span>{' '}
+              <span className="solis-app-header__dday-days">
+                {examCushion.daysRemaining === 0 ? 'D-Day' : `D-${examCushion.daysRemaining}`}
+              </span>
+            </span>
+            {isExamCushionReady && (
+              <span
+                className="solis-app-header__dday-cushion"
+                style={{
+                  color: TIME_CUSHION_STATUS_META[examCushion.status].colorToken
+                }}
+              >
+                • {TIME_CUSHION_STATUS_META[examCushion.status].label} (
+                {examCushion.cushionHours >= 0 ? '+' : '-'}
+                {formatCushionHours(examCushion.cushionHours)}h)
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       <div className="solis-app-header__right">
         <button

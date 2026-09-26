@@ -30,6 +30,9 @@ export interface Flashcard extends BaseEntity {
   imageUrl?: string;
   occlusionZones?: ImageOcclusionZone[];
   activeOcclusionZoneId?: string;
+  isLeech?: boolean;
+  lapsesCount?: number;
+  lastLapseAt?: string;
 }
 
 export interface ReviewQueueItem {

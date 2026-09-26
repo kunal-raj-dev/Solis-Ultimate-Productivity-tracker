@@ -15,6 +15,7 @@ import {
   IReflectionService,
   IRoomService,
   IStudyPactService,
+  IPresenceService,
   DataEntityChannel,
   matchesChannelFilter
 } from '../api.interface';
@@ -64,6 +65,7 @@ import {
   generatePactInviteCode,
   getPactWeekWindow
 } from '../../types/studyPact';
+import { PeerPresence, PeerCheerEmoji } from '../../types/presence';
 
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
 import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
@@ -2831,5 +2833,155 @@ export class MockDataService implements IDataService {
     }
   };
 
+  private _ghostMode: boolean = false;
+  private _presenceSubscribers: Array<(peers: PeerPresence[]) => void> = [];
+  private _peers: PeerPresence[] = [
+    {
+      userId: 'usr_peer_elena',
+      displayName: 'Elena Rostova',
+      avatarSeed: 'elena',
+      currentSubject: 'Cell Biology',
+      activity: 'deep_work',
+      elapsedMinutes: 42,
+      lastHeartbeat: new Date().toISOString(),
+      cheersReceived: []
+    },
+    {
+      userId: 'usr_peer_marcus',
+      displayName: 'Marcus Chen',
+      avatarSeed: 'marcus',
+      currentSubject: 'Organic Chemistry',
+      activity: 'spaced_recall',
+      elapsedMinutes: 25,
+      lastHeartbeat: new Date().toISOString(),
+      cheersReceived: []
+    },
+    {
+      userId: 'usr_peer_maya',
+      displayName: 'Maya Patel',
+      avatarSeed: 'maya',
+      currentSubject: 'Microeconomics',
+      activity: 'reading',
+      elapsedMinutes: 58,
+      lastHeartbeat: new Date().toISOString(),
+      cheersReceived: []
+    },
+    {
+      userId: 'usr_peer_jordan',
+      displayName: 'Jordan Miller',
+      avatarSeed: 'jordan',
+      currentSubject: 'Linear Algebra',
+      activity: 'deep_work',
+      elapsedMinutes: 18,
+      lastHeartbeat: new Date().toISOString(),
+      cheersReceived: []
+    }
+  ];
+
+  presence: IPresenceService = {
+    getLivePeers: async (): Promise<PeerPresence[]> => {
+      await delay(15);
+      const myId = this._user?.id || 'usr_mock_scholar';
+      return JSON.parse(
+        JSON.stringify(
+          this._peers.filter((p) => {
+            if (p.isGhostMode) return false;
+            if (this._ghostMode && (p.userId === myId || p.userId === 'usr_mock_scholar' || p.userId === 'usr_current_scholar')) return false;
+            return true;
+          })
+        )
+      );
+    },
+
+    updateMyPresence: async (presence: Partial<PeerPresence>): Promise<void> => {
+      await delay(15);
+      const myId = this._user?.id || 'usr_mock_scholar';
+      const myName = this._user?.name || 'Solis Scholar';
+
+      const existingIndex = this._peers.findIndex((p) => p.userId === myId);
+      const updated: PeerPresence = {
+        userId: myId,
+        displayName: myName,
+        avatarSeed: 'me',
+        currentSubject: presence.currentSubject || 'General Study',
+        activity: presence.activity || 'deep_work',
+        elapsedMinutes: presence.elapsedMinutes || 1,
+        isGhostMode: this._ghostMode,
+        lastHeartbeat: new Date().toISOString(),
+        cheersReceived: existingIndex >= 0 ? this._peers[existingIndex].cheersReceived : [],
+        ...presence
+      };
+
+      if (this._ghostMode) {
+        if (existingIndex >= 0) {
+          this._peers.splice(existingIndex, 1);
+        }
+      } else {
+        if (existingIndex >= 0) {
+          this._peers[existingIndex] = updated;
+        } else {
+          this._peers.unshift(updated);
+        }
+      }
+
+      this.notify('presence');
+      this._presenceSubscribers.forEach((cb) => cb(JSON.parse(JSON.stringify(this._peers))));
+    },
+
+    sendCheer: async (toUserId: string, emoji: PeerCheerEmoji): Promise<void> => {
+      await delay(20);
+      const peer = this._peers.find((p) => p.userId === toUserId);
+      if (peer) {
+        if (!peer.cheersReceived) peer.cheersReceived = [];
+        peer.cheersReceived.push({
+          id: `cheer_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          fromUserId: this._user?.id || 'usr_mock_scholar',
+          fromDisplayName: this._user?.name || 'Solis Scholar',
+          emoji,
+          sentAt: new Date().toISOString()
+        });
+        this.notify('presence');
+        this._presenceSubscribers.forEach((cb) => cb(JSON.parse(JSON.stringify(this._peers))));
+      }
+    },
+
+    setGhostMode: async (isGhost: boolean): Promise<void> => {
+      await delay(15);
+      this._ghostMode = isGhost;
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('solis_ghost_mode', isGhost ? 'true' : 'false');
+        }
+      } catch {
+        // Ignore local storage error
+      }
+
+      const myId = this._user?.id || 'usr_mock_scholar';
+      if (isGhost) {
+        this._peers = this._peers.filter((p) => p.userId !== myId && p.userId !== 'usr_mock_scholar' && p.userId !== 'usr_current_scholar');
+      }
+      this.notify('presence');
+      this._presenceSubscribers.forEach((cb) => cb(JSON.parse(JSON.stringify(this._peers))));
+    },
+
+    getGhostMode: async (): Promise<boolean> => {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          this._ghostMode = window.localStorage.getItem('solis_ghost_mode') === 'true';
+        }
+      } catch {
+        // fallback
+      }
+      return this._ghostMode;
+    },
+
+    subscribeToPresence: (callback: (peers: PeerPresence[]) => void): () => void => {
+      this._presenceSubscribers.push(callback);
+      callback(JSON.parse(JSON.stringify(this._peers)));
+      return () => {
+        this._presenceSubscribers = this._presenceSubscribers.filter((cb) => cb !== callback);
+      };
+    }
+  };
 }
 

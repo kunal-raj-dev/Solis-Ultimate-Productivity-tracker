@@ -30,12 +30,16 @@ export interface ImportedDeckCard {
   frontPrompt: string;
   backAnswer: string;
   cardType: CardType;
+  topicTitle?: string;
+  deckHierarchy?: string[];
 }
 
 export interface DeckImportResult {
   sourceFormat: DeckImportSourceFormat;
   /** Best-effort deck title from the Anki collection, when discoverable. */
   deckName?: string;
+  deckHierarchy?: string[];
+  detectedTopics?: string[];
   cards: ImportedDeckCard[];
   /** Non-fatal notes about cards or content that were skipped. */
   warnings: string[];
@@ -433,6 +437,8 @@ const FIELD_SEPARATOR = '\x1f'; // Anki joins note fields with \x1f
 interface AnkiCollection {
   cards: ImportedDeckCard[];
   deckName?: string;
+  deckHierarchy?: string[];
+  detectedTopics?: string[];
   warnings: string[];
 }
 
@@ -454,6 +460,8 @@ export async function parseAnkiApkg(buffer: ArrayBuffer): Promise<DeckImportResu
   return {
     sourceFormat: 'anki_apkg',
     deckName: collection.deckName,
+    deckHierarchy: collection.deckHierarchy,
+    detectedTopics: collection.detectedTopics,
     cards: collection.cards,
     warnings: collection.warnings
   };
@@ -511,6 +519,23 @@ function extractAnkiCollection(dbBytes: Uint8Array): AnkiCollection {
     }
   }
 
+  let deckHierarchy: string[] | undefined;
+  let detectedTopics: string[] | undefined;
+  if (deckName) {
+    if (deckName.includes('::')) {
+      deckHierarchy = deckName.split('::').map((s) => s.trim()).filter(Boolean);
+      if (deckHierarchy.length > 1) {
+        detectedTopics = deckHierarchy.slice(1);
+      }
+    } else {
+      deckHierarchy = [deckName];
+    }
+  }
+
+  const defaultTopicTitle = detectedTopics && detectedTopics.length > 0
+    ? detectedTopics[detectedTopics.length - 1]
+    : undefined;
+
   const cards: ImportedDeckCard[] = [];
   const noteRows = readTableRows(db, notesRootPage);
   for (const row of noteRows) {
@@ -535,11 +560,14 @@ function extractAnkiCollection(dbBytes: Uint8Array): AnkiCollection {
         warnings.push('A cloze note without cloze deletions was skipped.');
         continue;
       }
-      cards.push({
+      const card: ImportedDeckCard = {
         frontPrompt: stripAnkiMarkup(mapped.text),
         backAnswer: terms.join(', '),
         cardType: 'cloze'
-      });
+      };
+      if (defaultTopicTitle) card.topicTitle = defaultTopicTitle;
+      if (deckHierarchy && deckHierarchy.length > 1) card.deckHierarchy = deckHierarchy;
+      cards.push(card);
       continue;
     }
 
@@ -551,14 +579,21 @@ function extractAnkiCollection(dbBytes: Uint8Array): AnkiCollection {
       .slice(1)
       .filter(Boolean)
       .join(' — ');
-    cards.push({ frontPrompt: front, backAnswer: back, cardType: 'standard' });
+    const card: ImportedDeckCard = {
+      frontPrompt: front,
+      backAnswer: back,
+      cardType: 'standard'
+    };
+    if (defaultTopicTitle) card.topicTitle = defaultTopicTitle;
+    if (deckHierarchy && deckHierarchy.length > 1) card.deckHierarchy = deckHierarchy;
+    cards.push(card);
   }
 
   if (!cards.length) {
     warnings.push('No importable cards were found in this collection.');
   }
 
-  return { cards, deckName, warnings };
+  return { cards, deckName, deckHierarchy, detectedTopics, warnings };
 }
 
 // ── Quizlet-style text exports ───────────────────────────────────────────────

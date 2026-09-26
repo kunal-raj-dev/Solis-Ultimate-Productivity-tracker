@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, Sparkles, FileText } from 'lucide-react';
+import { Flame, Sparkles, FileText, BookOpen } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { useToast } from '../../context/ToastContext';
 import { dataService } from '../../services/dataService';
@@ -8,8 +8,12 @@ import { FlashcardCreateModal } from '../../components/features/Flashcards/Flash
 import { ExamCramModal } from '../../components/features/Flashcards/ExamCramModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
 import { ImportModal } from '../../components/features/ImportModal/ImportModal';
+import { SplitScreenPdfWorkspace } from '../../components/features/Study/SplitScreenPdfWorkspace';
 import { TopicIntelligenceDrawer } from './TopicIntelligenceDrawer';
 import { useStudyPage } from './hooks/useStudyPage';
+import { createAnkiPackageApkg, downloadFile } from '../../utils/export/ankiExporter';
+import { formatErrorMessage } from '../../utils/errors';
+import { StudyResource } from '../../types/resource';
 
 // Modular Subcomponents
 import { SubjectListHeader } from './components/SubjectListHeader';
@@ -26,6 +30,8 @@ import './StudyPage.css';
 export const StudyPage: React.FC = () => {
   const { addToast } = useToast();
   const [isDeckImportOpen, setIsDeckImportOpen] = useState(false);
+  const [isPdfWorkspaceOpen, setIsPdfWorkspaceOpen] = useState(false);
+  const [pdfWorkspaceResource, setPdfWorkspaceResource] = useState<StudyResource | null>(null);
   const {
     navigate,
     openGuide,
@@ -168,6 +174,34 @@ export const StudyPage: React.FC = () => {
     loadData
   } = useStudyPage();
 
+  const handleExportDeck = async () => {
+    if (flashcards.length === 0) {
+      addToast({
+        title: 'No Flashcards',
+        description: 'Create or import some flashcards first before exporting.',
+        type: 'warning'
+      });
+      return;
+    }
+    try {
+      const subjectName = selectedSubjectForTopics?.name || 'Solis_Deck';
+      const safeName = subjectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const blob = await createAnkiPackageApkg(subjectName, flashcards);
+      downloadFile(`${safeName}.apkg`, blob);
+      addToast({
+        title: 'Deck Exported',
+        description: `Exported ${flashcards.length} cards to ${safeName}.apkg`,
+        type: 'success'
+      });
+    } catch (err) {
+      addToast({
+        title: 'Export Failed',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2xl)', paddingBottom: 'var(--space-3xl)' }}>
       <SubjectListHeader
@@ -285,6 +319,18 @@ export const StudyPage: React.FC = () => {
                 Notes
               </Button>
               <Button
+                variant="subtle"
+                size="sm"
+                leftIcon={<BookOpen size={14} />}
+                onClick={() => {
+                  setPdfWorkspaceResource(null);
+                  setIsPdfWorkspaceOpen(true);
+                }}
+                title="Open Split-Screen PDF Lecture Reader & Annotation Workspace"
+              >
+                Lecture Reader
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
@@ -319,6 +365,7 @@ export const StudyPage: React.FC = () => {
         onOpenCardCreator={handleOpenCardCreator}
         onStartActiveRecall={handleStartActiveRecall}
         onImportDeck={() => setIsDeckImportOpen(true)}
+        onExportDeck={handleExportDeck}
         onOpenExamCram={() => setIsExamCramModalOpen(true)}
       />
 
@@ -481,6 +528,24 @@ export const StudyPage: React.FC = () => {
         onDeleteResource={handleDeleteResource}
         onStudyResource={handleStudyResource}
         onSynthesizeNote={handleSynthesizeNote}
+        onOpenLectureReader={(res) => {
+          setIsResourceModalOpen(false);
+          setPdfWorkspaceResource(res);
+          setIsPdfWorkspaceOpen(true);
+        }}
+      />
+
+      <SplitScreenPdfWorkspace
+        isOpen={isPdfWorkspaceOpen}
+        onClose={() => {
+          setIsPdfWorkspaceOpen(false);
+          setPdfWorkspaceResource(null);
+        }}
+        resource={pdfWorkspaceResource}
+        subject={selectedSubjectForTopics}
+        topic={selectedTopicIdForDrawer ? topicsList.find((t) => t.id === selectedTopicIdForDrawer) : null}
+        subjects={subjects.filter((s) => s.status !== 'archived')}
+        topics={allTopics}
       />
 
       {/* Plan §4.4: client-side Anki (.apkg) / Quizlet deck importer */}

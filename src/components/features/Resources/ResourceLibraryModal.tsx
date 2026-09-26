@@ -18,7 +18,8 @@ import {
   ExternalLink,
   Play,
   Bookmark,
-  FileEdit
+  FileEdit,
+  BookOpen
 } from 'lucide-react';
 import './ResourceLibraryModal.css';
 
@@ -35,6 +36,8 @@ export interface ResourceLibraryModalProps {
   onDeleteResource: (id: string) => Promise<void>;
   onStudyResource: (resource: StudyResource) => void;
   onSynthesizeNote: (resource: StudyResource) => void;
+  /** Feature 3.1: opens the Split-Screen PDF Lecture Reader & Annotation Workspace */
+  onOpenLectureReader?: (resource: StudyResource) => void;
 }
 
 const TYPE_ICONS: Record<ResourceType, React.ReactNode> = {
@@ -401,6 +404,17 @@ export const ResourceLibraryModal: React.FC<ResourceLibraryModalProps> = ({
                       >
                         <ExternalLink size={15} />
                       </a>
+                    )}
+
+                    {onOpenLectureReader && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onOpenLectureReader(res)}
+                        title="Open Split-Screen Lecture Reader"
+                      >
+                        <BookOpen size={14} />
+                      </Button>
                     )}
 
                     <Button

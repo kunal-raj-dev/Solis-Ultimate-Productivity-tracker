@@ -11,12 +11,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-lg);
+  gap: var(--space-md);
 }
 
 .solis-app-header__left {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  flex-shrink: 0;
 }
 
 .solis-app-header__breadcrumbs {
@@ -142,10 +144,71 @@
   box-shadow: 0 0 0 1.5px var(--bg-canvas);
 }
 
+/* Top Navbar Centered D-Day Hero Anchor (plan §2.4) */
+.solis-app-header__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--space-xs);
+}
+
+.solis-app-header__dday-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: all var(--duration-swift) var(--ease-spatial);
+  max-width: min(100%, 360px);
+}
+
+.solis-app-header__dday-btn:hover {
+  background-color: var(--bg-surface-tertiary);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.solis-app-header__dday-btn:active {
+  transform: translateY(0);
+}
+
+.solis-app-header__dday-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-app-header__dday-goal-name {
+  font-weight: 600;
+}
+
+.solis-app-header__dday-days {
+  font-weight: 700;
+}
+
+.solis-app-header__dday-cushion {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 .solis-app-header__right {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
+  flex-shrink: 0;
 }
 
 .solis-app-header__search-btn {
@@ -375,3 +438,22 @@
     padding: 8px;
   }
 }
+
+@media (max-width: 1200px) {
+  .solis-app-header__dday-cushion {
+    display: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .solis-app-header__dday-goal-name {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .solis-app-header__dday-btn {
+    display: none;
+  }
+}
+

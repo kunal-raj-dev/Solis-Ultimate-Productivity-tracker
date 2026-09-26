@@ -12,7 +12,15 @@ import {
   DEFAULT_REQUEST_RETENTION
 } from '../../../utils/learning/spacedRepetition';
 import { useAuth } from '../../../context/AuthContext';
-import { Sparkles, RotateCw, CheckCircle2, BookOpen } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
+import { dataService } from '../../../services/dataService';
+import {
+  isCardLeech,
+  generateConceptAtomization,
+  updateCardLapseTelemetry,
+  AtomizedCardPair
+} from '../../../utils/learning/leechDetector';
+import { Sparkles, RotateCw, CheckCircle2, BookOpen, Scissors, AlertTriangle } from 'lucide-react';
 import './FlashcardReviewModal.css';
 
 export interface FlashcardReviewModalProps {
@@ -45,12 +53,20 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
   isCramMode = false
 }) => {
   const { user } = useAuth();
+  const { addToast } = useToast();
   const activeRetention = requestRetention ?? user?.preferences?.fsrsRetention ?? DEFAULT_REQUEST_RETENTION;
   const [activeQueue, setActiveQueue] = useState<string[]>([]);
   const [learningQueue, setLearningQueue] = useState<string[]>([]);
   const [presentedSinceLearning, setPresentedSinceLearning] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+
+  // Feature 3.4: Active Leech Detection & Concept Atomization
+  const [isAtomizeOpen, setIsAtomizeOpen] = useState(false);
+  const [atomizedPair, setAtomizedPair] = useState<AtomizedCardPair | null>(null);
+  const [atomizedP1, setAtomizedP1] = useState({ prompt: '', answer: '' });
+  const [atomizedP2, setAtomizedP2] = useState({ prompt: '', answer: '' });
+  const [isAtomizing, setIsAtomizing] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,6 +85,92 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
   const currentCardId = presentationOrder[0];
   const currentCard = cards.find((card) => card.id === currentCardId);
   const isRepresenting = currentCardId !== undefined && learningQueue.includes(currentCardId);
+
+  const cardIsLeech = currentCard ? isCardLeech(currentCard) : false;
+
+  const handleOpenAtomize = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentCard) return;
+    const pair = generateConceptAtomization(currentCard);
+    setAtomizedPair(pair);
+    setAtomizedP1({ prompt: pair.card1.frontPrompt, answer: pair.card1.backAnswer });
+    setAtomizedP2({ prompt: pair.card2.frontPrompt, answer: pair.card2.backAnswer });
+    setIsAtomizeOpen(true);
+  };
+
+  const handleConfirmAtomize = async () => {
+    if (!currentCard || !atomizedP1.prompt || !atomizedP2.prompt) return;
+    setIsAtomizing(true);
+    try {
+      // 1. Create two new atomic cards
+      await dataService.flashcards.createFlashcard({
+        subjectId: currentCard.subjectId,
+        subjectName: currentCard.subjectName,
+        topicId: currentCard.topicId,
+        topicTitle: currentCard.topicTitle,
+        noteId: currentCard.noteId,
+        frontPrompt: atomizedP1.prompt,
+        backAnswer: atomizedP1.answer,
+        cardType: 'standard',
+        difficultyRating: 'good',
+        intervalDays: 1,
+        repetitionCount: 0,
+        easeFactor: 2.5,
+        isLeech: false,
+        lapsesCount: 0
+      });
+
+      await dataService.flashcards.createFlashcard({
+        subjectId: currentCard.subjectId,
+        subjectName: currentCard.subjectName,
+        topicId: currentCard.topicId,
+        topicTitle: currentCard.topicTitle,
+        noteId: currentCard.noteId,
+        frontPrompt: atomizedP2.prompt,
+        backAnswer: atomizedP2.answer,
+        cardType: 'standard',
+        difficultyRating: 'good',
+        intervalDays: 1,
+        repetitionCount: 0,
+        easeFactor: 2.5,
+        isLeech: false,
+        lapsesCount: 0
+      });
+
+      // 2. Mark parent card as resolved/reset leech status
+      await dataService.flashcards.updateFlashcard(currentCard.id, {
+        isLeech: false,
+        lapsesCount: 0
+      });
+
+      // 3. Remove from session queues
+      const nextActive = activeQueue.filter((id) => id !== currentCard.id);
+      const nextLearning = learningQueue.filter((id) => id !== currentCard.id);
+      setActiveQueue(nextActive);
+      setLearningQueue(nextLearning);
+      setIsAtomizeOpen(false);
+      setIsFlipped(false);
+
+      addToast({
+        title: 'Concept Atomized',
+        description: 'Split into 2 focused cards. Overloaded leech card resolved.',
+        type: 'success'
+      });
+
+      if (nextActive.length === 0 && nextLearning.length === 0) {
+        setIsFinished(true);
+        onCompleteSession?.(totalCards);
+      }
+    } catch {
+      addToast({
+        title: 'Atomization Failed',
+        description: 'Could not create atomic flashcards. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setIsAtomizing(false);
+    }
+  };
 
   const intervals = useMemo(() => {
     if (!currentCard) return null;
@@ -118,6 +220,14 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
       let nextPresentedSinceLearning = presentedSinceLearning;
 
       if (rating === 'again') {
+        // Track lapse telemetry
+        if (currentCard && !isCramMode) {
+          const telemetry = updateCardLapseTelemetry(currentCard, 'again');
+          currentCard.lapsesCount = telemetry.lapsesCount;
+          currentCard.lastLapseAt = telemetry.lastLapseAt;
+          currentCard.isLeech = telemetry.isLeech;
+          void dataService.flashcards.updateFlashcard(cardId, telemetry).catch(() => {});
+        }
         // Intra-day re-queue: the card stays in the session (step 0) and the
         // final tomorrow schedule is NOT committed yet.
         const next = requeueCardInSession({ activeQueue, learningQueue }, cardId);
@@ -216,6 +326,24 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
                 )}
                 {isRepresenting && (
                   <Badge variant="amber">Re-testing in this session</Badge>
+                )}
+                {cardIsLeech && (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Badge variant="amber" title="This concept has 4+ lapses in the rolling 14-day window">
+                      ⚡ Struggling Concept (Leech)
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-touch-target"
+                      leftIcon={<Scissors size={12} />}
+                      onClick={handleOpenAtomize}
+                      title="Split this high-friction card into 2 atomic flashcards"
+                      style={{ height: '22px', padding: '0 8px', fontSize: '11px' }}
+                    >
+                      Atomize
+                    </Button>
+                  </div>
                 )}
               </div>
               <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>
@@ -420,6 +548,79 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Feature 3.4: Concept Atomization Modal */}
+      {isAtomizeOpen && (
+        <Modal
+          isOpen={isAtomizeOpen}
+          onClose={() => setIsAtomizeOpen(false)}
+          title="Atomize Struggling Concept"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '8px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '12px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px' }}>
+              <AlertTriangle size={18} color="var(--color-amber-500, #f59e0b)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+                <strong>High Cognitive Load Detected:</strong>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)' }}>
+                  {atomizedPair?.rationale || 'This concept has failed 4+ times in 14 days. Splitting it into two focused, atomic cards eliminates interference and locks in retention.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Card 1 Preview */}
+            <div style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-secondary)' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-coral-500)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Child Card 1</span>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Question / Prompt</label>
+              <input
+                type="text"
+                value={atomizedP1.prompt}
+                onChange={(e) => setAtomizedP1({ ...atomizedP1, prompt: e.target.value })}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', color: 'var(--text-primary)', marginBottom: '8px' }}
+              />
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Answer</label>
+              <input
+                type="text"
+                value={atomizedP1.answer}
+                onChange={(e) => setAtomizedP1({ ...atomizedP1, answer: e.target.value })}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', color: 'var(--text-primary)' }}
+              />
+            </div>
+
+            {/* Card 2 Preview */}
+            <div style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-secondary)' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-coral-500)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Child Card 2</span>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Question / Prompt</label>
+              <input
+                type="text"
+                value={atomizedP2.prompt}
+                onChange={(e) => setAtomizedP2({ ...atomizedP2, prompt: e.target.value })}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', color: 'var(--text-primary)', marginBottom: '8px' }}
+              />
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Answer</label>
+              <input
+                type="text"
+                value={atomizedP2.answer}
+                onChange={(e) => setAtomizedP2({ ...atomizedP2, answer: e.target.value })}
+                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', color: 'var(--text-primary)' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
+              <Button variant="ghost" onClick={() => setIsAtomizeOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                leftIcon={<Scissors size={15} />}
+                isLoading={isAtomizing}
+                onClick={handleConfirmAtomize}
+              >
+                Confirm & Split Into 2 Cards
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 };

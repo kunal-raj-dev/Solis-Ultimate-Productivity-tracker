@@ -16,4 +16,5 @@ export * from './planning';
 export * from './reflection';
 export * from './resource';
 export * from './room';
+export * from './presence';
 

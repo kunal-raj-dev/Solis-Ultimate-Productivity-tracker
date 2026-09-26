@@ -253,5 +253,33 @@ describe('Global Navigation & Route Intelligence Architecture', () => {
       expect(content).toMatch(/\.solis-app-header__breadcrumb-root:focus-visible\s*\{[^}]*outline:/s);
       expect(content).toMatch(/\.solis-app-header__breadcrumb-sep\s*\{[^}]*opacity:\s*0\.35/s);
     });
+
+    it('verifies AppHeader integrates the centered D-Day anchor without fixed positioning collisions', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const headerPath = path.resolve(__dirname, '../components/layout/AppHeader/AppHeader.tsx');
+      const headerCssPath = path.resolve(__dirname, '../components/layout/AppHeader/AppHeader.css');
+      const layoutPath = path.resolve(__dirname, '../layouts/AppLayout.tsx');
+
+      const headerContent = fs.readFileSync(headerPath, 'utf8');
+      const cssContent = fs.readFileSync(headerCssPath, 'utf8');
+      const layoutContent = fs.readFileSync(layoutPath, 'utf8');
+
+      // 1. AppHeader renders the D-Day pill in a flex-centered container
+      expect(headerContent).toContain('solis-app-header__center');
+      expect(headerContent).toContain('solis-app-header__dday-btn');
+
+      // 2. CSS specifies centered flex layout with responsive breakpoints
+      expect(cssContent).toMatch(/\.solis-app-header__center\s*\{[^}]*display:\s*flex/);
+      expect(cssContent).toMatch(/\.solis-app-header__center\s*\{[^}]*justify-content:\s*center/);
+      expect(cssContent).toMatch(/\.solis-app-header__center\s*\{[^}]*flex:\s*1/);
+      expect(cssContent).toContain('.solis-app-header__dday-cushion');
+
+      // 3. AppLayout cleanly delegates exam horizon rendering to AppHeader without fixed positioning hacks
+      expect(layoutContent).toContain('examGoal={examGoal}');
+      expect(layoutContent).toContain('examCushion={examCushion}');
+      expect(layoutContent).not.toMatch(/style=\{\{\s*position:\s*'fixed'/);
+    });
   });
 });
+

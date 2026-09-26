@@ -24,6 +24,7 @@ import { formatErrorMessage } from '../../../utils/errors';
 import { getISODateString, isPast } from '../../../utils/date';
 import { ExamReadinessCard } from '../Analytics/ExamReadinessCard';
 import { ExamFeasibilityCard } from './ExamFeasibilityCard';
+import { DynamicSyllabusPacingCard } from './DynamicSyllabusPacingCard';
 import { calculateExamFeasibility } from '../../../utils/planning/examFeasibility';
 import { TimeCushionInput } from '../../../utils/planning/timeCushion';
 import { BrainCircuit, Play, Bookmark, ExternalLink, Flame, CalendarPlus } from 'lucide-react';
@@ -174,6 +175,15 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
           cushionInput={cushionInput}
           onSchedulePacedBlock={() => handleScheduleDailyFocusBlock()}
         />
+
+        {/* Dynamic Syllabus Pacing & Burnout-Aware Target Engine (Feature 3.5) */}
+        {goal.targetDate && (
+          <DynamicSyllabusPacingCard
+            targetExamDate={goal.targetDate}
+            topics={subjectTopics}
+            dailyCapacityMinutes={capacityMins}
+          />
+        )}
 
         {/* Top Header: Countdown & Target Grade */}
         <div className="solis-exam-countdown-card">

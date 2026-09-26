@@ -1,0 +1,95 @@
+.solis-pacing-card {
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-md, 16px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--bg-surface-secondary, rgba(255, 255, 255, 0.02));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: var(--space-md, 16px);
+  transition: border-color var(--duration-fast, 150ms) ease;
+}
+
+.solis-pacing-card--sustainable {
+  border-left: 4px solid var(--color-sage-500, #10b981);
+}
+
+.solis-pacing-card--elevated {
+  border-left: 4px solid var(--color-amber-500, #f59e0b);
+}
+
+.solis-pacing-card--critical {
+  border-left: 4px solid var(--color-coral-500, #eb5e28);
+}
+
+.solis-pacing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.solis-pacing-headline {
+  font-family: var(--font-display, inherit);
+  font-size: var(--text-h4, 16px);
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-pacing-stat-grid {
+  display: grid;
+  grid-templateColumns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.solis-pacing-stat-tile {
+  padding: 8px 12px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-primary, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
+}
+
+.solis-pacing-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.solis-pacing-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.solis-pacing-advice-box {
+  padding: 12px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-primary, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  font-size: var(--text-body-sm, 13px);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.solis-pacing-triage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.solis-pacing-triage-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-surface-secondary);
+  font-size: 12px;
+}

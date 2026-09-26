@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, Plus, Sparkles, Play, Upload, Flame } from 'lucide-react';
+import { BrainCircuit, Plus, Sparkles, Play, Upload, Flame, Download } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { Button } from '../../../components/ui/Button/Button';
 import { ContextualHelp } from '../../../components/ui/ContextualHelp/ContextualHelp';
@@ -13,6 +13,8 @@ export interface SpacedReviewsSanctuaryProps {
   onStartActiveRecall: (cards?: Flashcard[]) => void;
   /** Plan §4.4: opens the deck importer (Anki .apkg / Quizlet text). */
   onImportDeck?: () => void;
+  /** Feature 2.3: exports current flashcard deck to Anki .apkg package. */
+  onExportDeck?: () => void;
   /** Feature 2.4: opens the Exam Cram modal for filtered decks without FSRS damage. */
   onOpenExamCram?: () => void;
 }
@@ -24,6 +26,7 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
   onOpenCardCreator,
   onStartActiveRecall,
   onImportDeck,
+  onExportDeck,
   onOpenExamCram
 }) => {
   return (
@@ -57,6 +60,19 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
               title="Import an Anki (.apkg) or Quizlet deck"
             >
               Import Deck
+            </Button>
+          )}
+          {onExportDeck && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-touch-target"
+              leftIcon={<Download size={14} />}
+              onClick={onExportDeck}
+              title="Export deck to Anki package (.apkg)"
+              disabled={flashcards.length === 0}
+            >
+              Export Deck
             </Button>
           )}
           {onOpenExamCram && (

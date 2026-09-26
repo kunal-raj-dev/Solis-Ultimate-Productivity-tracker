@@ -25,6 +25,7 @@ import {
   IReflectionService,
   IRoomService,
   IStudyPactService,
+  IPresenceService,
   DataEntityChannel,
   matchesChannelFilter
 } from '../api.interface';
@@ -46,6 +47,7 @@ import { SupabaseResourceService } from './modules/resources.service';
 import { SupabaseReflectionService } from './modules/reflections.service';
 import { SupabaseRoomsService } from './modules/rooms.service';
 import { SupabaseStudyPactService } from './modules/studyPact.service';
+import { SupabasePresenceService } from './modules/presence.service';
 
 export class SupabaseDataService implements IDataService {
   private listeners: Set<{
@@ -68,6 +70,7 @@ export class SupabaseDataService implements IDataService {
   public reflections: IReflectionService;
   public rooms: IRoomService;
   public pacts: IStudyPactService;
+  public presence: IPresenceService;
 
   constructor() {
     // Plan §6.1 scoped entity pub/sub: every domain module emits its own
@@ -87,6 +90,7 @@ export class SupabaseDataService implements IDataService {
     this.habits = new SupabaseHabitService(ctxFor('habits'));
     this.goals = new SupabaseGoalService(ctxFor('goals'));
     this.pacts = new SupabaseStudyPactService(ctxFor('pacts'));
+    this.presence = new SupabasePresenceService(ctxFor('presence'));
 
     const globalCtx = ctxFor('all');
     this.auth = new SupabaseAuthService(globalCtx);

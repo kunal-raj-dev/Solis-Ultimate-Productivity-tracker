@@ -46,6 +46,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   const [deckSubjectId, setDeckSubjectId] = useState('');
   const [subjects, setSubjects] = useState<StudySubject[]>([]);
   const [isImportingDeck, setIsImportingDeck] = useState(false);
+  const [autoCreateTopics, setAutoCreateTopics] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
@@ -193,14 +194,46 @@ export const ImportModal: React.FC<ImportModalProps> = ({
       const existingPrompts = new Set(
         existingCards.map((card) => card.frontPrompt.trim().toLowerCase())
       );
+
+      // If auto-create topics is enabled, resolve or create topics for subdecks
+      const topicNameToId = new Map<string, string>();
+      if (autoCreateTopics && subjectId) {
+        try {
+          const existingTopics = await dataService.study.getTopics(subjectId);
+          for (const t of existingTopics) {
+            topicNameToId.set(t.title.trim().toLowerCase(), t.id);
+          }
+          const topicsToCreate = (deckResult.detectedTopics || []).filter(
+            (name) => !topicNameToId.has(name.trim().toLowerCase())
+          );
+          for (const topicName of topicsToCreate) {
+            const created = await dataService.study.createTopic({
+              subjectId,
+              title: topicName,
+              masteryLevel: 'unstudied'
+            });
+            topicNameToId.set(topicName.trim().toLowerCase(), created.id);
+          }
+        } catch (topicErr) {
+          console.warn('Could not auto-create syllabus topics:', topicErr);
+        }
+      }
+
       for (const card of deckResult.cards) {
         const promptKey = card.frontPrompt.trim().toLowerCase();
         if (existingPrompts.has(promptKey)) {
           skippedCount += 1;
           continue;
         }
+
+        const resolvedTopicId = card.topicTitle
+          ? topicNameToId.get(card.topicTitle.trim().toLowerCase())
+          : undefined;
+
         await dataService.flashcards.createFlashcard({
           subjectId,
+          topicId: resolvedTopicId,
+          topicTitle: card.topicTitle,
           frontPrompt: card.frontPrompt,
           backAnswer: card.backAnswer,
           cardType: card.cardType
@@ -239,6 +272,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     setIsParsingDeck(false);
     setDeckSubjectId('');
     setIsImportingDeck(false);
+    setAutoCreateTopics(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -333,6 +367,52 @@ export const ImportModal: React.FC<ImportModalProps> = ({
                 options={subjects.map((s) => ({ value: s.id, label: s.name, badge: s.code }))}
                 placeholder="Choose a subject"
               />
+
+              {deckResult.detectedTopics && deckResult.detectedTopics.length > 0 && (
+                <div
+                  className="solis-deck-detected-topics"
+                  style={{
+                    padding: '12px 14px',
+                    background: 'var(--surface-sunken, rgba(255, 255, 255, 0.03))',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      Detected Subdecks ({deckResult.detectedTopics.length})
+                    </span>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: 'var(--text-caption)', cursor: 'pointer', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={autoCreateTopics}
+                        onChange={(e) => setAutoCreateTopics(e.target.checked)}
+                      />
+                      <span>Auto-create Syllabus Topics</span>
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {deckResult.detectedTopics.map((topic, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          background: 'var(--surface-elevated, rgba(255, 255, 255, 0.06))',
+                          borderRadius: '12px',
+                          border: '1px solid var(--border-subtle)',
+                          color: 'var(--text-primary)'
+                        }}
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="solis-import-actions">
                 <Button type="button" variant="outline" size="md" onClick={() => setDeckResult(null)}>

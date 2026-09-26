@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Target } from 'lucide-react';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
 import { Sidebar } from '../components/layout/Sidebar/Sidebar';
 import { AppHeader } from '../components/layout/AppHeader/AppHeader';
@@ -22,9 +21,7 @@ import { notificationService } from '../services/notifications/notification.serv
 import { globalNotifiedStarts, globalNotifiedReviews } from '../hooks/useTimeBlockScheduler';
 import {
   calculateTimeCushion,
-  formatCushionHours,
-  projectRoutineCommitmentsByDay,
-  TIME_CUSHION_STATUS_META
+  projectRoutineCommitmentsByDay
 } from '../utils/planning/timeCushion';
 import { getDefaultDailyCapacityMinutes } from '../utils/tasks/workloadCalculator';
 import { Goal } from '../types/goal';
@@ -126,27 +123,6 @@ export const AppLayout: React.FC = () => {
   const [examFlashcards, setExamFlashcards] = useState<Flashcard[]>([]);
   const [examHabits, setExamHabits] = useState<Habit[]>([]);
   const [isExamWorkspaceOpen, setIsExamWorkspaceOpen] = useState(false);
-  const [isCompactHeader, setIsCompactHeader] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches
-  );
-  // The Sidebar is display:none below 1024px (Sidebar.css); the pill centers
-  // on the header, which spans [sidebar edge, viewport] when it is visible.
-  const [isSidebarVisible, setIsSidebarVisible] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
-  );
-
-  useEffect(() => {
-    const compactQuery = window.matchMedia('(max-width: 900px)');
-    const sidebarQuery = window.matchMedia('(min-width: 1024px)');
-    const onCompactChange = (event: MediaQueryListEvent) => setIsCompactHeader(event.matches);
-    const onSidebarChange = (event: MediaQueryListEvent) => setIsSidebarVisible(event.matches);
-    compactQuery.addEventListener('change', onCompactChange);
-    sidebarQuery.addEventListener('change', onSidebarChange);
-    return () => {
-      compactQuery.removeEventListener('change', onCompactChange);
-      sidebarQuery.removeEventListener('change', onSidebarChange);
-    };
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -286,75 +262,11 @@ export const AppLayout: React.FC = () => {
               <AppHeader
                 onOpenSearch={() => setIsCommandOpen(true)}
                 onOpenAskSolis={() => setIsAskSolisOpen(true)}
+                examGoal={examGoal}
+                examCushion={examCushion}
+                isExamCushionReady={isExamCushionReady}
+                onOpenExamWorkspace={handleOpenExamWorkspace}
               />
-            )}
-
-            {/* Persistent Global D-Day Pill (plan §2.4): `🎯 MCAT: D-38 • On Track (+4h)` */}
-            {!isFocus && examGoal && examCushion && (
-              <button
-                type="button"
-                onClick={handleOpenExamWorkspace}
-                aria-label={`Open exam workspace for ${examGoal.title}`}
-                style={{
-                  position: 'fixed',
-                  top: 'calc((var(--header-height) - 28px) / 2)',
-                  // Center on the top navbar, not the viewport: the header spans
-                  // [sidebar edge, viewport] whenever the Sidebar is visible.
-                  left: isSidebarVisible
-                    ? `calc(50% + ${
-                        isSidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'
-                      } / 2)`
-                    : '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 201, // one layer above --z-header (200), below modals (400+)
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  maxWidth: isCompactHeader ? '34vw' : 'min(40vw, 320px)',
-                  padding: '4px 12px',
-                  backgroundColor: 'var(--bg-canvas-glass)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-full)',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-interface)',
-                  fontSize: 'var(--text-caption)',
-                  color: 'var(--text-secondary)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden'
-                }}
-              >
-                <Target
-                  size={12}
-                  style={{
-                    color: TIME_CUSHION_STATUS_META[examCushion.status].colorToken,
-                    flexShrink: 0
-                  }}
-                  aria-hidden="true"
-                />
-                <span
-                  style={{ color: 'var(--text-primary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis' }}
-                >
-                  {!isCompactHeader && `${examGoal.title}: `}
-                  {examCushion.daysRemaining === 0 ? 'D-Day' : `D-${examCushion.daysRemaining}`}
-                </span>
-                {isExamCushionReady && (
-                  <span
-                    style={{
-                      color: TIME_CUSHION_STATUS_META[examCushion.status].colorToken,
-                      fontFamily: 'var(--font-mono)',
-                      fontVariantNumeric: 'tabular-nums',
-                      fontWeight: 600,
-                      flexShrink: 0
-                    }}
-                  >
-                    • {TIME_CUSHION_STATUS_META[examCushion.status].label} (
-                    {examCushion.cushionHours >= 0 ? '+' : '-'}
-                    {formatCushionHours(examCushion.cushionHours)}h)
-                  </span>
-                )}
-              </button>
             )}
 
             <main className={cn('solis-app-view', isFocus && 'solis-app-view--focus')}>

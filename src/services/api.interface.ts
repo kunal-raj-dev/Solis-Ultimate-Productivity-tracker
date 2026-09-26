@@ -22,6 +22,7 @@ import {
   RoomReflection
 } from '../types/room';
 import { CloudStudyPact, CreateStudyPactPayload, StudyPactWeekSummary } from '../types/studyPact';
+import { PeerPresence, PeerCheerEmoji } from '../types/presence';
 
 export interface IAuthService {
   getCurrentUser(): Promise<UserProfile | null>;
@@ -218,6 +219,15 @@ export interface IStudyPactService {
   deletePact(pactId: string): Promise<boolean>;
 }
 
+export interface IPresenceService {
+  getLivePeers(): Promise<PeerPresence[]>;
+  updateMyPresence(presence: Partial<PeerPresence>): Promise<void>;
+  sendCheer(toUserId: string, emoji: PeerCheerEmoji): Promise<void>;
+  setGhostMode(isGhost: boolean): Promise<void>;
+  getGhostMode(): Promise<boolean>;
+  subscribeToPresence(callback: (peers: PeerPresence[]) => void): () => void;
+}
+
 /**
  * Scoped entity pub/sub channels (plan §6.1).
  * A mutation notifies only the subscribers that declared an interest in its
@@ -226,7 +236,7 @@ export interface IStudyPactService {
  * Domains outside this enum (flashcards, reviews, routines, resources,
  * reflections, rooms, auth) broadcast on 'all'.
  */
-export type DataEntityChannel = 'tasks' | 'habits' | 'notes' | 'study' | 'focus' | 'goals' | 'pacts' | 'all';
+export type DataEntityChannel = 'tasks' | 'habits' | 'notes' | 'study' | 'focus' | 'goals' | 'pacts' | 'presence' | 'all';
 
 /**
  * Shared dispatch predicate for the scoped entity event bus.
@@ -259,6 +269,7 @@ export interface IDataService {
   reflections: IReflectionService;
   rooms: IRoomService;
   pacts: IStudyPactService;
+  presence: IPresenceService;
   subscribe(listener: () => void, channels?: DataEntityChannel[]): () => void;
   notifySubscribers(channel: DataEntityChannel): void;
 }

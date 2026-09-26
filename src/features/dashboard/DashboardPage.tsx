@@ -25,6 +25,7 @@ import { CognitiveLoadAlert } from '../../components/features/Analytics/Cognitiv
 import { PartialDataWarningBanner } from '../../components/feedback/PartialDataWarningBanner';
 import { KnowledgeResurfacingCard } from '../../components/features/Notes/KnowledgeResurfacingCard';
 import { ExamHorizonBar } from '../../components/features/Goals/ExamHorizonBar';
+import { AmbientPeerPresenceWidget } from '../../components/features/Presence/AmbientPeerPresenceWidget';
 import { SolarArc } from '../../components/illustrations';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -875,7 +876,10 @@ export const DashboardPage: React.FC = () => {
         dailyCapacity={getDefaultDailyCapacityMinutes()}
         onRefresh={loadDashboardData}
       />
- 
+
+      {/* Feature 3.3: Ambient Peer Presence (Friends Studying Now) */}
+      <AmbientPeerPresenceWidget />
+
       {/* Cognitive Load Alert if needed */}
       {cognitiveReport.status !== 'optimal' && (
         <CognitiveLoadAlert report={cognitiveReport} />
