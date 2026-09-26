@@ -23,7 +23,9 @@ import {
   Activity,
   Rocket,
   PieChart,
-  Hash
+  Hash,
+  Shield,
+  BellOff
 } from 'lucide-react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -124,6 +126,10 @@ export const FocusPage: React.FC = () => {
     setPreSessionEnergy,
     setIsReflectionModalOpen,
     testAudioChime,
+    interruptionsLog,
+    internalInterruptionsCount,
+    externalInterruptionsCount,
+    recordInterruption,
     saveReflection
   } = useFocus();
 
@@ -910,19 +916,89 @@ export const FocusPage: React.FC = () => {
               )}
             </div>
 
-            {/* Cognitive Drift Pad Trigger Button */}
+            {/* Feature 2.5: Distraction Counter & Interruption Tracking */}
             {(status === 'running' || status === 'paused') && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '14px' }}>
-                <button
-                  type="button"
-                  className="solis-focus-drift-trigger tactile-press"
-                  onClick={() => setIsDriftPadOpen(true)}
-                  title="Park intrusive thought into inbox (Alt+D)"
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    background: 'rgba(0, 0, 0, 0.35)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    fontSize: 'var(--text-micro)',
+                    color: 'var(--color-ivory-200)'
+                  }}
                 >
-                  <Zap size={14} color="var(--color-coral-400)" />
-                  <span>Park Thought {parkedThoughts.length > 0 ? `(${parkedThoughts.length})` : ''}</span>
-                  <span className="solis-drift-kbd">Alt+D</span>
-                </button>
+                  <Shield size={12} color={interruptionsLog.length === 0 ? 'var(--color-emerald-400, #34d399)' : 'var(--color-amber-400, #fbbf24)'} />
+                  <span>
+                    {interruptionsLog.length === 0
+                      ? 'Pristine Focus (0 Distractions)'
+                      : `Friction: ${internalInterruptionsCount} Drift • ${externalInterruptionsCount} External`}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => recordInterruption('internal')}
+                    title="Log an internal urge, mind wandering, or distraction impulse (+1)"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(235, 94, 40, 0.12)',
+                      border: '1px solid rgba(235, 94, 40, 0.28)',
+                      color: 'var(--color-ivory-100)',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Zap size={11} color="var(--color-coral-400)" />
+                    <span>+1 Mind Drift</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => recordInterruption('external')}
+                    title="Log external interruption: knock, call, noise, or alert (+1)"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'rgba(217, 119, 6, 0.12)',
+                      border: '1px solid rgba(217, 119, 6, 0.28)',
+                      color: 'var(--color-ivory-100)',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <BellOff size={11} color="var(--color-amber-400)" />
+                    <span>+1 External</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="solis-focus-drift-trigger tactile-press"
+                    onClick={() => setIsDriftPadOpen(true)}
+                    title="Park intrusive thought into inbox (Alt+D)"
+                    style={{ margin: 0 }}
+                  >
+                    <Zap size={13} color="var(--color-coral-400)" />
+                    <span>Park Thought {parkedThoughts.length > 0 ? `(${parkedThoughts.length})` : ''}</span>
+                    <span className="solis-drift-kbd">Alt+D</span>
+                  </button>
+                </div>
               </div>
             )}
           </ParallaxLayer>
@@ -941,6 +1017,9 @@ export const FocusPage: React.FC = () => {
         taskTitle={activeTask?.title}
         planItemId={selectedPlanItemId}
         parkedThoughts={parkedThoughts}
+        initialInternalCount={internalInterruptionsCount}
+        initialExternalCount={externalInterruptionsCount}
+        interruptionsLog={interruptionsLog}
         onSaveSession={saveReflection}
       />
 

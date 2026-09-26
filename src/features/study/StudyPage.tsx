@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { dataService } from '../../services/dataService';
 import { FlashcardReviewModal } from '../../components/features/Flashcards/FlashcardReviewModal';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
+import { ExamCramModal } from '../../components/features/Flashcards/ExamCramModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
 import { ImportModal } from '../../components/features/ImportModal/ImportModal';
 import { TopicIntelligenceDrawer } from './TopicIntelligenceDrawer';
@@ -69,6 +70,11 @@ export const StudyPage: React.FC = () => {
     setIsCreateFlashcardModalOpen,
     isResourceModalOpen,
     setIsResourceModalOpen,
+    isExamCramModalOpen,
+    setIsExamCramModalOpen,
+    isCramSessionActive,
+    setIsCramSessionActive,
+    handleStartExamCram,
     activeDeckCards,
     cardDefaultSubjectId,
     cardDefaultTopicId,
@@ -313,6 +319,7 @@ export const StudyPage: React.FC = () => {
         onOpenCardCreator={handleOpenCardCreator}
         onStartActiveRecall={handleStartActiveRecall}
         onImportDeck={() => setIsDeckImportOpen(true)}
+        onOpenExamCram={() => setIsExamCramModalOpen(true)}
       />
 
       {/* Grid: Study Plan Queue (Left) + Recent Sessions (Right) */}
@@ -433,9 +440,22 @@ export const StudyPage: React.FC = () => {
 
       <FlashcardReviewModal
         isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setIsCramSessionActive(false);
+        }}
         cards={activeDeckCards}
         onRecordAttempt={handleRecordCardAttempt}
+        isCramMode={isCramSessionActive}
+      />
+
+      <ExamCramModal
+        isOpen={isExamCramModalOpen}
+        onClose={() => setIsExamCramModalOpen(false)}
+        flashcards={flashcards}
+        subjects={subjects.filter((s) => s.status !== 'archived')}
+        topics={allTopics}
+        onStartCram={handleStartExamCram}
       />
 
       <FlashcardCreateModal

@@ -12,6 +12,7 @@ import { ID } from './common';
 import { StudySession } from './study';
 
 export type StudyPactStatus = 'active' | 'completed';
+export type CloudStudyPactStatus = 'pending' | 'active' | 'completed' | 'cancelled';
 
 export interface StudyPact {
   id: ID;
@@ -39,6 +40,68 @@ export interface StudyPact {
   createdAt: string;
   completedAt?: string;
   summary?: StudyPactWeekSummary;
+}
+
+/**
+ * Multi-User Cloud Study Pact (Phase 1 / F-103)
+ * Maps directly to public.study_pacts in Supabase PostgreSQL with RLS.
+ */
+export interface CloudStudyPact {
+  id: ID;
+  createdBy: string;
+  creatorName: string;
+  partnerId?: string | null;
+  partnerName: string;
+  partnerEmail?: string | null;
+  inviteCode: string;
+  sharedObjective?: string;
+  subjectId?: string;
+  subjectName?: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  creatorTargetMinutes: number;
+  partnerTargetMinutes: number;
+  creatorConfirmedMinutes: number;
+  partnerConfirmedMinutes: number;
+  status: CloudStudyPactStatus;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
+  summary?: StudyPactWeekSummary;
+}
+
+export interface CreateStudyPactPayload {
+  partnerName?: string;
+  sharedObjective?: string;
+  subjectId?: string;
+  subjectName?: string;
+  myWeeklyTargetMinutes: number;
+  partnerWeeklyTargetMinutes: number;
+  inviteCode?: string;
+}
+
+export interface NormalizedStudyPactView {
+  id: ID;
+  raw: CloudStudyPact;
+  isCreator: boolean;
+  isPartner: boolean;
+  myName: string;
+  partnerDisplayName: string;
+  myTargetMinutes: number;
+  myConfirmedMinutes: number;
+  myProgressPercent: number;
+  partnerTargetMinutes: number;
+  partnerConfirmedMinutes: number;
+  partnerProgressPercent: number;
+  mutualCommitmentMet: boolean;
+  status: CloudStudyPactStatus;
+  inviteCode: string;
+  sharedObjective?: string;
+  subjectId?: string;
+  subjectName?: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  isWeekOver: boolean;
 }
 
 export interface StudyPactWeekSummary {
@@ -209,3 +272,123 @@ export function countScholarsFocusingNow(
     0
   );
 }
+
+/**
+ * Generate a 6-character uppercase alphanumeric invite code.
+ * Excludes ambiguous glyphs (0, O, 1, I).
+ */
+export function generatePactInviteCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * Normalizes a CloudStudyPact from the perspective of the current user.
+ * Ensures consistent presentation of "My Progress" vs "Partner's Progress"
+ * regardless of whether the current user is the creator or the partner.
+ */
+export function normalizePactPerspective(
+  pact: CloudStudyPact,
+  currentUserId?: string
+): NormalizedStudyPactView {
+  // If no user ID provided (e.g. guest or testing), default to creator perspective
+  const isCreator = !currentUserId || pact.createdBy === currentUserId;
+  const isPartner = Boolean(currentUserId && pact.partnerId === currentUserId);
+
+  const myName = isCreator
+    ? pact.creatorName
+    : isPartner
+      ? pact.partnerName
+      : 'You';
+
+  const partnerDisplayName = isCreator
+    ? (pact.partnerId
+        ? pact.partnerName
+        : pact.partnerName && pact.partnerName !== 'Pending Peer'
+          ? pact.partnerName
+          : 'Awaiting Partner...')
+    : pact.creatorName;
+
+  const myTargetMinutes = isCreator ? pact.creatorTargetMinutes : pact.partnerTargetMinutes;
+  const myConfirmedMinutes = isCreator ? pact.creatorConfirmedMinutes : pact.partnerConfirmedMinutes;
+  const partnerTargetMinutes = isCreator ? pact.partnerTargetMinutes : pact.creatorTargetMinutes;
+  const partnerConfirmedMinutes = isCreator ? pact.partnerConfirmedMinutes : pact.creatorConfirmedMinutes;
+
+  const myProgressPercent = myTargetMinutes > 0
+    ? Math.min(100, Math.round((myConfirmedMinutes / myTargetMinutes) * 100))
+    : 0;
+
+  const partnerProgressPercent = partnerTargetMinutes > 0
+    ? Math.min(100, Math.round((partnerConfirmedMinutes / partnerTargetMinutes) * 100))
+    : 0;
+
+  const mutualCommitmentMet =
+    myConfirmedMinutes >= myTargetMinutes &&
+    partnerConfirmedMinutes >= partnerTargetMinutes;
+
+  const now = new Date();
+  const end = new Date(pact.weekEndDate + 'T23:59:59.999');
+  const isWeekOver = !isNaN(end.getTime()) && now.getTime() > end.getTime();
+
+  return {
+    id: pact.id,
+    raw: pact,
+    isCreator,
+    isPartner,
+    myName,
+    partnerDisplayName,
+    myTargetMinutes,
+    myConfirmedMinutes,
+    myProgressPercent,
+    partnerTargetMinutes,
+    partnerConfirmedMinutes,
+    partnerProgressPercent,
+    mutualCommitmentMet,
+    status: pact.status,
+    inviteCode: pact.inviteCode,
+    sharedObjective: pact.sharedObjective,
+    subjectId: pact.subjectId,
+    subjectName: pact.subjectName,
+    weekStartDate: pact.weekStartDate,
+    weekEndDate: pact.weekEndDate,
+    isWeekOver
+  };
+}
+
+/**
+ * Builds an anti-shame end-of-week summary for a CloudStudyPact.
+ */
+export function buildCloudPactSummary(
+  pact: CloudStudyPact,
+  currentUserId?: string
+): StudyPactWeekSummary {
+  const norm = normalizePactPerspective(pact, currentUserId);
+  const myMet = norm.myConfirmedMinutes >= norm.myTargetMinutes;
+  const partnerMet = norm.partnerConfirmedMinutes >= norm.partnerTargetMinutes;
+  const mutualCommitmentMet = myMet && partnerMet;
+
+  const myPart = myMet
+    ? `You logged ${norm.myConfirmedMinutes} of your ${norm.myTargetMinutes} pledged minutes — commitment met.`
+    : `You logged ${norm.myConfirmedMinutes} of your ${norm.myTargetMinutes} pledged minutes — every minute dedicated to learning counts.`;
+
+  const partnerPart =
+    pact.status === 'pending' || !pact.partnerId
+      ? `Partner pledge: ${norm.partnerTargetMinutes} minutes (awaiting partner join).`
+      : partnerMet
+        ? `${norm.partnerDisplayName} confirmed ${norm.partnerConfirmedMinutes} of ${norm.partnerTargetMinutes} pledged minutes — commitment met.`
+        : `${norm.partnerDisplayName} confirmed ${norm.partnerConfirmedMinutes} of ${norm.partnerTargetMinutes} pledged minutes.`;
+
+  return {
+    myMinutes: norm.myConfirmedMinutes,
+    myTargetMinutes: norm.myTargetMinutes,
+    partnerMinutes: norm.partnerConfirmedMinutes,
+    partnerTargetMinutes: norm.partnerTargetMinutes,
+    mutualCommitmentMet,
+    narrative: `Week of ${norm.weekStartDate} → ${norm.weekEndDate}. ${myPart} ${partnerPart}`
+  };
+}
+

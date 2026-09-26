@@ -1,0 +1,189 @@
+/* ==========================================================================
+   SOLIS — IMAGE OCCLUSION FLASHCARD DRAWER STYLES
+   ========================================================================== */
+
+.solis-occlusion-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+  width: 100%;
+}
+
+.solis-occlusion-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+}
+
+.solis-occlusion-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.solis-occlusion-preset-btn {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-occlusion-preset-btn:hover {
+  border-color: var(--color-coral-500);
+  color: var(--color-coral-500);
+}
+
+.solis-occlusion-preset-btn--active {
+  border-color: var(--color-coral-500);
+  background: rgba(235, 94, 40, 0.08);
+  color: var(--color-coral-500);
+  font-weight: 600;
+}
+
+/* Canvas / Interactive Container */
+.solis-occlusion-canvas-stage {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  margin: 0 auto;
+  border: 1.5px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #111418;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.solis-occlusion-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  object-fit: contain;
+}
+
+/* Existing Occlusion Boxes */
+.solis-occlusion-box {
+  position: absolute;
+  box-sizing: border-box;
+  background: rgba(235, 94, 40, 0.85);
+  border: 2px solid var(--color-coral-500);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  z-index: 5;
+}
+
+.solis-occlusion-box--target {
+  background: rgba(235, 94, 40, 0.95);
+  box-shadow: 0 0 0 3px rgba(235, 94, 40, 0.35);
+  border-color: #fff;
+}
+
+.solis-occlusion-box--inactive {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.solis-occlusion-box-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* Rubberband box while drawing */
+.solis-occlusion-rubberband {
+  position: absolute;
+  box-sizing: border-box;
+  background: rgba(235, 94, 40, 0.35);
+  border: 2px dashed var(--color-coral-500);
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Zone List below image */
+.solis-occlusion-zones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.solis-occlusion-zone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease;
+}
+
+.solis-occlusion-zone-row--target {
+  border-color: var(--color-coral-500);
+  background: rgba(235, 94, 40, 0.05);
+}
+
+.solis-occlusion-zone-tag {
+  font-size: var(--text-micro);
+  font-weight: 700;
+  color: var(--color-coral-500);
+  flex-shrink: 0;
+  min-width: 24px;
+}
+
+.solis-occlusion-zone-input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 4px 8px;
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.solis-occlusion-zone-input:focus {
+  border-color: var(--color-coral-500);
+}
+
+.solis-occlusion-zone-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solis-occlusion-zone-btn:hover {
+  color: var(--color-rose-500, #e11d48);
+}

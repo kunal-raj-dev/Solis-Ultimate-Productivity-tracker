@@ -1,0 +1,104 @@
+.solis-morning-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.solis-morning-step-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: var(--bg-surface-secondary);
+  transition: all 0.2s ease;
+}
+
+.solis-morning-step-dot--active {
+  color: var(--color-coral-500);
+  background-color: rgba(230, 90, 65, 0.12);
+}
+
+.solis-morning-step-dot--done {
+  color: var(--color-sage-500);
+  background-color: rgba(78, 135, 82, 0.12);
+}
+
+.solis-morning-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background-color: rgba(217, 119, 6, 0.1);
+  color: var(--color-amber-500);
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-morning-task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.solis-morning-task-card:hover {
+  border-color: var(--border-focus);
+}
+
+.solis-morning-task-card--selected {
+  border-color: var(--color-coral-500);
+  background-color: rgba(230, 90, 65, 0.03);
+}
+
+.solis-morning-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-triage-btn {
+  padding: 4px 10px;
+  font-size: var(--text-micro);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-triage-btn:hover {
+  background-color: var(--bg-surface-secondary);
+  color: var(--text-primary);
+}
+
+.solis-triage-btn--active {
+  background-color: var(--color-coral-500);
+  border-color: var(--color-coral-500);
+  color: #fff;
+  font-weight: 600;
+}
+
+.solis-morning-workload-bar {
+  padding: 12px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-md);
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

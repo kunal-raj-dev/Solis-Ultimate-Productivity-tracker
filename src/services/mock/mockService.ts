@@ -14,6 +14,7 @@ import {
   IResourceService,
   IReflectionService,
   IRoomService,
+  IStudyPactService,
   DataEntityChannel,
   matchesChannelFilter
 } from '../api.interface';
@@ -56,6 +57,13 @@ import {
   RoomEventType,
   RoomReflection
 } from '../../types/room';
+import {
+  CloudStudyPact,
+  CreateStudyPactPayload,
+  StudyPactWeekSummary,
+  generatePactInviteCode,
+  getPactWeekWindow
+} from '../../types/studyPact';
 
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
 import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
@@ -64,7 +72,7 @@ import { isToday, isPast, isFuture, getISODateString, isThisWeek } from '../../u
 import { spawnNextRecurringOccurrence } from '../../utils/tasks/recurrenceEngine';
 import { calculateStreaks } from '../../utils/streaks';
 import { calculateDailySummary } from '../../utils/productivity';
-import { calculateNextCardReview } from '../../utils/learning/spacedRepetition';
+import { calculateNextCardReview, DEFAULT_REQUEST_RETENTION } from '../../utils/learning/spacedRepetition';
 import { evaluateRoutinesForDate } from '../../utils/planning/timeBlocking';
 import {
   validateTaskInput,
@@ -153,6 +161,50 @@ export class MockDataService implements IDataService {
       createdAt: new Date(Date.now() - 86400000).toISOString()
     }
   ];
+  private _studyPacts: CloudStudyPact[] = (() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('solis_cloud_study_pacts_mock');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    const win = getPactWeekWindow();
+    return [
+      {
+        id: 'pact_mock_alyssa',
+        createdBy: 'user_mock_scholar',
+        creatorName: 'Kunal Raj',
+        partnerId: 'user_mock_alyssa',
+        partnerName: 'Alyssa Vance',
+        partnerEmail: 'alyssa@solis.study',
+        inviteCode: 'ALYS77',
+        sharedObjective: 'Master Byzantine Fault Tolerance & consensus mechanisms',
+        subjectId: 'subj_dist_sys',
+        subjectName: 'Distributed Systems',
+        weekStartDate: win.startKey,
+        weekEndDate: win.endKey,
+        creatorTargetMinutes: 300,
+        partnerTargetMinutes: 240,
+        creatorConfirmedMinutes: 180,
+        partnerConfirmedMinutes: 150,
+        status: 'active',
+        createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 3600000).toISOString()
+      }
+    ];
+  })();
+
+  private saveStudyPacts(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('solis_cloud_study_pacts_mock', JSON.stringify(this._studyPacts));
+      } catch {}
+    }
+  }
+
   private _rooms: StudyRoom[] = [
     {
       id: 'room_solis_sanctuary',
@@ -322,11 +374,16 @@ export class MockDataService implements IDataService {
         amnestyDates: habit.amnestyDates,
         referenceDate: new Date(`${today}T12:00:00`)
       });
+      const valToday = habit.valueHistory?.[today] ?? (habit.history?.[today] ? (habit.targetValue || 1) : 0);
+      const isDoneToday = habit.kind === 'quantitative'
+        ? valToday >= (habit.baseTierValue || habit.targetValue || 1)
+        : !!habit.history?.[today];
       return {
         ...habit,
         currentStreak,
         longestStreak,
-        completedToday: !!habit.history?.[today]
+        currentValueToday: valToday,
+        completedToday: isDoneToday
       };
     });
   }
@@ -1298,6 +1355,9 @@ export class MockDataService implements IDataService {
         title: session.title || 'Deep Focus Pod Session',
         completed: session.completed ?? true,
         interruptionsCount: session.interruptionsCount || 0,
+        internalInterruptionsCount: session.internalInterruptionsCount,
+        externalInterruptionsCount: session.externalInterruptionsCount,
+        interruptionsLog: session.interruptionsLog ? [...session.interruptionsLog] : undefined,
         flowQuality: session.flowQuality,
         soundscapeType: session.soundscapeType,
         targetOutcome: session.targetOutcome,
@@ -1351,10 +1411,17 @@ export class MockDataService implements IDataService {
         color: habit.color || 'coral',
         goalId: habit.goalId,
         goalTitle: habit.goalTitle,
+        kind: habit.kind || 'boolean',
+        unit: habit.unit?.trim() || undefined,
+        targetValue: habit.targetValue !== undefined ? Number(habit.targetValue) : undefined,
+        baseTierValue: habit.baseTierValue !== undefined ? Number(habit.baseTierValue) : undefined,
+        stretchTierValue: habit.stretchTierValue !== undefined ? Number(habit.stretchTierValue) : undefined,
+        currentValueToday: 0,
         currentStreak: 0,
         longestStreak: 0,
         completedToday: false,
         history: {},
+        valueHistory: {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -1373,6 +1440,11 @@ export class MockDataService implements IDataService {
       const updated: Habit = {
         ...current,
         ...updates,
+        kind: updates.kind !== undefined ? updates.kind : current.kind,
+        unit: updates.unit !== undefined ? updates.unit?.trim() || undefined : current.unit,
+        targetValue: updates.targetValue !== undefined ? Number(updates.targetValue) : current.targetValue,
+        baseTierValue: updates.baseTierValue !== undefined ? (updates.baseTierValue ? Number(updates.baseTierValue) : undefined) : current.baseTierValue,
+        stretchTierValue: updates.stretchTierValue !== undefined ? (updates.stretchTierValue ? Number(updates.stretchTierValue) : undefined) : current.stretchTierValue,
         updatedAt: new Date().toISOString()
       };
 
@@ -1402,10 +1474,42 @@ export class MockDataService implements IDataService {
       if (!habit) throw new Error(`Habit ${id} not found`);
 
       if (!habit.history) habit.history = {};
-      habit.history[dateStr] = !habit.history[dateStr];
+      if (!habit.valueHistory) habit.valueHistory = {};
+
+      const currentlyDone = !!habit.history[dateStr];
+      const nextDone = !currentlyDone;
+      habit.history[dateStr] = nextDone;
+
+      if (habit.kind === 'quantitative') {
+        const target = habit.targetValue || 1;
+        habit.valueHistory[dateStr] = nextDone ? target : 0;
+      }
 
       this.recalculateAllStreaks();
       const updated = this._habits.find((h) => h.id === id)!;
+      this.notify('habits');
+      return JSON.parse(JSON.stringify(updated));
+    },
+
+    logHabitProgress: async (habitId: string, value: number, dateStr?: string): Promise<Habit> => {
+      await delay(20);
+      const habit = this._habits.find((h) => h.id === habitId);
+      if (!habit) throw new Error(`Habit ${habitId} not found`);
+
+      const targetDate = dateStr || getISODateString(new Date());
+      const sanitizedValue = Math.max(0, Number(value) || 0);
+
+      if (!habit.valueHistory) habit.valueHistory = {};
+      if (!habit.history) habit.history = {};
+
+      habit.valueHistory[targetDate] = sanitizedValue;
+
+      // Base tier (or target/1) protects streak
+      const threshold = habit.baseTierValue || habit.targetValue || 1;
+      habit.history[targetDate] = sanitizedValue >= threshold;
+
+      this.recalculateAllStreaks();
+      const updated = this._habits.find((h) => h.id === habitId)!;
       this.notify('habits');
       return JSON.parse(JSON.stringify(updated));
     },
@@ -1753,6 +1857,9 @@ export class MockDataService implements IDataService {
         intervalDays: 1,
         easeFactor: 2.5,
         nextReviewDate: getISODateString(new Date()),
+        imageUrl: cardData.imageUrl,
+        occlusionZones: cardData.occlusionZones,
+        activeOcclusionZoneId: cardData.activeOcclusionZoneId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -1786,12 +1893,13 @@ export class MockDataService implements IDataService {
       return changed;
     },
 
-    recordCardAttempt: async (cardId: string, rating: CardRating): Promise<Flashcard> => {
+    recordCardAttempt: async (cardId: string, rating: CardRating, requestRetention?: number): Promise<Flashcard> => {
       await delay(20);
       const card = this._flashcards.find((c) => c.id === cardId);
       if (!card) throw new ValidationError(`Flashcard "${cardId}" not found.`);
 
-      const nextSchedule = calculateNextCardReview(card, rating);
+      const targetRetention = requestRetention ?? this._user?.preferences?.fsrsRetention ?? DEFAULT_REQUEST_RETENTION;
+      const nextSchedule = calculateNextCardReview(card, rating, new Date(), targetRetention);
       const updatedCard: Flashcard = {
         ...card,
         ...nextSchedule,
@@ -2582,4 +2690,146 @@ export class MockDataService implements IDataService {
     }
   };
 
+  public pacts: IStudyPactService = {
+    getPacts: async (): Promise<CloudStudyPact[]> => {
+      await delay(15);
+      return JSON.parse(JSON.stringify(this._studyPacts));
+    },
+
+    getActivePact: async (): Promise<CloudStudyPact | null> => {
+      await delay(15);
+      const active = this._studyPacts.find((p) => p.status === 'active' || p.status === 'pending');
+      return active ? JSON.parse(JSON.stringify(active)) : null;
+    },
+
+    getPactById: async (id: string): Promise<CloudStudyPact | null> => {
+      await delay(10);
+      const pact = this._studyPacts.find((p) => p.id === id);
+      return pact ? JSON.parse(JSON.stringify(pact)) : null;
+    },
+
+    getPactByInviteCode: async (code: string): Promise<CloudStudyPact | null> => {
+      await delay(15);
+      const clean = code.trim().toUpperCase();
+      const pact = this._studyPacts.find((p) => p.inviteCode.toUpperCase() === clean);
+      return pact ? JSON.parse(JSON.stringify(pact)) : null;
+    },
+
+    createPact: async (payload: CreateStudyPactPayload): Promise<CloudStudyPact> => {
+      await delay(25);
+      const win = getPactWeekWindow();
+      const currentUserId = this._user?.id || 'user_mock_scholar';
+      const currentUserName = this._user?.name || 'Kunal Raj';
+      const inviteCode = payload.inviteCode || generatePactInviteCode();
+
+      const newPact: CloudStudyPact = {
+        id: `pact_${Date.now()}`,
+        createdBy: currentUserId,
+        creatorName: currentUserName,
+        partnerId: null,
+        partnerName: payload.partnerName?.trim() || 'Pending Peer',
+        inviteCode,
+        sharedObjective: payload.sharedObjective?.trim() || undefined,
+        subjectId: payload.subjectId || undefined,
+        subjectName: payload.subjectName || undefined,
+        weekStartDate: win.startKey,
+        weekEndDate: win.endKey,
+        creatorTargetMinutes: Math.max(15, Math.round(payload.myWeeklyTargetMinutes)),
+        partnerTargetMinutes: Math.max(15, Math.round(payload.partnerWeeklyTargetMinutes)),
+        creatorConfirmedMinutes: 0,
+        partnerConfirmedMinutes: 0,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      this._studyPacts.unshift(newPact);
+      this.saveStudyPacts();
+      this.notify('pacts');
+      return JSON.parse(JSON.stringify(newPact));
+    },
+
+    joinPactByInviteCode: async (inviteCode: string, partnerName?: string): Promise<CloudStudyPact> => {
+      await delay(30);
+      const cleanCode = inviteCode.trim().toUpperCase();
+
+      const pact = this._studyPacts.find((p) => p.inviteCode.toUpperCase() === cleanCode);
+      if (!pact) {
+        throw new Error(`Study pact with invite code "${inviteCode}" not found.`);
+      }
+      if (pact.status !== 'pending' || pact.partnerId) {
+        throw new Error('This study pact has already been joined and is active.');
+      }
+
+      const currentUserId = this._user?.id || 'user_mock_scholar';
+      const cleanPartnerName = partnerName?.trim() || 'Peer Scholar';
+
+      // Self-join protection: if the caller is the creator and did not provide a separate peer name
+      if (pact.createdBy === currentUserId && (!partnerName || partnerName.trim() === this._user?.name)) {
+        throw new Error('You cannot join your own study pact as partner.');
+      }
+
+      const partnerId = pact.createdBy === currentUserId ? `usr_peer_${Date.now()}` : currentUserId;
+
+      pact.partnerId = partnerId;
+      pact.partnerName = cleanPartnerName;
+      pact.status = 'active';
+      pact.updatedAt = new Date().toISOString();
+
+      this.saveStudyPacts();
+      this.notify('pacts');
+      return JSON.parse(JSON.stringify(pact));
+    },
+
+    syncPactMinutes: async (pactId: string, minutes: number): Promise<CloudStudyPact> => {
+      await delay(20);
+      const pact = this._studyPacts.find((p) => p.id === pactId);
+      if (!pact) throw new Error(`Study pact not found: ${pactId}`);
+
+      const currentUserId = this._user?.id || 'user_mock_scholar';
+      const safeMinutes = Math.max(0, Math.round(minutes));
+
+      if (pact.createdBy === currentUserId || !pact.partnerId) {
+        pact.creatorConfirmedMinutes = safeMinutes;
+      } else if (pact.partnerId === currentUserId) {
+        pact.partnerConfirmedMinutes = safeMinutes;
+      } else {
+        pact.creatorConfirmedMinutes = safeMinutes;
+      }
+
+      pact.updatedAt = new Date().toISOString();
+      this.saveStudyPacts();
+      this.notify('pacts');
+      return JSON.parse(JSON.stringify(pact));
+    },
+
+    completePact: async (pactId: string, summary?: StudyPactWeekSummary): Promise<CloudStudyPact> => {
+      await delay(25);
+      const pact = this._studyPacts.find((p) => p.id === pactId);
+      if (!pact) throw new Error(`Study pact not found: ${pactId}`);
+
+      pact.status = 'completed';
+      pact.completedAt = new Date().toISOString();
+      pact.updatedAt = new Date().toISOString();
+      if (summary) pact.summary = summary;
+
+      this.saveStudyPacts();
+      this.notify('pacts');
+      return JSON.parse(JSON.stringify(pact));
+    },
+
+    deletePact: async (pactId: string): Promise<boolean> => {
+      await delay(20);
+      const prevLen = this._studyPacts.length;
+      this._studyPacts = this._studyPacts.filter((p) => p.id !== pactId);
+      const changed = this._studyPacts.length !== prevLen;
+      if (changed) {
+        this.saveStudyPacts();
+        this.notify('pacts');
+      }
+      return changed;
+    }
+  };
+
 }
+

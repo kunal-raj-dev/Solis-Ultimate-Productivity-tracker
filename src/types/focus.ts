@@ -19,6 +19,15 @@ export interface AmbientSound {
   volume: number;
 }
 
+export type InterruptionType = 'internal' | 'external';
+
+export interface InterruptionEvent {
+  id: string;
+  type: InterruptionType; // 'internal' (mind drift, impulse) vs 'external' (calls, knocks, alerts)
+  timestamp: string;      // ISO string
+  note?: string;          // Optional trigger note or parked reason
+}
+
 export interface ParkedThought {
   id: string;
   text: string;
@@ -38,6 +47,9 @@ export interface FocusSession extends BaseEntity {
   title: string;
   completed: boolean;
   interruptionsCount: number;
+  internalInterruptionsCount?: number;
+  externalInterruptionsCount?: number;
+  interruptionsLog?: InterruptionEvent[];
   notes?: string;
   flowQuality?: number; // 1 to 5
   soundscapeType?: SoundscapeType;

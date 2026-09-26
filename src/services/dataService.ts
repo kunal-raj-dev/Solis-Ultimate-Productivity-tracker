@@ -154,6 +154,7 @@ export const dataService: IDataService = {
   get resources() { return ServiceContainer.getService().resources; },
   get reflections() { return ServiceContainer.getService().reflections; },
   get rooms() { return ServiceContainer.getService().rooms; },
+  get pacts() { return ServiceContainer.getService().pacts; },
   subscribe(listener: () => void, channels?: DataEntityChannel[]) {
     return ServiceContainer.subscribe(listener, channels);
   },

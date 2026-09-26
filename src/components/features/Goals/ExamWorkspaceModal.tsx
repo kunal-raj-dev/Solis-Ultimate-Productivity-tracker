@@ -23,6 +23,9 @@ import { getDefaultDailyCapacityMinutes } from '../../../utils/tasks/workloadCal
 import { formatErrorMessage } from '../../../utils/errors';
 import { getISODateString, isPast } from '../../../utils/date';
 import { ExamReadinessCard } from '../Analytics/ExamReadinessCard';
+import { ExamFeasibilityCard } from './ExamFeasibilityCard';
+import { calculateExamFeasibility } from '../../../utils/planning/examFeasibility';
+import { TimeCushionInput } from '../../../utils/planning/timeCushion';
 import { BrainCircuit, Play, Bookmark, ExternalLink, Flame, CalendarPlus } from 'lucide-react';
 import './ExamWorkspaceModal.css';
 
@@ -103,15 +106,17 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
     habits: habits || []
   });
 
-  // Forward Time Cushion (plan §2.1/§2.3): open routine hours vs required
-  // syllabus hours between now and the exam, in hours — not percentages.
-  const cushion = calculateTimeCushion({
+  // Forward Time Cushion (plan §2.1/§2.3 / F-104)
+  const capacityMins = dailyCapacityMinutes ?? getDefaultDailyCapacityMinutes();
+  const cushionInput: TimeCushionInput = {
     examDate: goal.targetDate,
     subjectId: goal.subjectId || '',
     topics: subjectTopics,
-    dailyCapacityMinutes: dailyCapacityMinutes ?? getDefaultDailyCapacityMinutes(),
+    dailyCapacityMinutes: capacityMins,
     existingCommitmentsMinutesByDay: projectRoutineCommitmentsByDay(routines, goal.targetDate)
-  });
+  };
+  const cushion = calculateTimeCushion(cushionInput);
+  const feasibility = calculateExamFeasibility(cushion, capacityMins);
   const cushionMeta = TIME_CUSHION_STATUS_META[cushion.status];
 
   // The scheduled block honors the service validation cap (720m / 12h); when
@@ -162,6 +167,13 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
         {/* Deterministic Exam Readiness Card */}
         <ExamReadinessCard result={readiness} goalTitle={goal.title} />
+
+        {/* Visual Time-Cushion & Exam Feasibility UI (F-104) */}
+        <ExamFeasibilityCard
+          analysis={feasibility}
+          cushionInput={cushionInput}
+          onSchedulePacedBlock={() => handleScheduleDailyFocusBlock()}
+        />
 
         {/* Top Header: Countdown & Target Grade */}
         <div className="solis-exam-countdown-card">

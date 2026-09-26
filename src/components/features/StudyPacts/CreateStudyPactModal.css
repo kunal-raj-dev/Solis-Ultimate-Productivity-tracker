@@ -1,0 +1,166 @@
+.solis-create-pact-modal {
+  max-width: 520px;
+}
+
+.solis-pact-modal-tabs {
+  display: flex;
+  background: var(--bg-surface-secondary, #f4f4f5);
+  padding: 4px;
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.solis-pact-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--text-body-sm, 13px);
+  font-weight: 500;
+  color: var(--text-secondary, #71717a);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-pact-tab-btn:hover {
+  color: var(--text-primary, #18181b);
+}
+
+.solis-pact-tab-btn.active {
+  background: var(--bg-surface-primary, #ffffff);
+  color: var(--color-coral-600, #c85a42);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.solis-pact-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--color-danger, #ef4444);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--text-caption, 12px);
+  margin-bottom: 16px;
+}
+
+.solis-pact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solis-pact-form-lead {
+  margin: 0;
+  font-size: var(--text-body-sm, 13px);
+  color: var(--text-secondary, #71717a);
+  line-height: 1.5;
+}
+
+.solis-pact-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-pact-form-group label {
+  font-size: var(--text-caption, 12px);
+  font-weight: 600;
+  color: var(--text-primary, #27272a);
+}
+
+.solis-pact-modal-input,
+.solis-pact-modal-select {
+  padding: 9px 12px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, #d4d4d8);
+  background: var(--bg-surface-primary, #ffffff);
+  color: var(--text-primary, #18181b);
+  font-size: var(--text-body-sm, 13px);
+  font-family: var(--font-interface, inherit);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.solis-pact-modal-input:focus,
+.solis-pact-modal-select:focus {
+  outline: none;
+  border-color: var(--color-coral-500, #e06c53);
+  box-shadow: 0 0 0 2px rgba(224, 108, 83, 0.15);
+}
+
+.solis-pact-code-input {
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.1em;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.solis-pact-input-hint {
+  font-size: var(--text-micro, 11px);
+  color: var(--text-muted, #a1a1aa);
+}
+
+/* Targets Grid */
+.solis-pact-targets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.solis-pact-target-card {
+  background: var(--bg-surface-secondary, #fafafa);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.05));
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-pact-target-card label {
+  font-size: var(--text-caption, 12px);
+  font-weight: 600;
+  color: var(--text-primary, #27272a);
+}
+
+.solis-pact-minute-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-pact-minute-input-wrapper input {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+}
+
+.solis-pact-unit {
+  font-size: var(--text-caption, 12px);
+  color: var(--text-muted, #71717a);
+}
+
+.solis-pact-target-hrs {
+  font-size: var(--text-micro, 11px);
+  color: var(--text-secondary, #71717a);
+}
+
+/* Modal Actions */
+.solis-pact-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
+}

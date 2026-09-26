@@ -10,7 +10,8 @@ import {
   FileText,
   Moon,
   Clock,
-  Plus
+  Plus,
+  Sun
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
@@ -19,6 +20,7 @@ import { cn } from '../../utils/classNames';
 import { TimeBlockGrid } from '../../components/features/Planning/TimeBlockGrid';
 import { RecurringRoutinesModal } from '../../components/features/Planning/RecurringRoutinesModal';
 import { EveningClosureModal } from '../../components/features/Reflection/EveningClosureModal';
+import { MorningPlanningModal } from '../../components/features/Planning/MorningPlanningModal';
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
 import { PartialDataWarningBanner } from '../../components/feedback/PartialDataWarningBanner';
 import { KnowledgeResurfacingCard } from '../../components/features/Notes/KnowledgeResurfacingCard';
@@ -44,6 +46,7 @@ import { DailyReflection } from '../../types/reflection';
 import { getTimeOfDayGreeting, formatFriendlyDate, formatFullDate, getISODateString, addDays } from '../../utils/date';
 import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntelligence';
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
+import { evaluateHabitTier, getTierMeta } from '../../utils/habits/tieredHabits';
 import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
 import { WelcomeBackModal } from '../../components/features/Activation/WelcomeBackModal';
 import { NextBestActionCard } from '../../components/features/Activation/NextBestActionCard';
@@ -149,6 +152,7 @@ export const DashboardPage: React.FC = () => {
   }, [currentTime, tasks, taskTimeBlocks, welcomeBackChoice]);
 
   // Modals
+  const [isMorningModalOpen, setIsMorningModalOpen] = useState(false);
   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
   const [isRoutinesModalOpen, setIsRoutinesModalOpen] = useState(false);
   const [isActivationModalOpen, setIsActivationModalOpen] = useState(() => {
@@ -825,6 +829,18 @@ export const DashboardPage: React.FC = () => {
               >
                 Start Focus Session
               </Button>
+              {/* Morning Planning primary CTA before 14:00 (F-201) */}
+              {currentTime.getHours() < 14 && (
+                <Button
+                  variant="accent"
+                  size="md"
+                  className="tactile-press"
+                  leftIcon={<Sun size={16} />}
+                  onClick={() => setIsMorningModalOpen(true)}
+                >
+                  Morning Planning (90s)
+                </Button>
+              )}
               {/* Evening Closure primary CTA after 17:00 (Zone 1) */}
               {currentTime.getHours() >= 17 && (
                 <Button
@@ -1106,7 +1122,17 @@ export const DashboardPage: React.FC = () => {
                     </span>
                     <span className="solis-habit-pulse-item__streak" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                       <Flame size={12} color="var(--accent-terracotta)" aria-hidden="true" />
-                      <span>{h.currentStreak}d streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}</span>
+                      {h.kind === 'quantitative' ? (
+                        <span>
+                          {h.currentStreak}d streak • {h.currentValueToday || 0}/{h.targetValue} {h.unit || 'units'}
+                          {h.completedToday && (() => {
+                            const tier = evaluateHabitTier(h.currentValueToday || 0, h);
+                            return tier ? ` (${getTierMeta(tier).shortLabel})` : '';
+                          })()}
+                        </span>
+                      ) : (
+                        <span>{h.currentStreak}d streak {h.frequency ? `• ${h.frequency.replace(/_/g, ' ')}` : ''}</span>
+                      )}
                     </span>
                   </div>
                   <Checkbox
@@ -1120,6 +1146,16 @@ export const DashboardPage: React.FC = () => {
           )}
         </section>
       </section>
+
+      {/* Guided 90-Second Morning Planning Ritual Modal (F-201) */}
+      <MorningPlanningModal
+        isOpen={isMorningModalOpen}
+        onClose={() => setIsMorningModalOpen(false)}
+        tasks={tasks}
+        timeBlocks={taskTimeBlocks}
+        dailyCapacityMinutes={getDefaultDailyCapacityMinutes()}
+        onPlanningCompleted={loadDashboardData}
+      />
 
       {/* Evening Closure & Reflection Ritual Modal */}
       <EveningClosureModal

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Check, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Check, Eye, EyeOff, AlertCircle, Brain } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -106,6 +106,12 @@ export const SettingsPage: React.FC = () => {
   const [dailyGoal, setDailyGoal] = useState<string>(
     String(user?.preferences?.dailyStudyGoalMinutes ?? savedLocalPrefs?.dailyStudyGoalMinutes ?? 360)
   );
+  const [fsrsRetention, setFsrsRetention] = useState<number>(() => {
+    return user?.preferences?.fsrsRetention ?? savedLocalPrefs?.fsrsRetention ?? 0.90;
+  });
+  const [fsrsAlgorithm, setFsrsAlgorithm] = useState<'fsrs-5' | 'sm-2'>(() => {
+    return user?.preferences?.fsrsAlgorithm ?? savedLocalPrefs?.fsrsAlgorithm ?? 'fsrs-5';
+  });
   const [weekStart, setWeekStart] = useState(() => localStorage.getItem('solis_week_start') || 'monday');
   const [geminiApiKey, setGeminiApiKey] = useState(() => readStoredGeminiKey());
   const [geminiModel, setGeminiModel] = useState(() => {
@@ -151,6 +157,12 @@ export const SettingsPage: React.FC = () => {
         }
         if (user.preferences.dailyStudyGoalMinutes) {
           setDailyGoal(String(user.preferences.dailyStudyGoalMinutes));
+        }
+        if (typeof user.preferences.fsrsRetention === 'number') {
+          setFsrsRetention(user.preferences.fsrsRetention);
+        }
+        if (user.preferences.fsrsAlgorithm) {
+          setFsrsAlgorithm(user.preferences.fsrsAlgorithm);
         }
       }
     }
@@ -370,7 +382,9 @@ export const SettingsPage: React.FC = () => {
       soundEnabled,
       defaultFocusDurationMinutes: parsedFocus,
       defaultBreakDurationMinutes: parsedBreak,
-      dailyStudyGoalMinutes: parsedDailyGoal
+      dailyStudyGoalMinutes: parsedDailyGoal,
+      fsrsRetention,
+      fsrsAlgorithm
     };
 
     try {
@@ -412,7 +426,9 @@ export const SettingsPage: React.FC = () => {
       soundEnabled,
       defaultFocusDurationMinutes: parsedFocus,
       defaultBreakDurationMinutes: parsedBreak,
-      dailyStudyGoalMinutes: parsedDailyGoal
+      dailyStudyGoalMinutes: parsedDailyGoal,
+      fsrsRetention,
+      fsrsAlgorithm
     };
     setIsRetryingSync(true);
     try {
@@ -700,6 +716,139 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Spaced Repetition & Recall Engine (FSRS-5) */}
+          <Card>
+            <CardHeader>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Brain size={18} color="var(--color-coral-500)" />
+                  <CardTitle>Spaced Repetition & Recall Engine (FSRS-5)</CardTitle>
+                </div>
+                {fsrsAlgorithm === 'fsrs-5' ? (
+                  <Badge variant="coral" showDot>FSRS-5 Active</Badge>
+                ) : (
+                  <Badge variant="neutral">SM-2 Legacy</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  Solis uses the modern FSRS-5 (Free Spaced Repetition Scheduler) memory model as its default engine. Using the bounded DSR (Difficulty, Stability, Retrievability) power-law forgetting curve, it computes personalized intervals to hit your target retention without Ease-Hell collapse.
+                </p>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                    Scheduler Architecture
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setFsrsAlgorithm('fsrs-5')}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        border: fsrsAlgorithm === 'fsrs-5' ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
+                        background: fsrsAlgorithm === 'fsrs-5' ? 'rgba(235, 94, 40, 0.08)' : 'var(--bg-surface-secondary)',
+                        color: fsrsAlgorithm === 'fsrs-5' ? 'var(--color-coral-500)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>FSRS-5 (Recommended)</span>
+                      <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>DSR power-law with dynamic retention</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFsrsAlgorithm('sm-2')}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        border: fsrsAlgorithm === 'sm-2' ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
+                        background: fsrsAlgorithm === 'sm-2' ? 'rgba(235, 94, 40, 0.08)' : 'var(--bg-surface-secondary)',
+                        color: fsrsAlgorithm === 'sm-2' ? 'var(--color-coral-500)' : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '2px'
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 'var(--text-body-sm)' }}>SM-2 (Legacy 1987)</span>
+                      <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>Fixed multiplier algorithm</span>
+                    </button>
+                  </div>
+                </div>
+
+                {fsrsAlgorithm === 'fsrs-5' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={{ fontSize: 'var(--text-caption)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        Target Request Retention
+                      </label>
+                      <span style={{ fontSize: 'var(--text-caption)', fontWeight: 700, color: 'var(--color-coral-500)' }}>
+                        {Math.round(fsrsRetention * 100)}%
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min="0.75"
+                      max="0.97"
+                      step="0.01"
+                      value={fsrsRetention}
+                      onChange={(e) => setFsrsRetention(parseFloat(e.target.value))}
+                      style={{ width: '100%', accentColor: 'var(--color-coral-500)', cursor: 'pointer' }}
+                    />
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {[
+                        { label: '85% Relaxed', val: 0.85, desc: 'Lower study load' },
+                        { label: '90% Optimal', val: 0.90, desc: 'Recommended default' },
+                        { label: '95% Mastery', val: 0.95, desc: 'High stakes / exams' }
+                      ].map((preset) => {
+                        const isSelected = Math.abs(fsrsRetention - preset.val) < 0.005;
+                        return (
+                          <button
+                            key={preset.val}
+                            type="button"
+                            onClick={() => setFsrsRetention(preset.val)}
+                            style={{
+                              flex: 1,
+                              fontSize: 'var(--text-micro)',
+                              padding: '6px 8px',
+                              borderRadius: 'var(--radius-sm)',
+                              border: isSelected ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
+                              background: isSelected ? 'var(--color-coral-500)' : 'var(--bg-surface-secondary)',
+                              color: isSelected ? '#fff' : 'var(--text-secondary)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '2px',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>{preset.label}</span>
+                            <span style={{ fontSize: '9px', opacity: isSelected ? 0.9 : 0.7 }}>{preset.desc}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <p style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', margin: '4px 0 0', lineHeight: 1.4 }}>
+                      Higher retention targets yield stronger long-term recall but require exponentially more frequent reviews. 90% is the scientifically proven optimal efficiency threshold for university and professional learners.
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

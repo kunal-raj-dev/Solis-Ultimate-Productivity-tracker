@@ -116,7 +116,7 @@ describe('Phase 7 — Mobile Ergonomics & Responsive Refactor', () => {
       // SpacedReviewsSanctuary action buttons carry the 44px touch-target
       // utility (master.md §17.4) — plan §7.2's named file for touch targets.
       const sanctuary = read('src/features/study/components/SpacedReviewsSanctuary.tsx');
-      expect(sanctuary.match(/className="min-touch-target"/g)?.length).toBe(4);
+      expect(sanctuary.match(/className="min-touch-target"/g)?.length).toBeGreaterThanOrEqual(4);
     });
   });
 

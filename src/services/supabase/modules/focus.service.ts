@@ -48,6 +48,9 @@ export class SupabaseFocusService implements IFocusService {
       title: session.title || 'Deep Focus Pod Session',
       completed: session.completed ?? true,
       interruptions_count: session.interruptionsCount || 0,
+      internal_interruptions_count: session.internalInterruptionsCount ?? null,
+      external_interruptions_count: session.externalInterruptionsCount ?? null,
+      interruptions_log: session.interruptionsLog || [],
       flow_quality: session.flowQuality || null,
       soundscape_type: session.soundscapeType || null,
       target_outcome: session.targetOutcome?.trim() || null,
@@ -64,8 +67,7 @@ export class SupabaseFocusService implements IFocusService {
       .select()
       .single();
 
-    // Pre-Phase-1 schemas without task_id degrade gracefully (task_id is the
-    // only column stripped — PGRST204 messages always name the missing column).
+    // Pre-Phase-1 schemas without task_id degrade gracefully
     if (error && error.message?.includes('task_id')) {
       const { task_id: _omittedTaskId, ...fallbackPayload } = payload;
       payload = fallbackPayload;
@@ -78,10 +80,27 @@ export class SupabaseFocusService implements IFocusService {
       error = retry.error;
     }
 
-    // Older schemas without the Phase 5 energy column degrade gracefully while
-    // keeping every other field — including the task link (P5F5).
+    // Older schemas without the Phase 5 energy column degrade gracefully
     if (error && error.message?.includes('pre_session_energy')) {
       const { pre_session_energy: _omittedEnergy, ...fallbackPayload } = payload;
+      payload = fallbackPayload;
+      const retry = await this.ctx.client
+        .from('focus_sessions')
+        .insert(payload)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    // Older schemas without distraction tracking columns degrade gracefully
+    if (error && (error.message?.includes('internal_interruptions_count') || error.message?.includes('interruptions_log'))) {
+      const {
+        internal_interruptions_count: _i1,
+        external_interruptions_count: _i2,
+        interruptions_log: _i3,
+        ...fallbackPayload
+      } = payload;
       payload = fallbackPayload;
       const retry = await this.ctx.client
         .from('focus_sessions')

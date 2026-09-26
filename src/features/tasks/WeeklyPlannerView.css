@@ -1,0 +1,418 @@
+/* ==========================================================================
+   SOLIS — 7-DAY MULTI-DAY WEEKLY CALENDAR TIME-BLOCKER STYLES
+   ========================================================================== */
+
+.solis-weekly-planner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 16px);
+  width: 100%;
+}
+
+/* Header & Controls */
+.solis-weekly-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+}
+
+.solis-weekly-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-weekly-range-label {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 4px 12px;
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-weekly-view-toggles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Summary stats banner */
+.solis-weekly-summary-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px 18px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--text-caption);
+}
+
+.solis-weekly-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.solis-weekly-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.solis-weekly-stat strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* Main 7-day grid wrapper with smooth horizontal scroll */
+.solis-weekly-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface-primary);
+  box-shadow: var(--shadow-subtle);
+  -webkit-overflow-scrolling: touch;
+}
+
+.solis-weekly-grid-table {
+  min-width: 920px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grid Header: Days of the Week */
+.solis-weekly-header-row {
+  display: grid;
+  grid-template-columns: 75px repeat(7, 1fr);
+  border-bottom: 2px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.solis-weekly-corner-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  border-right: 1px solid var(--border-subtle);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.solis-weekly-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 6px;
+  border-right: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background-color var(--duration-instant) ease;
+  user-select: none;
+}
+
+.solis-weekly-day-header:last-child {
+  border-right: none;
+}
+
+.solis-weekly-day-header:hover {
+  background: var(--bg-surface-hover);
+}
+
+.solis-weekly-day-header--today {
+  background: rgba(235, 94, 40, 0.06);
+  border-top: 3px solid var(--color-coral-500);
+}
+
+.solis-weekly-day-name {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.solis-weekly-day-header--today .solis-weekly-day-name {
+  color: var(--color-coral-500);
+  font-weight: 700;
+}
+
+.solis-weekly-day-number {
+  font-size: var(--text-h4, 18px);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 2px;
+  line-height: 1.1;
+}
+
+.solis-weekly-day-header--today .solis-weekly-day-number {
+  color: var(--color-coral-500);
+}
+
+.solis-weekly-day-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Hourly Rows Grid */
+.solis-weekly-body {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.solis-weekly-hour-row {
+  display: grid;
+  grid-template-columns: 75px repeat(7, 1fr);
+  min-height: 64px;
+  border-bottom: 1px solid var(--border-hairline);
+  position: relative;
+}
+
+.solis-weekly-hour-row:last-child {
+  border-bottom: none;
+}
+
+.solis-weekly-time-gutter {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 6px 4px;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-weekly-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 6px;
+  border-right: 1px solid var(--border-hairline);
+  transition: background-color var(--duration-instant) ease;
+  min-height: 64px;
+}
+
+.solis-weekly-cell:last-child {
+  border-right: none;
+}
+
+.solis-weekly-cell--today {
+  background: rgba(235, 94, 40, 0.015);
+}
+
+.solis-weekly-cell--drag-over {
+  background: rgba(235, 94, 40, 0.12) !important;
+  border: 1.5px dashed var(--color-coral-500) !important;
+}
+
+.solis-weekly-cell:hover {
+  background: var(--bg-surface-hover);
+}
+
+/* Add slot button in cell */
+.solis-weekly-add-slot-btn {
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  margin-top: auto;
+  padding: 3px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px dashed var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-instant) ease;
+}
+
+.solis-weekly-cell:hover .solis-weekly-add-slot-btn {
+  opacity: 0.85;
+}
+
+.solis-weekly-add-slot-btn:hover {
+  opacity: 1;
+  border-color: var(--color-coral-500);
+  color: var(--color-coral-500);
+  background: rgba(235, 94, 40, 0.08);
+}
+
+/* Time Block Chip in Week Cell */
+.solis-week-block-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-surface-elevated);
+  font-size: var(--text-micro);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.solis-week-block-chip:hover {
+  border-color: var(--color-coral-400);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-subtle);
+  z-index: 2;
+}
+
+.solis-week-block-chip--active {
+  border-left: 3px solid var(--color-coral-500);
+  background: rgba(235, 94, 40, 0.06);
+}
+
+.solis-week-block-chip--completed {
+  border-left: 3px solid var(--color-emerald-500, #10b981);
+  background: rgba(16, 185, 129, 0.04);
+  opacity: 0.85;
+}
+
+.solis-week-block-chip--completed .solis-week-block-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.solis-week-block-chip--partial {
+  border-left: 3px solid var(--color-amber-500, #f59e0b);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.solis-week-block-chip--missed {
+  border-left: 3px solid var(--color-rose-500, #e11d48);
+  opacity: 0.8;
+}
+
+.solis-week-block-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.solis-week-block-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.solis-week-block-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.solis-week-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity var(--duration-instant) ease;
+}
+
+.solis-week-block-chip:hover .solis-week-block-actions {
+  opacity: 1;
+}
+
+.solis-week-block-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.1s ease, background-color 0.1s ease;
+}
+
+.solis-week-block-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.solis-week-block-btn--check:hover {
+  color: var(--color-emerald-500, #10b981);
+}
+
+.solis-week-block-btn--delete:hover {
+  color: var(--color-rose-500, #e11d48);
+}
+
+/* External Calendar Event Chip */
+.solis-week-event-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.08);
+  font-size: 10px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Real-Time Now Indicator Line */
+.solis-week-now-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-coral-500);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.solis-week-now-indicator::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-coral-500);
+}

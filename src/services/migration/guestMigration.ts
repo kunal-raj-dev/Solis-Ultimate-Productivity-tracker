@@ -196,7 +196,12 @@ export async function migrateGuestWorkspaceToCloud(
       description: habit.description,
       category: habit.category,
       frequency: habit.frequency,
-      color: habit.color
+      color: habit.color,
+      kind: habit.kind,
+      unit: habit.unit,
+      targetValue: habit.targetValue,
+      baseTierValue: habit.baseTierValue,
+      stretchTierValue: habit.stretchTierValue
     });
     habitIdMap.set(habit.id, created.id);
     counts.habits++;
@@ -205,6 +210,15 @@ export async function migrateGuestWorkspaceToCloud(
   for (const habit of snapshot.habits) {
     const newHabitId = habitIdMap.get(habit.id);
     if (!newHabitId) continue;
+
+    if (habit.kind === 'quantitative' && habit.valueHistory) {
+      for (const [date, val] of Object.entries(habit.valueHistory)) {
+        if (val > 0) {
+          await dataService.habits.logHabitProgress(newHabitId, val, date).catch(() => {});
+        }
+      }
+    }
+
     const completedDates = Object.entries(habit.history || {})
       .filter(([, completed]) => completed === true)
       .map(([date]) => date);

@@ -70,6 +70,8 @@ export function useStudyPage() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isCreateFlashcardModalOpen, setIsCreateFlashcardModalOpen] = useState(false);
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+  const [isExamCramModalOpen, setIsExamCramModalOpen] = useState(false);
+  const [isCramSessionActive, setIsCramSessionActive] = useState(false);
 
   // Active Flashcard Deck Session
   const [activeDeckCards, setActiveDeckCards] = useState<Flashcard[]>([]);
@@ -539,14 +541,19 @@ export function useStudyPage() {
     setIsCreateFlashcardModalOpen(true);
   };
 
-  const handleStartActiveRecall = (customDeck?: Flashcard[]) => {
+  const handleStartActiveRecall = (customDeck?: Flashcard[], isCram = false) => {
     const deck = customDeck || flashcards;
     if (deck.length === 0) {
       addToast({ title: 'No flashcards available in this deck', type: 'info' });
       return;
     }
     setActiveDeckCards(deck);
+    setIsCramSessionActive(isCram);
     setIsReviewModalOpen(true);
+  };
+
+  const handleStartExamCram = (filteredDeck: Flashcard[]) => {
+    handleStartActiveRecall(filteredDeck, true);
   };
 
   const handleCreateFlashcard = async (cardData: Partial<Flashcard>) => {
@@ -653,6 +660,11 @@ export function useStudyPage() {
     setIsCreateFlashcardModalOpen,
     isResourceModalOpen,
     setIsResourceModalOpen,
+    isExamCramModalOpen,
+    setIsExamCramModalOpen,
+    isCramSessionActive,
+    setIsCramSessionActive,
+    handleStartExamCram,
     activeDeckCards,
     cardDefaultSubjectId,
     cardDefaultTopicId,

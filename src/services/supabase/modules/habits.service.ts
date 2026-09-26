@@ -27,13 +27,19 @@ export class SupabaseHabitService implements IHabitService {
 
     const result = (habitsRes.data || []).map((h: any) => {
       const history: Record<string, boolean> = {};
+      const valueHistory: Record<string, number> = {};
       for (const rec of records) {
         if (rec.habit_id === h.id) {
           history[rec.completion_date] = rec.completed;
+          if (rec.value !== undefined && rec.value !== null) {
+            valueHistory[rec.completion_date] = Number(rec.value);
+          } else if (rec.completed) {
+            valueHistory[rec.completion_date] = Number(h.target_value || 1);
+          }
         }
       }
       const resolvedGoalTitle = h.goal_id ? goalsMap.get(h.goal_id) : undefined;
-      return mapHabit(h, history, resolvedGoalTitle);
+      return mapHabit(h, history, resolvedGoalTitle, valueHistory);
     });
 
     queryCache.set(cacheKey, result);
@@ -56,7 +62,12 @@ export class SupabaseHabitService implements IHabitService {
         category: habit.category || 'study',
         frequency: habit.frequency || 'daily',
         color: habit.color || 'coral',
-        goal_id: habit.goalId || null
+        goal_id: habit.goalId || null,
+        kind: habit.kind || 'boolean',
+        unit: habit.unit?.trim() || null,
+        target_value: habit.targetValue !== undefined ? Number(habit.targetValue) : null,
+        base_tier_value: habit.baseTierValue !== undefined ? Number(habit.baseTierValue) : null,
+        stretch_tier_value: habit.stretchTierValue !== undefined ? Number(habit.stretchTierValue) : null
       })
       .select('*')
       .single();
@@ -79,6 +90,11 @@ export class SupabaseHabitService implements IHabitService {
     if (updates.goalId !== undefined) payload.goal_id = updates.goalId || null;
     // Plan §3.4 "Streak Amnesty": persist excused absence dates (YYYY-MM-DD[]).
     if (updates.amnestyDates !== undefined) payload.amnesty_dates = updates.amnestyDates;
+    if (updates.kind !== undefined) payload.kind = updates.kind;
+    if (updates.unit !== undefined) payload.unit = updates.unit ? updates.unit.trim() : null;
+    if (updates.targetValue !== undefined) payload.target_value = updates.targetValue !== null ? Number(updates.targetValue) : null;
+    if (updates.baseTierValue !== undefined) payload.base_tier_value = updates.baseTierValue ? Number(updates.baseTierValue) : null;
+    if (updates.stretchTierValue !== undefined) payload.stretch_tier_value = updates.stretchTierValue ? Number(updates.stretchTierValue) : null;
 
     const { data, error } = await this.ctx.client
       .from('habits')
@@ -90,6 +106,7 @@ export class SupabaseHabitService implements IHabitService {
 
     if (error || !data) throw error || new Error('Failed to update habit');
 
+    queryCache.invalidate('habits_all');
     this.ctx.notify();
     const all = await this.getHabits();
     return all.find((h) => h.id === id)!;
@@ -104,6 +121,7 @@ export class SupabaseHabitService implements IHabitService {
       .eq('user_id', userId);
 
     if (error) throw error;
+    queryCache.invalidate('habits_all');
     this.ctx.notify();
     return true;
   };
@@ -149,9 +167,57 @@ export class SupabaseHabitService implements IHabitService {
         });
     }
 
+    queryCache.invalidate('habits_all');
     this.ctx.notify();
     const all = await this.getHabits();
     return all.find((h) => h.id === id)!;
+  };
+
+  logHabitProgress = async (habitId: string, value: number, dateStr?: string): Promise<Habit> => {
+    const userId = await this.ctx.getUserId();
+    const targetDate = dateStr || getISODateString(new Date());
+    const sanitizedValue = Math.max(0, Number(value) || 0);
+
+    const habits = await this.getHabits();
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) throw new Error(`Habit ${habitId} not found`);
+
+    const threshold = habit.baseTierValue || habit.targetValue || 1;
+    const isCompleted = sanitizedValue >= threshold;
+
+    const { data: existing } = await this.ctx.client
+      .from('habit_records')
+      .select('*')
+      .eq('habit_id', habitId)
+      .eq('completion_date', targetDate)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existing) {
+      await this.ctx.client
+        .from('habit_records')
+        .update({
+          completed: isCompleted,
+          value: sanitizedValue
+        })
+        .eq('id', existing.id)
+        .eq('user_id', userId);
+    } else {
+      await this.ctx.client
+        .from('habit_records')
+        .insert({
+          habit_id: habitId,
+          user_id: userId,
+          completion_date: targetDate,
+          completed: isCompleted,
+          value: sanitizedValue
+        });
+    }
+
+    queryCache.invalidate('habits_all');
+    this.ctx.notify();
+    const updatedAll = await this.getHabits();
+    return updatedAll.find((h) => h.id === habitId)!;
   };
 
   importHabitCompletions = async (habitId: string, completionDates: string[]): Promise<Habit> => {

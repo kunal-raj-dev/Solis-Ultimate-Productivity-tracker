@@ -1,0 +1,66 @@
+.solis-feasibility-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.solis-feasibility-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-feasibility-track {
+  position: relative;
+  height: 24px;
+  background-color: var(--bg-surface-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+}
+
+.solis-feasibility-segment-available {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(78, 135, 82, 0.25) 0%, rgba(78, 135, 82, 0.45) 100%);
+  border-right: 2px solid var(--color-sage-500);
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.solis-feasibility-segment-required {
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(230, 90, 65, 0.15),
+    rgba(230, 90, 65, 0.15) 6px,
+    rgba(230, 90, 65, 0.28) 6px,
+    rgba(230, 90, 65, 0.28) 12px
+  );
+  border-left: 2px solid var(--color-coral-500);
+  transition: width 0.3s ease;
+}
+
+.solis-feasibility-bar-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.solis-feasibility-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-feasibility-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}

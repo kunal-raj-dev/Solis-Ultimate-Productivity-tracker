@@ -1,0 +1,358 @@
+.solis-study-pact-card {
+  background: var(--bg-surface-primary, #ffffff);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.solis-study-pact-card:hover {
+  border-color: var(--border-medium, rgba(0, 0, 0, 0.15));
+}
+
+.solis-study-pact-card.is-completed {
+  background: var(--bg-surface-secondary, #fafafa);
+  opacity: 0.95;
+}
+
+/* Header */
+.solis-pact-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.solis-pact-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-pact-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.solis-pact-icon {
+  color: var(--color-coral-500, #e06c53);
+}
+
+.solis-pact-title {
+  margin: 0;
+  font-size: var(--text-body, 15px);
+  font-weight: 600;
+  color: var(--text-primary, #1e1e24);
+}
+
+.solis-pact-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: var(--text-caption, 12px);
+  color: var(--text-secondary, #6b7280);
+}
+
+.solis-pact-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.solis-pact-objective {
+  font-style: italic;
+  color: var(--text-muted, #9ca3af);
+}
+
+/* Header Right */
+.solis-pact-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.solis-pact-invite-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface-secondary, #f4f4f5);
+  border: 1px dashed var(--border-medium, #d4d4d8);
+  padding: 4px 10px;
+  border-radius: var(--radius-md, 8px);
+}
+
+.solis-pact-invite-label {
+  font-size: var(--text-micro, 11px);
+  color: var(--text-muted, #71717a);
+  font-weight: 500;
+}
+
+.solis-pact-invite-code-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: var(--radius-xs, 4px);
+  color: var(--text-primary, #18181b);
+  transition: background 0.15s ease;
+}
+
+.solis-pact-invite-code-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.solis-pact-invite-code-btn code {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  color: var(--color-coral-600, #c85a42);
+}
+
+.solis-pact-delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted, #9ca3af);
+  padding: 6px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.solis-pact-delete-btn:hover {
+  color: var(--color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Dual Progress Columns */
+.solis-pact-dual-progress {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 680px) {
+  .solis-pact-dual-progress {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.solis-pact-progress-column {
+  background: var(--bg-surface-secondary, #fafafa);
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.05));
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.solis-pact-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-pact-user-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-body-sm, 13px);
+  color: var(--text-primary, #27272a);
+}
+
+.solis-pact-avatar-chip {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(224, 108, 83, 0.12);
+  color: var(--color-coral-600, #c85a42);
+}
+
+.solis-pact-avatar-chip.solis-chip-partner {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-sage-600, #059669);
+}
+
+.solis-pact-minutes-tally {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-body-sm, 13px);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.solis-tally-current {
+  font-weight: 700;
+  color: var(--text-primary, #18181b);
+}
+
+.solis-tally-sep {
+  color: var(--text-muted, #a1a1aa);
+}
+
+.solis-tally-target {
+  color: var(--text-secondary, #71717a);
+}
+
+.solis-tally-percent {
+  font-size: 11px;
+  color: var(--text-muted, #71717a);
+  margin-left: 2px;
+}
+
+.solis-tally-pending {
+  font-size: var(--text-caption, 12px);
+  color: var(--text-muted, #a1a1aa);
+  font-style: italic;
+}
+
+/* Progress Bar */
+.solis-pact-bar-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.solis-pact-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.solis-pact-bar-fill.solis-bar-user {
+  background: var(--color-coral-500, #e06c53);
+}
+
+.solis-pact-bar-fill.solis-bar-partner {
+  background: var(--color-sage-500, #10b981);
+}
+
+/* Actions in Column */
+.solis-pact-sync-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.solis-pact-manual-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--text-micro, 11px);
+  color: var(--text-secondary, #71717a);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.solis-pact-manual-toggle:hover {
+  color: var(--text-primary, #18181b);
+}
+
+.solis-pact-manual-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.solis-pact-input {
+  width: 90px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--border-subtle, #d4d4d8);
+  background: var(--bg-surface-primary, #ffffff);
+  font-size: var(--text-caption, 12px);
+  color: var(--text-primary, #18181b);
+  font-family: var(--font-mono, monospace);
+}
+
+.solis-pact-partner-footnote {
+  font-size: var(--text-micro, 11px);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.solis-footnote-muted {
+  color: var(--text-muted, #71717a);
+}
+
+.solis-footnote-muted code {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: var(--text-primary, #18181b);
+}
+
+/* Summary Box */
+.solis-pact-summary-box {
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-md, 8px);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solis-pact-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption, 12px);
+  font-weight: 600;
+  color: var(--color-amber-600, #d97706);
+}
+
+.solis-pact-narrative {
+  margin: 0;
+  font-size: var(--text-body-sm, 13px);
+  color: var(--text-primary, #27272a);
+  line-height: 1.5;
+}
+
+.solis-pact-closed-time {
+  font-size: var(--text-micro, 11px);
+  color: var(--text-muted, #a1a1aa);
+}
+
+/* Footer Actions */
+.solis-pact-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.05));
+  padding-top: 12px;
+}
+
+.solis-pact-week-over-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-caption, 12px);
+  color: var(--color-amber-600, #d97706);
+  font-weight: 500;
+}

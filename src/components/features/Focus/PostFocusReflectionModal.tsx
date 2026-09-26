@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Modal } from '../../feedback/Modal/Modal';
 import { Button } from '../../ui/Button/Button';
 import { Badge } from '../../ui/Badge/Badge';
 import { Textarea } from '../../ui/Textarea/Textarea';
 import { Checkbox } from '../../ui/Checkbox/Checkbox';
-import { Sparkles, Flame, Zap, Check, ShieldAlert } from 'lucide-react';
+import { Sparkles, Flame, Zap, Check, ShieldAlert, Shield, BellOff, Minus, Plus } from 'lucide-react';
+import { calculateDistractionSummary } from '../../../utils/focus/interruptionTracker';
+import { InterruptionEvent } from '../../../types/focus';
 import './PostFocusReflectionModal.css';
 
 export interface PostFocusReflectionModalProps {
@@ -18,9 +20,14 @@ export interface PostFocusReflectionModalProps {
   taskTitle?: string;
   planItemId?: string;
   parkedThoughts?: Array<{ id: string; text: string; type: string }>;
+  initialInternalCount?: number;
+  initialExternalCount?: number;
+  interruptionsLog?: InterruptionEvent[];
   onSaveSession: (data: {
     flowQuality: number;
     interruptionsCount: number;
+    internalInterruptionsCount?: number;
+    externalInterruptionsCount?: number;
     notes?: string;
     synthesizeNote: boolean;
     completeLinkedTask?: boolean;
@@ -39,17 +46,40 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
   taskTitle,
   planItemId,
   parkedThoughts,
+  initialInternalCount,
+  initialExternalCount,
+  interruptionsLog,
   onSaveSession
 }) => {
   const [flowQuality, setFlowQuality] = useState<number>(4);
-  const [interruptions, setInterruptions] = useState<number>(() =>
-    parkedThoughts ? Math.min(4, parkedThoughts.length) : 0
-  );
+  const [internalCount, setInternalCount] = useState<number>(() => {
+    if (initialInternalCount !== undefined) return initialInternalCount;
+    if (interruptionsLog && interruptionsLog.length > 0) {
+      return interruptionsLog.filter((i) => i.type === 'internal').length;
+    }
+    return parkedThoughts ? Math.min(4, parkedThoughts.length) : 0;
+  });
+  const [externalCount, setExternalCount] = useState<number>(() => {
+    if (initialExternalCount !== undefined) return initialExternalCount;
+    if (interruptionsLog && interruptionsLog.length > 0) {
+      return interruptionsLog.filter((i) => i.type === 'external').length;
+    }
+    return 0;
+  });
   const [notes, setNotes] = useState('');
   const [synthesizeNote, setSynthesizeNote] = useState(false);
   const [completeLinkedTask, setCompleteLinkedTask] = useState(true);
   const [completePlanItem, setCompletePlanItem] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const totalInterruptions = internalCount + externalCount;
+
+  const distractionSummary = useMemo(() => {
+    return calculateDistractionSummary(
+      { internal: internalCount, external: externalCount },
+      sessionMinutes
+    );
+  }, [internalCount, externalCount, sessionMinutes]);
 
   if (!isOpen) return null;
 
@@ -59,7 +89,9 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
     try {
       await onSaveSession({
         flowQuality,
-        interruptionsCount: interruptions,
+        interruptionsCount: totalInterruptions,
+        internalInterruptionsCount: internalCount,
+        externalInterruptionsCount: externalCount,
         notes: notes.trim() || undefined,
         synthesizeNote,
         completeLinkedTask: taskId ? completeLinkedTask : undefined,
@@ -125,23 +157,90 @@ export const PostFocusReflectionModal: React.FC<PostFocusReflectionModalProps> =
           </div>
         </div>
 
-        {/* Interruptions Count */}
-        <div>
-          <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 600, marginBottom: '6px' }}>
-            Distraction Interruptions
-          </label>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {[0, 1, 2, 3, 4].map((count) => (
-              <button
-                key={count}
-                type="button"
-                className={`solis-score-pill ${interruptions === count ? 'solis-score-pill--selected' : ''}`}
-                style={{ flex: 1, padding: '6px 0' }}
-                onClick={() => setInterruptions(count)}
-              >
-                <span>{count === 4 ? '4+' : count}</span>
-              </button>
-            ))}
+        {/* Feature 2.5: Attentional Friction & Distraction Breakdown */}
+        <div style={{ padding: '12px 14px', background: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Shield size={16} color="var(--color-coral-500)" />
+              <span style={{ fontSize: 'var(--text-body-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Attentional Friction & Distraction Log
+              </span>
+            </div>
+            <Badge variant={distractionSummary.frictionTier === 'pristine' ? 'coral' : distractionSummary.frictionTier === 'mild' ? 'neutral' : 'amber'}>
+              {distractionSummary.frictionLabel} ({distractionSummary.focusScore}% Flow)
+            </Badge>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px' }}>
+            {/* Internal Mind Drift */}
+            <div style={{ padding: '8px 12px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Zap size={13} color="var(--color-amber-500)" /> Internal Drift
+                </span>
+                <span style={{ fontSize: 'var(--text-caption)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {internalCount}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setInternalCount((p) => Math.max(0, p - 1))}
+                  style={{ flex: 1, padding: '4px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}
+                  aria-label="Decrease internal drift count"
+                >
+                  <Minus size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInternalCount((p) => p + 1)}
+                  style={{ flex: 1, padding: '4px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}
+                  aria-label="Increase internal drift count"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+            </div>
+
+            {/* External Surrounding Interruption */}
+            <div style={{ padding: '8px 12px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <BellOff size={13} color="var(--color-coral-500)" /> External Intrusions
+                </span>
+                <span style={{ fontSize: 'var(--text-caption)', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {externalCount}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setExternalCount((p) => Math.max(0, p - 1))}
+                  style={{ flex: 1, padding: '4px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}
+                  aria-label="Decrease external intrusion count"
+                >
+                  <Minus size={12} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExternalCount((p) => p + 1)}
+                  style={{ flex: 1, padding: '4px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}
+                  aria-label="Increase external intrusion count"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Metacognitive Guidance */}
+          <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', lineHeight: 1.4, background: 'rgba(0,0,0,0.1)', padding: '8px 10px', borderRadius: 'var(--radius-xs)' }}>
+            <p style={{ margin: 0, fontWeight: 500, color: 'var(--text-primary)' }}>{distractionSummary.reflectionPrompt}</p>
+            {distractionSummary.cognitiveInsight && (
+              <p style={{ margin: '3px 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
+                {distractionSummary.cognitiveInsight}
+              </p>
+            )}
           </div>
         </div>
 

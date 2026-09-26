@@ -429,12 +429,25 @@ export async function executeWorkspaceImport(
         description: h.description,
         category: h.category,
         frequency: h.frequency,
-        color: h.color
+        color: h.color,
+        kind: h.kind,
+        unit: h.unit,
+        targetValue: h.targetValue,
+        baseTierValue: h.baseTierValue,
+        stretchTierValue: h.stretchTierValue
       });
 
-      const completedDates = Object.keys(h.history || {}).filter((date) => h.history && h.history[date] === true);
-      for (const date of completedDates) {
-        await service.habits.toggleHabitDate(created.id, date).catch(() => {});
+      if (h.kind === 'quantitative' && h.valueHistory) {
+        for (const [date, val] of Object.entries(h.valueHistory)) {
+          if (val > 0) {
+            await service.habits.logHabitProgress(created.id, val, date).catch(() => {});
+          }
+        }
+      } else {
+        const completedDates = Object.keys(h.history || {}).filter((date) => h.history && h.history[date] === true);
+        for (const date of completedDates) {
+          await service.habits.toggleHabitDate(created.id, date).catch(() => {});
+        }
       }
       // master.md §16.3 restore fidelity: re-attach the plan §3.4 amnesty
       // dates after the completion history so the streak engine re-evaluates

@@ -12,7 +12,7 @@ export type TaskSortOrder = 'asc' | 'desc';
 
 export type TimeBlockStatus = 'planned' | 'active' | 'completed' | 'partial' | 'missed';
 
-export type TaskViewMode = 'list' | 'schedule' | 'matrix' | 'today' | 'timeline' | 'inbox' | 'review';
+export type TaskViewMode = 'list' | 'schedule' | 'matrix' | 'today' | 'timeline' | 'inbox' | 'review' | 'week';
 
 export interface SubTask {
   id: ID;

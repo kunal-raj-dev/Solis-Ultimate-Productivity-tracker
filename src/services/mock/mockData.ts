@@ -40,7 +40,9 @@ export const MOCK_USER: UserProfile = {
     defaultBreakDurationMinutes: 5,
     dailyStudyGoalMinutes: 180,
     dailyTasksGoalCount: 5,
-    focusGradientTheme: 'momentum'
+    focusGradientTheme: 'momentum',
+    fsrsRetention: 0.90,
+    fsrsAlgorithm: 'fsrs-5'
   }
 };
 
@@ -351,6 +353,37 @@ export const MOCK_HABITS: Habit[] = [
       [threeDaysAgoStr]: true
     },
     createdAt: '2026-01-05T00:00:00.000Z',
+    updatedAt: '2026-08-17T08:00:00.000Z'
+  },
+  {
+    id: 'hab_3',
+    title: 'Daily Textbook & Research Paper Reading',
+    description: 'Read peer-reviewed literature or core syllabus chapters with active margin annotations.',
+    category: 'study',
+    frequency: 'daily',
+    color: 'emerald',
+    kind: 'quantitative',
+    unit: 'pages',
+    targetValue: 20,
+    baseTierValue: 5,
+    stretchTierValue: 35,
+    currentValueToday: 20,
+    currentStreak: 5,
+    longestStreak: 18,
+    completedToday: true,
+    history: {
+      [todayStr]: true,
+      [yesterdayStr]: true,
+      [twoDaysAgoStr]: true,
+      [threeDaysAgoStr]: true
+    },
+    valueHistory: {
+      [todayStr]: 20,
+      [yesterdayStr]: 25,
+      [twoDaysAgoStr]: 5,
+      [threeDaysAgoStr]: 35
+    },
+    createdAt: '2026-01-10T00:00:00.000Z',
     updatedAt: '2026-08-17T08:00:00.000Z'
   }
 ];

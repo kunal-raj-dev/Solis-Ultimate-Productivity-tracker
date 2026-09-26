@@ -5,9 +5,10 @@ import { Input } from '../../ui/Input/Input';
 import { Textarea } from '../../ui/Textarea/Textarea';
 import { CustomSelect } from '../../ui/Select/CustomSelect';
 import { StudySubject, StudyTopic } from '../../../types/study';
-import { CardType } from '../../../types/learning';
+import { CardType, ImageOcclusionZone } from '../../../types/learning';
 import { parseClozeSyntax } from '../../../utils/learning/spacedRepetition';
-import { Plus } from 'lucide-react';
+import { ImageOcclusionDrawer, DIAGRAM_PRESETS } from './ImageOcclusionDrawer';
+import { Plus, Image as ImageIcon, Type } from 'lucide-react';
 
 export interface FlashcardCreateModalProps {
   isOpen: boolean;
@@ -26,6 +27,9 @@ export interface FlashcardCreateModalProps {
     frontPrompt: string;
     backAnswer: string;
     cardType: CardType;
+    imageUrl?: string;
+    occlusionZones?: ImageOcclusionZone[];
+    activeOcclusionZoneId?: string;
   }) => Promise<void>;
 }
 
@@ -47,6 +51,15 @@ export const FlashcardCreateModal: React.FC<FlashcardCreateModalProps> = ({
   const [frontPrompt, setFrontPrompt] = useState(defaultPrompt);
   const [backAnswer, setBackAnswer] = useState(defaultAnswer);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [occlusionData, setOcclusionData] = useState<{
+    imageUrl: string;
+    occlusionZones: ImageOcclusionZone[];
+    activeOcclusionZoneId: string;
+  }>({
+    imageUrl: DIAGRAM_PRESETS[0].url,
+    occlusionZones: DIAGRAM_PRESETS[0].defaultZones,
+    activeOcclusionZoneId: DIAGRAM_PRESETS[0].defaultZones[0]?.id || ''
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -69,10 +82,35 @@ export const FlashcardCreateModal: React.FC<FlashcardCreateModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectId || !frontPrompt.trim() || (!backAnswer.trim() && !clozeResult.hasCloze)) return;
+    if (!subjectId) return;
 
     setIsSubmitting(true);
     try {
+      if (cardType === 'image_occlusion') {
+        if (occlusionData.occlusionZones.length === 0) return;
+        const targetZone =
+          occlusionData.occlusionZones.find((z) => z.id === occlusionData.activeOcclusionZoneId) ||
+          occlusionData.occlusionZones[0];
+        const targetAnswer = targetZone?.label?.trim() || backAnswer.trim() || 'Occluded Diagram Region';
+        const prompt = frontPrompt.trim() || 'Identify the masked diagram region [?]';
+
+        await onCreateCard({
+          subjectId,
+          topicId: topicId || undefined,
+          noteId: defaultNoteId,
+          frontPrompt: prompt,
+          backAnswer: targetAnswer,
+          cardType: 'image_occlusion',
+          imageUrl: occlusionData.imageUrl,
+          occlusionZones: occlusionData.occlusionZones,
+          activeOcclusionZoneId: targetZone?.id
+        });
+        onClose();
+        return;
+      }
+
+      if (!frontPrompt.trim() || (!backAnswer.trim() && !clozeResult.hasCloze)) return;
+
       const resolvedAnswer = clozeResult.hasCloze ? clozeResult.extractedAnswers.join(', ') : backAnswer;
       const resolvedType: CardType = clozeResult.hasCloze ? 'cloze' : cardType;
 
@@ -114,39 +152,102 @@ export const FlashcardCreateModal: React.FC<FlashcardCreateModalProps> = ({
           options={topicOptions}
         />
 
+        {/* Card Format Selector */}
         <div>
           <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 500, marginBottom: '6px' }}>
-            Prompt / Question (Use <code style={{ color: 'var(--color-coral-500)' }}>&#123;&#123;hidden answer&#125;&#125;</code> for cloze)
+            Flashcard Architecture
           </label>
-          <Textarea
-            placeholder="e.g. In Raft, a candidate wins an election with a {{majority}} of cluster votes."
-            value={frontPrompt}
-            onChange={(e) => setFrontPrompt(e.target.value)}
-            rows={3}
-            required
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setCardType('standard')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-sm)',
+                border: cardType !== 'image_occlusion' ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
+                background: cardType !== 'image_occlusion' ? 'rgba(235, 94, 40, 0.08)' : 'var(--bg-surface-secondary)',
+                color: cardType !== 'image_occlusion' ? 'var(--color-coral-500)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 'var(--text-caption)'
+              }}
+            >
+              <Type size={15} />
+              <span>Text & Cloze</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCardType('image_occlusion')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '8px 12px',
+                borderRadius: 'var(--radius-sm)',
+                border: cardType === 'image_occlusion' ? '1.5px solid var(--color-coral-500)' : '1px solid var(--border-subtle)',
+                background: cardType === 'image_occlusion' ? 'rgba(235, 94, 40, 0.08)' : 'var(--bg-surface-secondary)',
+                color: cardType === 'image_occlusion' ? 'var(--color-coral-500)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 'var(--text-caption)'
+              }}
+            >
+              <ImageIcon size={15} />
+              <span>Image Occlusion</span>
+            </button>
+          </div>
         </div>
 
-        {clozeResult.hasCloze ? (
-          <div style={{ padding: '10px 14px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
-            <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Cloze Blank Preview
-            </span>
-            <p style={{ marginTop: '4px', fontSize: 'var(--text-body-sm)' }}>
-              {clozeResult.promptText}
-            </p>
-            <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-sage-600)', marginTop: '4px' }}>
-              Extracted Answer: <strong>{clozeResult.extractedAnswers.join(', ')}</strong>
-            </p>
-          </div>
-        ) : (
-          <Input
-            label="Active Recall Answer"
-            placeholder="e.g. The Leader Completeness Property"
-            value={backAnswer}
-            onChange={(e) => setBackAnswer(e.target.value)}
-            required={!clozeResult.hasCloze}
+        {cardType === 'image_occlusion' ? (
+          <ImageOcclusionDrawer
+            initialImageUrl={occlusionData.imageUrl}
+            initialZones={occlusionData.occlusionZones}
+            initialActiveZoneId={occlusionData.activeOcclusionZoneId}
+            onChange={setOcclusionData}
           />
+        ) : (
+          <>
+            <div>
+              <label style={{ display: 'block', fontSize: 'var(--text-body-sm)', fontWeight: 500, marginBottom: '6px' }}>
+                Prompt / Question (Use <code style={{ color: 'var(--color-coral-500)' }}>&#123;&#123;hidden answer&#125;&#125;</code> for cloze)
+              </label>
+              <Textarea
+                placeholder="e.g. In Raft, a candidate wins an election with a {{majority}} of cluster votes."
+                value={frontPrompt}
+                onChange={(e) => setFrontPrompt(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+
+            {clozeResult.hasCloze ? (
+              <div style={{ padding: '10px 14px', backgroundColor: 'var(--bg-surface-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Cloze Blank Preview
+                </span>
+                <p style={{ marginTop: '4px', fontSize: 'var(--text-body-sm)' }}>
+                  {clozeResult.promptText}
+                </p>
+                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-sage-600)', marginTop: '4px' }}>
+                  Extracted Answer: <strong>{clozeResult.extractedAnswers.join(', ')}</strong>
+                </p>
+              </div>
+            ) : (
+              <Input
+                label="Active Recall Answer"
+                placeholder="e.g. The Leader Completeness Property"
+                value={backAnswer}
+                onChange={(e) => setBackAnswer(e.target.value)}
+                required={!clozeResult.hasCloze}
+              />
+            )}
+          </>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-md)' }}>

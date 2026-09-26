@@ -21,6 +21,7 @@ import {
   RoomEventType,
   RoomReflection
 } from '../types/room';
+import { CloudStudyPact, CreateStudyPactPayload, StudyPactWeekSummary } from '../types/studyPact';
 
 export interface IAuthService {
   getCurrentUser(): Promise<UserProfile | null>;
@@ -114,6 +115,8 @@ export interface IHabitService {
   deleteHabit(id: string): Promise<boolean>;
   toggleHabitToday(id: string): Promise<Habit>;
   toggleHabitDate(id: string, dateStr: string): Promise<Habit>;
+  /** Feature 2.6: Logs quantitative progress for a habit on a specific date (defaults to today). */
+  logHabitProgress(habitId: string, value: number, dateStr?: string): Promise<Habit>;
   /** Bulk-imports completed dates (guest-to-cloud migration, plan §1.3). */
   importHabitCompletions(habitId: string, completionDates: string[]): Promise<Habit>;
 }
@@ -141,7 +144,7 @@ export interface IFlashcardService {
   createFlashcard(card: Partial<Flashcard>): Promise<Flashcard>;
   updateFlashcard(id: string, updates: Partial<Flashcard>): Promise<Flashcard>;
   deleteFlashcard(id: string): Promise<boolean>;
-  recordCardAttempt(cardId: string, rating: CardRating): Promise<Flashcard>;
+  recordCardAttempt(cardId: string, rating: CardRating, requestRetention?: number): Promise<Flashcard>;
 }
 
 export interface IReviewService {
@@ -203,6 +206,17 @@ export interface IRoomService {
   promoteNextHost(roomId: string): Promise<StudyRoom | null>;
 }
 
+export interface IStudyPactService {
+  getPacts(): Promise<CloudStudyPact[]>;
+  getActivePact(): Promise<CloudStudyPact | null>;
+  getPactById(id: string): Promise<CloudStudyPact | null>;
+  getPactByInviteCode(code: string): Promise<CloudStudyPact | null>;
+  createPact(payload: CreateStudyPactPayload): Promise<CloudStudyPact>;
+  joinPactByInviteCode(inviteCode: string, partnerName?: string): Promise<CloudStudyPact>;
+  syncPactMinutes(pactId: string, minutes: number): Promise<CloudStudyPact>;
+  completePact(pactId: string, summary?: StudyPactWeekSummary): Promise<CloudStudyPact>;
+  deletePact(pactId: string): Promise<boolean>;
+}
 
 /**
  * Scoped entity pub/sub channels (plan §6.1).
@@ -212,7 +226,7 @@ export interface IRoomService {
  * Domains outside this enum (flashcards, reviews, routines, resources,
  * reflections, rooms, auth) broadcast on 'all'.
  */
-export type DataEntityChannel = 'tasks' | 'habits' | 'notes' | 'study' | 'focus' | 'goals' | 'all';
+export type DataEntityChannel = 'tasks' | 'habits' | 'notes' | 'study' | 'focus' | 'goals' | 'pacts' | 'all';
 
 /**
  * Shared dispatch predicate for the scoped entity event bus.
@@ -244,6 +258,7 @@ export interface IDataService {
   resources: IResourceService;
   reflections: IReflectionService;
   rooms: IRoomService;
+  pacts: IStudyPactService;
   subscribe(listener: () => void, channels?: DataEntityChannel[]): () => void;
   notifySubscribers(channel: DataEntityChannel): void;
 }

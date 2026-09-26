@@ -3,6 +3,8 @@
  * Enforces business constraints close to the domain boundary.
  */
 
+import { HabitKind } from '../types/habit';
+
 export class ValidationError extends Error {
   public readonly field?: string;
 
@@ -72,6 +74,11 @@ export function validateHabitInput(data: {
   title?: string;
   category?: string;
   frequency?: string;
+  kind?: HabitKind;
+  unit?: string;
+  targetValue?: number;
+  baseTierValue?: number;
+  stretchTierValue?: number;
 }): Result<boolean> {
   if (!data.title || data.title.trim().length === 0) {
     return { success: false, error: 'Habit title is required.', field: 'title' };
@@ -79,6 +86,35 @@ export function validateHabitInput(data: {
 
   if (data.title.trim().length > 120) {
     return { success: false, error: 'Habit title must be 120 characters or fewer.', field: 'title' };
+  }
+
+  if (data.kind === 'quantitative') {
+    if (data.targetValue === undefined || isNaN(data.targetValue) || data.targetValue <= 0) {
+      return { success: false, error: 'Target goal must be a positive number.', field: 'targetValue' };
+    }
+
+    if (data.baseTierValue !== undefined && data.baseTierValue !== null && !isNaN(data.baseTierValue)) {
+      if (data.baseTierValue <= 0) {
+        return { success: false, error: 'Base tier value must be greater than zero.', field: 'baseTierValue' };
+      }
+      if (data.baseTierValue > data.targetValue) {
+        return {
+          success: false,
+          error: 'Base tier (minimum viable habit) cannot exceed the target goal.',
+          field: 'baseTierValue'
+        };
+      }
+    }
+
+    if (data.stretchTierValue !== undefined && data.stretchTierValue !== null && !isNaN(data.stretchTierValue)) {
+      if (data.stretchTierValue < data.targetValue) {
+        return {
+          success: false,
+          error: 'Mastery stretch goal must be greater than or equal to the target goal.',
+          field: 'stretchTierValue'
+        };
+      }
+    }
   }
 
   return { success: true, data: true };

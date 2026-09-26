@@ -12,7 +12,9 @@ import { Flashcard } from '../../../types/learning';
 import { Habit } from '../../../types/habit';
 import { dataService } from '../../../services/dataService';
 import { calculateExamReadiness } from '../../../utils/intelligence/masteryIntelligence';
+import { calculateTimeCushion } from '../../../utils/planning/timeCushion';
 import { ExamWorkspaceModal } from './ExamWorkspaceModal';
+import { ExamFeasibilityBar } from './ExamFeasibilityBar';
 import { Button } from '../../ui/Button/Button';
 import { Badge } from '../../ui/Badge/Badge';
 import { useToast } from '../../../context/ToastContext';
@@ -109,6 +111,15 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
     flashcards: subjectCards,
     habits: allHabits
   });
+
+  const cushion = useMemo(() => {
+    return calculateTimeCushion({
+      examDate: activeGoal.targetDate,
+      subjectId: activeGoal.subjectId || '',
+      topics: subjectTopics,
+      dailyCapacityMinutes: dailyCapacity ?? 360
+    });
+  }, [activeGoal.targetDate, activeGoal.subjectId, subjectTopics, dailyCapacity]);
 
   const masteredTopicsCount = subjectTopics.filter((t) => t.masteryLevel === 'mastered').length;
   const totalTopicsCount = subjectTopics.length;
@@ -218,6 +229,11 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
               {readiness.componentScores.milestoneScore}% completed
             </span>
           </div>
+        </div>
+
+        {/* Visual Time-Cushion & Exam Feasibility (F-104) */}
+        <div style={{ padding: '0 16px 12px' }}>
+          <ExamFeasibilityBar cushion={cushion} compact />
         </div>
 
         <div className="solis-exam-horizon-bar__footer">

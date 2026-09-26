@@ -10,6 +10,7 @@ import { RecurringStudyRoutine } from '../../types/planning';
 import { StudyResource } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
 import { StudyRoom, RoomParticipant, RoomMessage, RoomTimelineEvent, RoomReflection } from '../../types/room';
+import { CloudStudyPact } from '../../types/studyPact';
 import { calculateStreaks } from '../../utils/streaks';
 import { getISODateString } from '../../utils/date';
 
@@ -29,7 +30,9 @@ export function mapProfile(row: any): UserProfile {
       defaultBreakDurationMinutes: 5,
       dailyStudyGoalMinutes: 180,
       dailyTasksGoalCount: 5,
-      focusGradientTheme: 'momentum'
+      focusGradientTheme: 'momentum',
+      fsrsRetention: 0.90,
+      fsrsAlgorithm: 'fsrs-5'
     }
   };
 }
@@ -174,6 +177,9 @@ export function mapFocusSession(row: any, subjectName?: string): FocusSession {
     title: row.title || 'Deep Focus Session',
     completed: row.completed ?? true,
     interruptionsCount: row.interruptions_count ?? 0,
+    internalInterruptionsCount: row.internal_interruptions_count ?? undefined,
+    externalInterruptionsCount: row.external_interruptions_count ?? undefined,
+    interruptionsLog: row.interruptions_log || undefined,
     flowQuality: row.flow_quality ?? undefined,
     soundscapeType: row.soundscape_type ?? undefined,
     targetOutcome: row.target_outcome ?? undefined,
@@ -185,7 +191,12 @@ export function mapFocusSession(row: any, subjectName?: string): FocusSession {
   };
 }
 
-export function mapHabit(row: any, history: Record<string, boolean> = {}, goalTitle?: string): Habit {
+export function mapHabit(
+  row: any,
+  history: Record<string, boolean> = {},
+  goalTitle?: string,
+  valueHistory: Record<string, number> = {}
+): Habit {
   const todayStr = getISODateString(new Date());
   const { currentStreak, longestStreak } = calculateStreaks(history, {
     frequency: row.frequency || 'daily',
@@ -196,6 +207,16 @@ export function mapHabit(row: any, history: Record<string, boolean> = {}, goalTi
     referenceDate: new Date(`${todayStr}T12:00:00`)
   });
 
+  const kind = row.kind || (row.target_value ? 'quantitative' : 'boolean');
+  const targetValue = row.target_value !== undefined && row.target_value !== null ? Number(row.target_value) : undefined;
+  const baseTierValue = row.base_tier_value !== undefined && row.base_tier_value !== null ? Number(row.base_tier_value) : undefined;
+  const stretchTierValue = row.stretch_tier_value !== undefined && row.stretch_tier_value !== null ? Number(row.stretch_tier_value) : undefined;
+
+  const valToday = valueHistory[todayStr] ?? (history[todayStr] ? (targetValue || 1) : 0);
+  const isDoneToday = kind === 'quantitative'
+    ? valToday >= (baseTierValue || targetValue || 1)
+    : history[todayStr] === true;
+
   return {
     id: row.id,
     title: row.title,
@@ -205,11 +226,18 @@ export function mapHabit(row: any, history: Record<string, boolean> = {}, goalTi
     color: row.color || 'coral',
     currentStreak,
     longestStreak,
-    completedToday: history[todayStr] === true,
+    completedToday: isDoneToday,
     history,
     amnestyDates: row.amnesty_dates || undefined,
     goalId: row.goal_id || undefined,
     goalTitle: goalTitle || row.goals?.title || undefined,
+    kind,
+    unit: row.unit || undefined,
+    targetValue,
+    baseTierValue,
+    stretchTierValue,
+    currentValueToday: valToday,
+    valueHistory,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -289,6 +317,9 @@ export function mapFlashcard(row: any, subjectName?: string, topicTitle?: string
     easeFactor: Number(row.ease_factor ?? 2.5),
     nextReviewDate: row.next_review_date || getISODateString(new Date()),
     lastReviewedAt: row.last_reviewed_at || undefined,
+    imageUrl: row.image_url || undefined,
+    occlusionZones: row.occlusion_zones || undefined,
+    activeOcclusionZoneId: row.active_occlusion_zone_id || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -454,4 +485,31 @@ export function mapTaskTimeBlock(row: any): TaskTimeBlock {
     updatedAt: row.updated_at
   };
 }
+
+export function mapStudyPact(row: any): CloudStudyPact {
+  return {
+    id: row.id,
+    createdBy: row.created_by,
+    creatorName: row.creator_name || 'Scholar',
+    partnerId: row.partner_id || null,
+    partnerName: row.partner_name || 'Peer Scholar',
+    partnerEmail: row.partner_email || null,
+    inviteCode: row.invite_code,
+    sharedObjective: row.shared_objective || undefined,
+    subjectId: row.subject_id || undefined,
+    subjectName: row.subject_name || undefined,
+    weekStartDate: row.week_start_date,
+    weekEndDate: row.week_end_date,
+    creatorTargetMinutes: row.creator_target_minutes,
+    partnerTargetMinutes: row.partner_target_minutes,
+    creatorConfirmedMinutes: row.creator_confirmed_minutes ?? 0,
+    partnerConfirmedMinutes: row.partner_confirmed_minutes ?? 0,
+    status: row.status || 'pending',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    completedAt: row.completed_at || null,
+    summary: row.summary || undefined
+  };
+}
+
 

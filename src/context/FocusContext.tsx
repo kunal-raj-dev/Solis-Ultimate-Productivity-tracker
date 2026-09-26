@@ -4,16 +4,18 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useCallback
+  useCallback,
+  useMemo
 } from 'react';
 import { StudySubject } from '../types/study';
 import { Task } from '../types/task';
-import { SoundscapeType, ParkedThought, PreSessionEnergy } from '../types/focus';
+import { SoundscapeType, ParkedThought, PreSessionEnergy, InterruptionEvent, InterruptionType } from '../types/focus';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastContext';
 import { playFocusCompletionChime, calculateTimerRemaining } from '../utils/timer';
 import { soundscapeEngine } from '../utils/focus/soundscapeEngine';
 import { hapticsEngine } from '../utils/focus/hapticsEngine';
+import { createInterruptionEvent } from '../utils/focus/interruptionTracker';
 
 export type FocusPreset = 'pomodoro' | 'deep_flow' | 'short_break' | 'custom';
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed' | 'cancelled';
@@ -54,6 +56,10 @@ export interface FocusContextValue {
   tasks: Task[];
   activeTask: Task | undefined;
   parkedThoughts: ParkedThought[];
+  /** Feature 2.5: Distraction counter & interruption tracking */
+  interruptionsLog: InterruptionEvent[];
+  internalInterruptionsCount: number;
+  externalInterruptionsCount: number;
 
   // Actions
   startTimer: () => void;
@@ -79,9 +85,13 @@ export interface FocusContextValue {
   testAudioChime: () => void;
   parkThought: (text: string, type: 'task' | 'note' | 'question') => Promise<void>;
   clearParkedThoughts: () => void;
+  recordInterruption: (type: InterruptionType, note?: string) => void;
+  clearInterruptions: () => void;
   saveReflection: (data: {
     flowQuality: number;
     interruptionsCount: number;
+    internalInterruptionsCount?: number;
+    externalInterruptionsCount?: number;
     notes?: string;
     synthesizeNote: boolean;
     completeLinkedTask?: boolean;
@@ -169,9 +179,30 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isMuted, setIsMuted] = useState<boolean>(persisted?.isMuted || false);
   const [checkpointAcknowledged, setCheckpointAcknowledged] = useState<boolean>(persisted?.checkpointAcknowledged || false);
   const [parkedThoughts, setParkedThoughts] = useState<ParkedThought[]>(persisted?.parkedThoughts || []);
+  const [interruptionsLog, setInterruptionsLog] = useState<InterruptionEvent[]>(persisted?.interruptionsLog || []);
   const [preSessionEnergy, setPreSessionEnergy] = useState<PreSessionEnergy | null>(
     persisted?.preSessionEnergy ?? null
   );
+
+  const internalInterruptionsCount = useMemo(
+    () => interruptionsLog.filter((i) => i.type === 'internal').length,
+    [interruptionsLog]
+  );
+
+  const externalInterruptionsCount = useMemo(
+    () => interruptionsLog.filter((i) => i.type === 'external').length,
+    [interruptionsLog]
+  );
+
+  const recordInterruption = useCallback((type: InterruptionType, note?: string) => {
+    const newEvent = createInterruptionEvent(type, note);
+    setInterruptionsLog((prev) => [...prev, newEvent]);
+    hapticsEngine.playMechanicalTick();
+  }, []);
+
+  const clearInterruptions = useCallback(() => {
+    setInterruptionsLog([]);
+  }, []);
 
   // Plan §5.3: soft-landing chime fires once, ~2 minutes before a countdown ends.
   const softLandingPlayedRef = useRef(false);
@@ -223,6 +254,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           isMuted,
           checkpointAcknowledged,
           parkedThoughts,
+          interruptionsLog,
           preSessionEnergy
         })
       );
@@ -250,6 +282,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isMuted,
     checkpointAcknowledged,
     parkedThoughts,
+    interruptionsLog,
     preSessionEnergy
   ]);
 
@@ -494,6 +527,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPausedRemainingMs(null);
     setCheckpointAcknowledged(false);
     setParkedThoughts([]);
+    clearInterruptions();
     softLandingPlayedRef.current = false;
     setTimerMode('countdown');
     setStopwatchStartEpochMs(null);
@@ -511,6 +545,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPausedRemainingMs(null);
     setCheckpointAcknowledged(false);
     setParkedThoughts([]);
+    clearInterruptions();
     softLandingPlayedRef.current = false;
     setTimerMode('countdown');
     setStopwatchStartEpochMs(null);
@@ -678,12 +713,18 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const saveReflection = async (data: {
     flowQuality: number;
     interruptionsCount: number;
+    internalInterruptionsCount?: number;
+    externalInterruptionsCount?: number;
     notes?: string;
     synthesizeNote: boolean;
     completeLinkedTask?: boolean;
     completePlanItem?: boolean;
   }) => {
     try {
+      const finalInternal = data.internalInterruptionsCount ?? internalInterruptionsCount;
+      const finalExternal = data.externalInterruptionsCount ?? externalInterruptionsCount;
+      const finalTotal = data.interruptionsCount ?? (finalInternal + finalExternal);
+
       const savedFocusSession = await dataService.focus.saveFocusSession({
         mode: timerMode === 'stopwatch' ? 'stopwatch' : preset === 'pomodoro' ? 'pomodoro' : preset === 'deep_flow' ? 'deep_flow' : 'custom_timer',
         durationMinutes: completedSessionMinutes,
@@ -694,7 +735,10 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         topic: focusTitle || 'Deep Focus Pod Session',
         title: focusTitle || 'Deep Focus Pod Session',
         completed: true,
-        interruptionsCount: Math.max(data.interruptionsCount, parkedThoughts.length),
+        interruptionsCount: Math.max(finalTotal, parkedThoughts.length),
+        internalInterruptionsCount: finalInternal,
+        externalInterruptionsCount: finalExternal,
+        interruptionsLog: interruptionsLog.length > 0 ? interruptionsLog : undefined,
         flowQuality: data.flowQuality,
         soundscapeType: soundscape,
         targetOutcome: targetOutcome || undefined,
@@ -813,6 +857,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         type: 'success'
       });
       clearParkedThoughts();
+      clearInterruptions();
       setSelectedTaskIdState('');
       setSelectedBlockIdState('');
       setSelectedPlanItemId('');
@@ -848,6 +893,9 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     tasks,
     activeTask,
     parkedThoughts,
+    interruptionsLog,
+    internalInterruptionsCount,
+    externalInterruptionsCount,
 
     startTimer,
     pauseTimer,
@@ -871,6 +919,8 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     testAudioChime,
     parkThought,
     clearParkedThoughts,
+    recordInterruption,
+    clearInterruptions,
     saveReflection
   };
 

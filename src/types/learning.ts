@@ -1,7 +1,16 @@
 import { BaseEntity, ID, PriorityLevel } from './common';
 
-export type CardType = 'standard' | 'cloze' | 'concept';
+export type CardType = 'standard' | 'cloze' | 'concept' | 'image_occlusion';
 export type CardRating = 'again' | 'hard' | 'good' | 'easy';
+
+export interface ImageOcclusionZone {
+  id: string;
+  x: number; // percentage (0 - 100)
+  y: number; // percentage (0 - 100)
+  width: number; // percentage (0 - 100)
+  height: number; // percentage (0 - 100)
+  label?: string; // Revealed text/hint (e.g. "Frontal Cortex")
+}
 
 export interface Flashcard extends BaseEntity {
   subjectId: ID;
@@ -18,6 +27,9 @@ export interface Flashcard extends BaseEntity {
   easeFactor: number;
   nextReviewDate: string; // ISO date 'YYYY-MM-DD'
   lastReviewedAt?: string;
+  imageUrl?: string;
+  occlusionZones?: ImageOcclusionZone[];
+  activeOcclusionZoneId?: string;
 }
 
 export interface ReviewQueueItem {

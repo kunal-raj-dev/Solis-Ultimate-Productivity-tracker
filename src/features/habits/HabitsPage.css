@@ -200,3 +200,278 @@
   font-size: var(--text-caption);
   font-weight: 600;
 }
+
+/* ==========================================================================
+   FEATURE 2.6: QUANTITATIVE & MULTI-TIER HABIT STYLES
+   ========================================================================== */
+
+/* Habit Kind Segmented Tab Selector */
+.solis-habit-kind-selector {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-surface-secondary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+
+.solis-habit-kind-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-swift) var(--ease-spatial);
+}
+
+.solis-habit-kind-tab.active {
+  background: var(--bg-surface-primary);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-subtle);
+}
+
+.solis-habit-field-hint {
+  display: block;
+  font-size: var(--text-micro);
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.solis-habits-quantitative-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  padding: 12px;
+  border-radius: var(--radius-md);
+}
+
+/* Quantitative Tier Container on Habit Card */
+.solis-habit-tier-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.solis-habit-tier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Stepper Group */
+.solis-habit-stepper-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+}
+
+.solis-habit-stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid var(--border-hairline);
+  background: var(--bg-surface-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-instant) ease;
+}
+
+.solis-habit-stepper-btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-default);
+}
+
+.solis-habit-stepper-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+}
+
+.solis-habit-stepper-val {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.solis-habit-stepper-target {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+/* Quick Tier Preset Buttons */
+.solis-habit-tier-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.solis-habit-tier-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: var(--text-micro);
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-instant) ease;
+}
+
+.solis-habit-tier-preset-btn:hover {
+  border-color: var(--border-default);
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.solis-habit-tier-preset-btn.active-base {
+  background: rgba(217, 119, 6, 0.12);
+  border-color: var(--color-amber-500);
+  color: var(--color-amber-600);
+}
+
+.solis-habit-tier-preset-btn.active-target {
+  background: rgba(62, 114, 80, 0.12);
+  border-color: var(--color-sage-600);
+  color: var(--color-sage-600);
+}
+
+.solis-habit-tier-preset-btn.active-stretch {
+  background: rgba(230, 90, 65, 0.12);
+  border-color: var(--color-coral-500);
+  color: var(--color-coral-600);
+}
+
+/* Multi-Tier Progress Track */
+.solis-habit-track-wrap {
+  position: relative;
+  padding-bottom: 18px; /* space for marker labels */
+  margin-top: 4px;
+}
+
+.solis-habit-track {
+  position: relative;
+  height: 8px;
+  background: var(--border-hairline);
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.solis-habit-track-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--color-coral-500);
+}
+
+.solis-habit-track-fill--base {
+  background: var(--color-amber-500);
+}
+
+.solis-habit-track-fill--target {
+  background: var(--color-sage-600);
+}
+
+.solis-habit-track-fill--stretch {
+  background: linear-gradient(90deg, var(--color-sage-600), var(--color-coral-500));
+}
+
+.solis-habit-track-fill--empty {
+  background: transparent;
+}
+
+.solis-habit-track-marker {
+  position: absolute;
+  top: -2px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.solis-habit-marker-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg-surface-primary);
+  border: 2px solid var(--color-amber-500);
+}
+
+.solis-habit-marker-pin--target {
+  border-color: var(--color-sage-600);
+}
+
+.solis-habit-marker-pin--stretch {
+  border-color: var(--color-coral-500);
+}
+
+.solis-habit-marker-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.solis-habit-guidance-text {
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Day Buttons for Tiers */
+.solis-habit-day-btn--base {
+  background: rgba(217, 119, 6, 0.85) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-amber-500) !important;
+}
+
+.solis-habit-day-btn--target {
+  background: var(--color-sage-600) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-sage-600) !important;
+}
+
+.solis-habit-day-btn--stretch {
+  background: var(--color-coral-500) !important;
+  color: #FFFFFF !important;
+  border-color: var(--color-coral-500) !important;
+}
+
+.solis-habit-day-btn--partial {
+  background: rgba(217, 119, 6, 0.25) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--color-amber-500) !important;
+}

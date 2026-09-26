@@ -38,6 +38,7 @@ import { formatFriendlyDate, getISODateString, addDays } from '../../utils/date'
 import { ValidationError } from '../../utils/validation';
 import { useTimeBlockScheduler } from '../../hooks/useTimeBlockScheduler';
 import { HourlyPlannerView } from './HourlyPlannerView';
+import { WeeklyPlannerView } from './WeeklyPlannerView';
 import { TaskInboxView } from './TaskInboxView';
 import { TaskPriorityMatrix } from './TaskPriorityMatrix';
 import { CreateTimeBlockModal } from './CreateTimeBlockModal';
@@ -67,6 +68,7 @@ export const TasksPage: React.FC = () => {
     if (typeof window !== 'undefined') {
       const mode = new URLSearchParams(window.location.search).get('view');
       if (mode === 'schedule' || mode === 'today' || mode === 'timeline' || mode === 'review') return 'schedule';
+      if (mode === 'week' || mode === 'weekly' || mode === 'calendar') return 'week';
       if (mode === 'matrix') return 'matrix';
       if (mode === 'list' || mode === 'inbox') return 'list';
     }
@@ -957,7 +959,8 @@ export const TasksPage: React.FC = () => {
 
   const viewModeOptions: { value: string; label: string }[] = [
     { value: 'list', label: 'List' },
-    { value: 'schedule', label: 'Schedule (24h)' },
+    { value: 'schedule', label: 'Day Schedule' },
+    { value: 'week', label: '7-Day Week' },
     { value: 'matrix', label: 'Priority Matrix' }
   ];
 
@@ -1309,9 +1312,54 @@ export const TasksPage: React.FC = () => {
                   onAutoReplanCandidates={handleAutoReplanCandidates}
                   onQuickReplanBlock={handleQuickReplanBlock}
                   onRollPastBlocksToToday={handleRollPastBlocksToToday}
+                  onSwitchToWeekView={() => setViewMode('week')}
                 />
               </div>
             </div>
+          )}
+
+          {/* VIEW MODE: 7-DAY MULTI-DAY WEEKLY CALENDAR TIME-BLOCKER */}
+          {viewMode === 'week' && (
+            <WeeklyPlannerView
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              tasks={tasks}
+              subjects={subjects}
+              goals={goals}
+              onOpenCreateBlock={(date, hour) => {
+                setSelectedDate(date);
+                setSelectedBlockHour(hour);
+                setIsCreateBlockModalOpen(true);
+              }}
+              onOpenEditBlock={handleOpenEditBlock}
+              onOpenReviewBlock={handleOpenReviewBlock}
+              onDeleteBlock={handleDeleteTimeBlock}
+              onToggleBlockComplete={handleToggleBlockComplete}
+              onScheduleTaskToDateAndHour={async (task, date, hour) => {
+                await dataService.tasks.createTimeBlock({
+                  taskId: task.id,
+                  taskTitle: task.title,
+                  date: date,
+                  startHour: hour,
+                  startMinute: 0,
+                  durationMinutes: task.estimatedMinutes || 60,
+                  priority: task.priority,
+                  subjectId: task.subjectId,
+                  goalId: task.goalId,
+                  status: 'planned'
+                });
+                loadTimeBlocks(date);
+                addToast({
+                  title: 'Task Scheduled',
+                  description: `"${task.title}" placed on ${formatFriendlyDate(date)} at ${hour}:00`,
+                  type: 'success'
+                });
+              }}
+              onSwitchToDayView={(date) => {
+                setSelectedDate(date);
+                setViewMode('schedule');
+              }}
+            />
           )}
 
           {/* VIEW MODE 3: PRIORITY MATRIX (EISENHOWER) */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, Plus, Sparkles, Play, Upload } from 'lucide-react';
+import { BrainCircuit, Plus, Sparkles, Play, Upload, Flame } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { Button } from '../../../components/ui/Button/Button';
 import { ContextualHelp } from '../../../components/ui/ContextualHelp/ContextualHelp';
@@ -13,6 +13,8 @@ export interface SpacedReviewsSanctuaryProps {
   onStartActiveRecall: (cards?: Flashcard[]) => void;
   /** Plan §4.4: opens the deck importer (Anki .apkg / Quizlet text). */
   onImportDeck?: () => void;
+  /** Feature 2.4: opens the Exam Cram modal for filtered decks without FSRS damage. */
+  onOpenExamCram?: () => void;
 }
 
 export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
@@ -21,7 +23,8 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
   onOpenGuide,
   onOpenCardCreator,
   onStartActiveRecall,
-  onImportDeck
+  onImportDeck,
+  onOpenExamCram
 }) => {
   return (
     <div style={{ marginBottom: '32px' }}>
@@ -43,7 +46,7 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {onImportDeck && (
             <Button
               variant="outline"
@@ -54,6 +57,18 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
               title="Import an Anki (.apkg) or Quizlet deck"
             >
               Import Deck
+            </Button>
+          )}
+          {onOpenExamCram && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-touch-target"
+              leftIcon={<Flame size={14} color="var(--color-coral-500)" />}
+              onClick={onOpenExamCram}
+              title="Drill filtered card decks without affecting long-term FSRS intervals"
+            >
+              Exam Cram
             </Button>
           )}
           <Button

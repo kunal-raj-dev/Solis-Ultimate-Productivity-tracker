@@ -22,6 +22,10 @@ import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 import { calculateWorkload, getGentleStartDailyCapacityMinutes } from '../../utils/tasks/workloadCalculator';
 import { WorkloadCapacityBar } from './components/WorkloadCapacityBar';
 import { getReplanSuggestions } from '../../utils/tasks/replanEngine';
+import { CalendarOverlayCard } from '../../components/features/Calendar/CalendarOverlayCard';
+import { calendarService } from '../../services/calendar/calendar.service';
+import { ExternalCalendarEvent } from '../../types/calendar';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 interface HourlyPlannerViewProps {
   selectedDate: string;
@@ -38,6 +42,7 @@ interface HourlyPlannerViewProps {
   onAutoReplanCandidates?: () => void;
   onQuickReplanBlock?: (block: TaskTimeBlock, targetDate: string, targetHour: number) => Promise<void>;
   onRollPastBlocksToToday?: (blocks: TaskTimeBlock[]) => void;
+  onSwitchToWeekView?: () => void;
 }
 
 /** Custom MIME type carrying the dragged unscheduled task id (plan §3.1). */
@@ -57,7 +62,8 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   onScheduleTaskToHour,
   onAutoReplanCandidates,
   onQuickReplanBlock,
-  onRollPastBlocksToToday
+  onRollPastBlocksToToday,
+  onSwitchToWeekView
 }) => {
   const navigate = useNavigate();
   const currentHourRef = useRef<HTMLDivElement>(null);
@@ -155,6 +161,28 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
     blocksByHour.set(hour, existing);
   });
 
+  // External calendar subscription & event grouping (F-101)
+  const [externalEvents, setExternalEvents] = useState<ExternalCalendarEvent[]>([]);
+
+  useEffect(() => {
+    const loadEvents = () => {
+      setExternalEvents(calendarService.getAllEvents(selectedDate));
+    };
+    loadEvents();
+    return calendarService.subscribe(loadEvents);
+  }, [selectedDate]);
+
+  const externalEventsByHour = useMemo(() => {
+    const map = new Map<number, ExternalCalendarEvent[]>();
+    for (const ev of externalEvents) {
+      const startHour = new Date(ev.startTime).getHours();
+      const existing = map.get(startHour) || [];
+      existing.push(ev);
+      map.set(startHour, existing);
+    }
+    return map;
+  }, [externalEvents]);
+
   // Calculate day summary metrics
   const totalPlannedBlocks = timeBlocks.length;
   const completedBlocks = timeBlocks.filter((b) => b.status === 'completed').length;
@@ -194,6 +222,12 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           onAutoReplanCandidates={onAutoReplanCandidates}
         />
       </div>
+
+      {/* Available Time & External Calendar Overlay (F-101) */}
+      <CalendarOverlayCard
+        date={selectedDate}
+        solisBlocks={timeBlocks}
+      />
 
       {/* 1.5 Calm Past-Blocks Roll Prompt (plan §3.3 — serene, never guilt-inducing) */}
       {unreviewedPastBlocks.length > 0 && (
@@ -347,6 +381,16 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           >
             {viewMode === 'workday' ? 'Workday (8 AM – 8 PM)' : 'All 24 Hours'}
           </Button>
+          {onSwitchToWeekView && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSwitchToWeekView}
+              leftIcon={<CalendarIcon size={13} />}
+            >
+              7-Day Week
+            </Button>
+          )}
           {isToday && (
             <Button variant="subtle" size="sm" onClick={scrollToNow} leftIcon={<Clock size={13} />}>
               Jump to Now ({formatHourLabel(currentHour)})
@@ -369,8 +413,9 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           .filter((hour) => {
             if (viewMode === '24h') return true;
             const hasBlocks = (blocksByHour.get(hour) || []).length > 0;
+            const hasExt = (externalEventsByHour.get(hour) || []).length > 0;
             const isCurrent = isToday && hour === currentHour;
-            return (hour >= 8 && hour <= 20) || hasBlocks || isCurrent;
+            return (hour >= 8 && hour <= 20) || hasBlocks || hasExt || isCurrent;
           })
           .map((hour) => {
           const isNow = isToday && hour === currentHour;
@@ -379,7 +424,9 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           const isPeakCircadian = hour >= 9 && hour <= 12;
           const blocks = blocksByHour.get(hour) || [];
           const hasBlocks = blocks.length > 0;
-          const isCompact = viewMode === '24h' && (hour < 8 || hour > 20) && !hasBlocks && !isNow;
+          const extEventsForHour = externalEventsByHour.get(hour) || [];
+          const hasExtEvents = extEventsForHour.length > 0;
+          const isCompact = viewMode === '24h' && (hour < 8 || hour > 20) && !hasBlocks && !hasExtEvents && !isNow;
 
           return (
             <div
@@ -417,6 +464,46 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
 
               {/* Hour Slot Content */}
               <div className="solis-hour-content">
+                {/* External Calendar Events Overlay (F-101) */}
+                {hasExtEvents && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                    {extEventsForHour.map((ext) => (
+                      <div
+                        key={ext.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 12px',
+                          borderRadius: 'var(--radius-sm, 6px)',
+                          backgroundColor: 'var(--bg-surface-secondary)',
+                          borderLeft: `4px solid ${ext.calendarColor || 'var(--color-coral-500)'}`,
+                          fontSize: 'var(--text-caption)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <CalendarIcon size={14} style={{ color: ext.calendarColor || 'var(--color-coral-500)', flexShrink: 0 }} />
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ext.title}
+                          </span>
+                          {ext.location && (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+                              ({ext.location})
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <Badge variant="neutral" style={{ fontSize: '10px' }}>
+                            {ext.calendarName || 'External'}
+                          </Badge>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {ext.allDay ? 'All Day' : `${ext.startTime.slice(11, 16)}–${ext.endTime.slice(11, 16)}`}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {hasBlocks ? (
                   <div className="solis-hour-blocks-list">
                     {blocks.map((block) => {

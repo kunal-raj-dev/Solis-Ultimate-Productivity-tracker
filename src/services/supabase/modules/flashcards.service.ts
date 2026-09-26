@@ -3,7 +3,7 @@ import { Flashcard, CardRating } from '../../../types/learning';
 import { mapFlashcard } from '../supabaseMappers';
 import { getISODateString } from '../../../utils/date';
 import { ValidationError, validateFlashcardInput } from '../../../utils/validation';
-import { calculateNextCardReview } from '../../../utils/learning/spacedRepetition';
+import { calculateNextCardReview, DEFAULT_REQUEST_RETENTION } from '../../../utils/learning/spacedRepetition';
 import { SupabaseServiceContext } from './types';
 
 export class SupabaseFlashcardService implements IFlashcardService {
@@ -138,12 +138,14 @@ export class SupabaseFlashcardService implements IFlashcardService {
     return true;
   };
 
-  recordCardAttempt = async (cardId: string, rating: CardRating): Promise<Flashcard> => {
+  recordCardAttempt = async (cardId: string, rating: CardRating, requestRetention?: number): Promise<Flashcard> => {
     const card = await this.getFlashcardById(cardId);
     if (!card) throw new ValidationError(`Flashcard "${cardId}" not found.`);
 
     const userId = await this.ctx.getUserId();
-    const nextSchedule = calculateNextCardReview(card, rating);
+    const user = await this.ctx.getServices().auth.getCurrentUser().catch(() => null);
+    const targetRetention = requestRetention ?? user?.preferences?.fsrsRetention ?? DEFAULT_REQUEST_RETENTION;
+    const nextSchedule = calculateNextCardReview(card, rating, new Date(), targetRetention);
 
     const { data, error } = await this.ctx.client
       .from('flashcards')

@@ -27,7 +27,14 @@ import {
   updateMemoryState
 } from './fsrsEngine';
 
-export { MIN_EASE_FACTOR, DEFAULT_EASE_FACTOR, MAX_EASE_FACTOR } from './fsrsEngine';
+export {
+  MIN_EASE_FACTOR,
+  DEFAULT_EASE_FACTOR,
+  MAX_EASE_FACTOR,
+  DEFAULT_REQUEST_RETENTION,
+  computeIntervalForRetention,
+  computeIntervalPerStability
+} from './fsrsEngine';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

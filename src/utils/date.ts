@@ -170,3 +170,62 @@ export function getPastNDaysISO(count = 7): string[] {
   }
   return result;
 }
+
+export interface WeekDayInfo {
+  date: string; // YYYY-MM-DD
+  dayName: string; // "Mon", "Tue"
+  fullDayName: string; // "Monday"
+  dayNumber: number; // 22
+  monthName: string; // "Sep"
+  isToday: boolean;
+  dateObj: Date;
+}
+
+/**
+ * Returns an array of 7 day descriptors for the week surrounding the given reference date.
+ */
+export function getWeekDays(referenceDate: string | Date = new Date(), startOnMonday = true): WeekDayInfo[] {
+  const ref = typeof referenceDate === 'string' ? new Date(`${referenceDate}T00:00:00`) : new Date(referenceDate);
+  const day = ref.getDay();
+
+  const diff = startOnMonday
+    ? ref.getDate() - day + (day === 0 ? -6 : 1)
+    : ref.getDate() - day;
+
+  const weekStart = new Date(ref);
+  weekStart.setDate(diff);
+  weekStart.setHours(0, 0, 0, 0);
+
+  const days: WeekDayInfo[] = [];
+  const todayStr = getISODateString(new Date());
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const dateStr = getISODateString(d);
+    days.push({
+      date: dateStr,
+      dayName: new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(d),
+      fullDayName: new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(d),
+      dayNumber: d.getDate(),
+      monthName: new Intl.DateTimeFormat('en-US', { month: 'short' }).format(d),
+      isToday: dateStr === todayStr,
+      dateObj: d
+    });
+  }
+  return days;
+}
+
+/**
+ * Formats a 7-day week into a friendly human header range (e.g. "Sep 22 – 28, 2026").
+ */
+export function formatWeekRange(weekDays: WeekDayInfo[]): string {
+  if (!weekDays || weekDays.length === 0) return '';
+  const first = weekDays[0];
+  const last = weekDays[weekDays.length - 1];
+  if (first.monthName === last.monthName) {
+    return `${first.monthName} ${first.dayNumber} – ${last.dayNumber}, ${first.dateObj.getFullYear()}`;
+  }
+  return `${first.monthName} ${first.dayNumber} – ${last.monthName} ${last.dayNumber}, ${last.dateObj.getFullYear()}`;
+}
+
