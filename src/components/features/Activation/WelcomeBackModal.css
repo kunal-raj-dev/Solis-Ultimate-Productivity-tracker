@@ -1,0 +1,121 @@
+/* ==========================================================================
+   Plan §3.4 — "Welcome Back" Gentle Re-Entry Modal
+   Calm, warm surfaces only: no red, no amber warning tones, no guilt copy.
+   ========================================================================== */
+
+.solis-welcome-back-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.solis-welcome-back-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.solis-welcome-back-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(62, 114, 80, 0.1);
+  color: var(--color-sage-600);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.solis-welcome-back-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-2);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.solis-welcome-back-subtitle {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.55;
+}
+
+.solis-welcome-back-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-welcome-back-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--duration-instant) ease, background-color var(--duration-instant) ease;
+}
+
+.solis-welcome-back-option:hover {
+  border-color: var(--color-sage-500);
+  background: var(--bg-surface-elevated);
+}
+
+.solis-welcome-back-option:focus-visible {
+  outline: 2px solid var(--color-sage-500);
+  outline-offset: 2px;
+}
+
+.solis-welcome-back-option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(62, 114, 80, 0.1);
+  color: var(--color-sage-600);
+}
+
+.solis-welcome-back-option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.solis-welcome-back-option-title {
+  font-family: var(--font-interface);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-welcome-back-option-desc {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.solis-welcome-back-option-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.solis-welcome-back-actions {
+  display: flex;
+  justify-content: center;
+}

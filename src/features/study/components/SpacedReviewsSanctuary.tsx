@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrainCircuit, Plus, Sparkles, Play } from 'lucide-react';
+import { BrainCircuit, Plus, Sparkles, Play, Upload } from 'lucide-react';
 import { Badge } from '../../../components/ui/Badge/Badge';
 import { Button } from '../../../components/ui/Button/Button';
 import { ContextualHelp } from '../../../components/ui/ContextualHelp/ContextualHelp';
@@ -11,6 +11,8 @@ export interface SpacedReviewsSanctuaryProps {
   onOpenGuide: (guideId: string) => void;
   onOpenCardCreator: (subjectId?: string, topicId?: string) => void;
   onStartActiveRecall: (cards?: Flashcard[]) => void;
+  /** Plan §4.4: opens the deck importer (Anki .apkg / Quizlet text). */
+  onImportDeck?: () => void;
 }
 
 export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
@@ -18,7 +20,8 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
   flashcards,
   onOpenGuide,
   onOpenCardCreator,
-  onStartActiveRecall
+  onStartActiveRecall,
+  onImportDeck
 }) => {
   return (
     <div style={{ marginBottom: '32px' }}>
@@ -30,7 +33,7 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
           </h3>
           <ContextualHelp
             title="What is Active Recall?"
-            content="Active Recall tests your memory by prompting retrieval of concepts without looking at notes. Combined with SM-2 spaced repetition, it minimizes forgetting."
+            content="Active Recall tests your memory by prompting retrieval of concepts without looking at notes. Combined with FSRS spaced repetition, it minimizes forgetting."
             example="Testing flashcards on optimal intervals ensures long-term memory retention."
             guideId="active-recall-flashcards"
             onOpenGuide={onOpenGuide}
@@ -41,9 +44,22 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
+          {onImportDeck && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="min-touch-target"
+              leftIcon={<Upload size={14} />}
+              onClick={onImportDeck}
+              title="Import an Anki (.apkg) or Quizlet deck"
+            >
+              Import Deck
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
+            className="min-touch-target"
             leftIcon={<Plus size={14} />}
             onClick={() => onOpenCardCreator()}
           >
@@ -52,6 +68,7 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
           <Button
             variant="primary"
             size="sm"
+            className="min-touch-target"
             leftIcon={<Sparkles size={14} />}
             onClick={() => onStartActiveRecall()}
           >
@@ -89,6 +106,7 @@ export const SpacedReviewsSanctuary: React.FC<SpacedReviewsSanctuaryProps> = ({
                 <Button
                   variant="subtle"
                   size="sm"
+                  className="min-touch-target"
                   leftIcon={<Play size={12} />}
                   onClick={() => {
                     const topicCards = flashcards.filter((c) => c.topicId === rev.topicId);

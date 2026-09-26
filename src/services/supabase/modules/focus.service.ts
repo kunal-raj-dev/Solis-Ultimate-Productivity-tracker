@@ -1,7 +1,6 @@
 import { IFocusService } from '../../api.interface';
 import { FocusSession } from '../../../types/focus';
 import { mapFocusSession } from '../supabaseMappers';
-import { getISODateString } from '../../../utils/date';
 import { queryCache } from '../../cache';
 import { SupabaseServiceContext } from './types';
 
@@ -53,20 +52,40 @@ export class SupabaseFocusService implements IFocusService {
       soundscape_type: session.soundscapeType || null,
       target_outcome: session.targetOutcome?.trim() || null,
       notes: session.notes?.trim() || null,
-      parked_thoughts: session.parkedThoughts || []
+      parked_thoughts: session.parkedThoughts || [],
+      // Plan §5.1: pre-session energy calibration (migration 20260926_phase5_learning_intelligence).
+      pre_session_energy: session.preSessionEnergy || null
     };
 
+    let payload: Record<string, any> = insertPayload;
     let { data, error } = await this.ctx.client
       .from('focus_sessions')
-      .insert(insertPayload)
+      .insert(payload)
       .select()
       .single();
 
-    if (error && (error.code === 'PGRST204' || error.message?.includes('task_id'))) {
-      const { task_id: _omitted, ...fallbackPayload } = insertPayload;
+    // Pre-Phase-1 schemas without task_id degrade gracefully (task_id is the
+    // only column stripped — PGRST204 messages always name the missing column).
+    if (error && error.message?.includes('task_id')) {
+      const { task_id: _omittedTaskId, ...fallbackPayload } = payload;
+      payload = fallbackPayload;
       const retry = await this.ctx.client
         .from('focus_sessions')
-        .insert(fallbackPayload)
+        .insert(payload)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
+
+    // Older schemas without the Phase 5 energy column degrade gracefully while
+    // keeping every other field — including the task link (P5F5).
+    if (error && error.message?.includes('pre_session_energy')) {
+      const { pre_session_energy: _omittedEnergy, ...fallbackPayload } = payload;
+      payload = fallbackPayload;
+      const retry = await this.ctx.client
+        .from('focus_sessions')
+        .insert(payload)
         .select()
         .single();
       data = retry.data;
@@ -85,14 +104,18 @@ export class SupabaseFocusService implements IFocusService {
 
   getTodayFocusMinutes = async (): Promise<number> => {
     const userId = await this.ctx.getUserId();
-    const todayStr = getISODateString(new Date());
+    // Local-midnight instant (master.md §16.2, P5F12): the absolute UTC instant
+    // of the user's local 00:00 — not a UTC-midnight string built from the
+    // local date key, which excludes early-morning sessions in UTC+ zones.
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
 
     const { data, error } = await this.ctx.client
       .from('focus_sessions')
       .select('duration_minutes, created_at, completed')
       .eq('user_id', userId)
       .eq('completed', true)
-      .gte('created_at', `${todayStr}T00:00:00.000Z`);
+      .gte('created_at', startOfToday.toISOString());
 
     if (error) throw error;
     return (data || []).reduce((acc: number, curr: any) => acc + (curr.duration_minutes || 0), 0);

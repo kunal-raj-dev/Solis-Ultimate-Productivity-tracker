@@ -10,62 +10,65 @@ import { MockDataService } from '../services/mock/mockService';
 import { Flashcard } from '../types/learning';
 
 describe('Stage A — Learning Core & Spaced Retrieval Suite', () => {
-  describe('SM-2 / Solis Spaced Repetition Algorithm', () => {
+  describe('FSRS Spaced Repetition Algorithm (plan §4.1 — canonical engine)', () => {
     const baseCard: Pick<Flashcard, 'intervalDays' | 'easeFactor' | 'repetitionCount'> = {
       intervalDays: 3,
       easeFactor: 2.5,
       repetitionCount: 1
     };
 
-    it('handles "again" rating by resetting interval to 1 and reducing ease factor', () => {
+    it('handles "again" rating with a short post-lapse interval and a harder difficulty', () => {
       const schedule = calculateNextCardReview(baseCard, 'again', new Date('2026-08-17'));
-      expect(schedule.intervalDays).toBe(1);
+      expect(schedule.intervalDays).toBe(1); // FSRS post-lapse stability ≈ 1.1 days
       expect(schedule.repetitionCount).toBe(0);
-      expect(schedule.easeFactor).toBe(2.3);
+      expect(schedule.easeFactor).toBeCloseTo(2.2239, 3); // difficulty rose, bounded (no Ease Hell)
       expect(schedule.nextReviewDate).toBe('2026-08-18');
     });
 
-    it('handles "hard" rating with modest interval scaling and ease penalty', () => {
+    it('handles "hard" rating with modest stability growth', () => {
       const schedule = calculateNextCardReview(baseCard, 'hard', new Date('2026-08-17'));
-      expect(schedule.intervalDays).toBe(4); // round(3 * 1.2) = 4
+      expect(schedule.intervalDays).toBe(5); // FSRS hard penalty keeps growth modest
       expect(schedule.repetitionCount).toBe(2);
-      expect(schedule.easeFactor).toBe(2.35);
+      expect(schedule.easeFactor).toBeCloseTo(2.3618, 3);
     });
 
-    it('handles "good" rating with standard ease multiplication', () => {
+    it('handles "good" rating with FSRS stability growth', () => {
       const initialCard = { intervalDays: 1, easeFactor: 2.5, repetitionCount: 0 };
       const rep1 = calculateNextCardReview(initialCard, 'good', new Date('2026-08-17'));
-      expect(rep1.intervalDays).toBe(1);
+      expect(rep1.intervalDays).toBe(4); // initial stability w2 = 3.17 days → ≈ 3.9
       expect(rep1.repetitionCount).toBe(1);
 
+      // The chain reviews share one timestamp, so repetitions 2–3 exercise the
+      // FSRS-5 short-term (same-day) learning step: modest, strictly growing.
       const rep2 = calculateNextCardReview(rep1, 'good', new Date('2026-08-17'));
-      expect(rep2.intervalDays).toBe(3);
+      expect(rep2.intervalDays).toBe(6);
       expect(rep2.repetitionCount).toBe(2);
 
       const rep3 = calculateNextCardReview(rep2, 'good', new Date('2026-08-17'));
-      expect(rep3.intervalDays).toBe(8); // round(3 * 2.5) = 8
+      expect(rep3.intervalDays).toBe(8);
       expect(rep3.repetitionCount).toBe(3);
     });
 
-    it('handles "easy" rating with bonus multiplier and ease increase', () => {
+    it('handles "easy" rating with bonus stability growth', () => {
       const initialCard = { intervalDays: 1, easeFactor: 2.5, repetitionCount: 0 };
       const rep1 = calculateNextCardReview(initialCard, 'easy', new Date('2026-08-17'));
-      expect(rep1.intervalDays).toBe(3);
-      expect(rep1.easeFactor).toBe(2.65);
+      expect(rep1.intervalDays).toBe(19); // initial stability w3 = 15.69 days
+      expect(rep1.easeFactor).toBeCloseTo(2.9298, 3);
 
       const rep2 = calculateNextCardReview(rep1, 'easy', new Date('2026-08-17'));
-      expect(rep2.intervalDays).toBe(6);
-      expect(rep2.easeFactor).toBe(2.80);
+      expect(rep2.intervalDays).toBeGreaterThan(rep1.intervalDays);
     });
 
-    it('clamps ease factor within safe limits [1.30, 3.00]', () => {
+    it('keeps the persisted ease encoding within safe limits [1.30, 3.00] under any rating', () => {
       const lowEaseCard = { intervalDays: 1, easeFactor: 1.35, repetitionCount: 0 };
       const lowResult = calculateNextCardReview(lowEaseCard, 'again');
-      expect(lowResult.easeFactor).toBe(MIN_EASE_FACTOR);
+      expect(lowResult.easeFactor).toBeGreaterThanOrEqual(MIN_EASE_FACTOR);
+      expect(lowResult.easeFactor).toBeLessThanOrEqual(MAX_EASE_FACTOR);
 
       const highEaseCard = { intervalDays: 1, easeFactor: 2.95, repetitionCount: 0 };
       const highResult = calculateNextCardReview(highEaseCard, 'easy');
-      expect(highResult.easeFactor).toBe(MAX_EASE_FACTOR);
+      expect(highResult.easeFactor).toBeGreaterThanOrEqual(MIN_EASE_FACTOR);
+      expect(highResult.easeFactor).toBeLessThanOrEqual(MAX_EASE_FACTOR);
     });
   });
 
@@ -170,8 +173,9 @@ describe('Stage A — Learning Core & Spaced Retrieval Suite', () => {
       expect(completed).toBe(true);
     });
 
-    it('simulates a 7-day student active recall session across all 4 rating choices', async () => {
+    it('simulates a multi-day student active recall session across all 4 rating choices', async () => {
       const mockService = new MockDataService();
+      const DAY_MS = 24 * 60 * 60 * 1000;
       const card = await mockService.flashcards.createFlashcard({
         subjectId: 'sbj_1',
         topicId: 'top_1',
@@ -180,24 +184,35 @@ describe('Stage A — Learning Core & Spaced Retrieval Suite', () => {
         cardType: 'concept'
       });
 
-      // Attempt 1: 'again' -> resets interval to 1
+      // Attempt 1: 'again' -> short FSRS post-lapse interval, repetitions reset
       const res1 = await mockService.flashcards.recordCardAttempt(card.id, 'again');
       expect(res1.intervalDays).toBe(1);
       expect(res1.repetitionCount).toBe(0);
 
-      // Attempt 2: 'good' -> interval becomes 1
+      // FSRS stability growth depends on real elapsed time, so each further
+      // attempt back-dates the persisted review timestamp (2, then 5, then 13
+      // days before "now") to simulate a spaced multi-day drill.
+      await mockService.flashcards.updateFlashcard(card.id, {
+        lastReviewedAt: new Date(Date.now() - 2 * DAY_MS).toISOString()
+      });
       const res2 = await mockService.flashcards.recordCardAttempt(card.id, 'good');
-      expect(res2.intervalDays).toBe(1);
+      expect(res2.intervalDays).toBeGreaterThanOrEqual(4);
       expect(res2.repetitionCount).toBe(1);
 
-      // Attempt 3: 'good' -> interval becomes 3
+      await mockService.flashcards.updateFlashcard(card.id, {
+        lastReviewedAt: new Date(Date.now() - 5 * DAY_MS).toISOString()
+      });
       const res3 = await mockService.flashcards.recordCardAttempt(card.id, 'good');
-      expect(res3.intervalDays).toBe(3);
+      expect(res3.intervalDays).toBeGreaterThan(res2.intervalDays);
       expect(res3.repetitionCount).toBe(2);
 
-      // Attempt 4: 'easy' -> interval becomes 6+
+      await mockService.flashcards.updateFlashcard(card.id, {
+        lastReviewedAt: new Date(Date.now() - 13 * DAY_MS).toISOString()
+      });
       const res4 = await mockService.flashcards.recordCardAttempt(card.id, 'easy');
-      expect(res4.intervalDays).toBeGreaterThanOrEqual(6);
+      expect(res4.intervalDays).toBeGreaterThan(res3.intervalDays);
+      expect(res4.intervalDays).toBeGreaterThanOrEqual(20);
+      expect(res4.repetitionCount).toBe(3);
     });
   });
 });

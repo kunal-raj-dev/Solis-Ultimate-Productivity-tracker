@@ -24,9 +24,20 @@ describe('Global Navigation & Route Intelligence Architecture', () => {
     expect(itemIds).toEqual(['dashboard', 'tasks', 'study', 'focus', 'rooms']);
   });
 
-  it('correctly maps mobile navigation to primary destinations', () => {
+  it('correctly maps mobile navigation to the Phase 7 five-tab bottom bar', () => {
     const mobileIds = MOBILE_NAVIGATION.map((m) => m.id);
-    expect(mobileIds).toEqual(['dashboard', 'tasks', 'study', 'focus', 'notes']);
+    expect(mobileIds).toEqual(['dashboard', 'focus', 'study', 'tasks', 'analytics']);
+
+    // Plan §7.2 tab composition: Today, Focus, Subjects (/app/study),
+    // Tasks, Progress (/app/analytics).
+    const mobilePaths = MOBILE_NAVIGATION.map((m) => m.path);
+    expect(mobilePaths).toEqual([
+      '/app/dashboard',
+      '/app/focus',
+      '/app/study',
+      '/app/tasks',
+      '/app/analytics'
+    ]);
   });
 
   it('correctly identifies Focus sanctuary routes for chrome isolation', () => {

@@ -18,7 +18,12 @@ import {
   Minimize2,
   Target,
   X,
-  Wind
+  Wind,
+  BatteryLow,
+  Activity,
+  Rocket,
+  PieChart,
+  Hash
 } from 'lucide-react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -32,14 +37,43 @@ import { ParallaxScene, ParallaxLayer, AtmosphericOrb } from '../../components/p
 import { PostFocusReflectionModal } from '../../components/features/Focus/PostFocusReflectionModal';
 import { CognitiveDriftPad } from '../../components/features/Focus/CognitiveDriftPad';
 import { CenteringSanctuaryModal } from '../../components/features/Focus/CenteringSanctuaryModal';
+import { AnalogPieTimer } from '../../components/features/Focus/AnalogPieTimer';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { useFocus, FocusPreset } from '../../context/FocusContext';
-import { SoundscapeType } from '../../types/focus';
+import { SoundscapeType, PreSessionEnergy } from '../../types/focus';
 import { formatSecondsToTimer } from '../../utils/formatters';
 import { SOUNDSCAPE_PRESETS } from '../../utils/focus/soundscapeEngine';
 import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 import './FocusPage.css';
+
+// Plan §5.1: 3-tap pre-session energy calibration — each level applies its
+// deterministic duration recommendation on tap.
+const ENERGY_CHECKIN_OPTIONS: Array<{
+  value: PreSessionEnergy;
+  label: string;
+  hint: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    value: 'low',
+    label: 'Low',
+    hint: 'Gentle 15m session — or an easy flashcard review instead',
+    icon: <BatteryLow size={18} />
+  },
+  {
+    value: 'steady',
+    label: 'Steady',
+    hint: 'Standard 25m Pomodoro',
+    icon: <Activity size={18} />
+  },
+  {
+    value: 'sharp',
+    label: 'Sharp',
+    hint: 'Challenge yourself: 90m deep-work block',
+    icon: <Rocket size={18} />
+  }
+];
 
 export const FocusPage: React.FC = () => {
   const { addToast } = useToast();
@@ -52,6 +86,8 @@ export const FocusPage: React.FC = () => {
     totalDurationSeconds,
     secondsRemaining,
     status,
+    timerMode,
+    stopwatchElapsedSeconds,
     focusTitle,
     targetOutcome,
     selectedSubjectId,
@@ -63,6 +99,7 @@ export const FocusPage: React.FC = () => {
     checkpointAcknowledged,
     isReflectionModalOpen,
     completedSessionMinutes,
+    preSessionEnergy,
     subjects,
     selectedSubject,
     tasks,
@@ -84,6 +121,7 @@ export const FocusPage: React.FC = () => {
     setSoundscapeVolume,
     toggleMute,
     setCheckpointAcknowledged,
+    setPreSessionEnergy,
     setIsReflectionModalOpen,
     testAudioChime,
     saveReflection
@@ -98,6 +136,8 @@ export const FocusPage: React.FC = () => {
   const [customMinutesInput, setCustomMinutesInput] = useState('45');
   const [isAbortConfirmOpen, setIsAbortConfirmOpen] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
+  // Plan §5.3: toggle between digital numerals and the analog pie sweep.
+  const [timerDisplayStyle, setTimerDisplayStyle] = useState<'digital' | 'analog'>('digital');
 
   // Keyboard shortcut listener:
   // Alt+D or Ctrl+Shift+D opens Drift Pad during active flow
@@ -228,6 +268,27 @@ export const FocusPage: React.FC = () => {
     addToast({ title: `Custom Focus set to ${mins}m`, type: 'info' });
   };
 
+  // Plan §5.1: record the energy check-in and apply its duration recommendation.
+  const handleEnergySelect = (energy: PreSessionEnergy) => {
+    hapticsEngine.playMechanicalTick();
+    if (energy === 'low') {
+      selectPreset('custom', 15);
+    } else if (energy === 'steady') {
+      selectPreset('pomodoro');
+    } else {
+      selectPreset('custom', 90);
+    }
+    setPreSessionEnergy(energy);
+  };
+
+  // The pie sweep only carries meaning for countdown sessions.
+  const isAnalogEligible = timerDisplayStyle === 'analog' && timerMode === 'countdown';
+  const displaySeconds = timerMode === 'stopwatch' ? stopwatchElapsedSeconds : secondsRemaining;
+  const remainingFraction =
+    timerMode === 'countdown' && totalDurationSeconds > 0
+      ? secondsRemaining / totalDurationSeconds
+      : 0;
+
   const subjectOptions = [
     { value: '', label: 'No Subject Associated' },
     ...subjects.filter((s) => s.status !== 'archived').map((s) => ({
@@ -267,7 +328,9 @@ export const FocusPage: React.FC = () => {
   // Screen Reader live announcement
   const accessibleAnnouncement =
     status === 'running'
-      ? `Focus session running: ${formatSecondsToTimer(secondsRemaining)} remaining`
+      ? timerMode === 'stopwatch'
+        ? `Focus stopwatch running: ${formatSecondsToTimer(stopwatchElapsedSeconds)} elapsed`
+        : `Focus session running: ${formatSecondsToTimer(secondsRemaining)} remaining`
       : status === 'paused'
       ? 'Focus session paused'
       : status === 'completed'
@@ -494,6 +557,32 @@ export const FocusPage: React.FC = () => {
                 onOpenGuide={openGuide}
               />
 
+              {/* Plan §5.3: digital ⇄ analog pie display toggle (countdown only) */}
+              {timerMode === 'countdown' && (
+                <button
+                  type="button"
+                  onClick={() => setTimerDisplayStyle((prev) => (prev === 'digital' ? 'analog' : 'digital'))}
+                  className="tactile-press"
+                  title={timerDisplayStyle === 'digital' ? 'Switch to analog pie timer' : 'Switch to digital timer'}
+                  aria-label={timerDisplayStyle === 'digital' ? 'Switch to analog pie timer' : 'Switch to digital timer'}
+                  aria-pressed={timerDisplayStyle === 'analog'}
+                  style={{
+                    background: timerDisplayStyle === 'analog' ? 'rgba(230, 90, 65, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '50%',
+                    width: '36px',
+                    height: '36px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: timerDisplayStyle === 'analog' ? 'var(--color-coral-400)' : 'var(--color-ivory-50)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {timerDisplayStyle === 'digital' ? <PieChart size={16} /> : <Hash size={16} />}
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={testAudioChime}
@@ -645,14 +734,58 @@ export const FocusPage: React.FC = () => {
               <div className="solis-focus-aura__ring solis-focus-aura__ring--3" />
             </div>
 
+            {/* Plan §5.1: Pre-Session Energy Check-In (3-tap calibration) */}
+            {status === 'idle' && (
+              <div
+                className="solis-energy-checkin solis-focus-peripheral"
+                style={{ position: 'relative', zIndex: 10 }}
+              >
+                <span className="solis-energy-checkin__label">How is your energy right now?</span>
+                <div className="solis-energy-checkin__row" role="group" aria-label="Pre-session energy check-in">
+                  {ENERGY_CHECKIN_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`solis-energy-checkin__option tactile-press ${
+                        preSessionEnergy === option.value ? 'solis-energy-checkin__option--selected' : ''
+                      }`}
+                      onClick={() => handleEnergySelect(option.value)}
+                      aria-pressed={preSessionEnergy === option.value}
+                      title={option.hint}
+                    >
+                      <span className="solis-energy-checkin__icon">{option.icon}</span>
+                      <span className="solis-energy-checkin__option-label">{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <span className="solis-energy-checkin__hint" aria-live="polite">
+                  {preSessionEnergy
+                    ? ENERGY_CHECKIN_OPTIONS.find((o) => o.value === preSessionEnergy)?.hint
+                    : 'Tap once to calibrate today\'s session length'}
+                </span>
+              </div>
+            )}
+
             {/* Floating Time Typography */}
-            <div
-              className="solis-focus-time-display"
-              data-cursor="zen"
-              aria-label={`Time remaining: ${formatSecondsToTimer(secondsRemaining)}`}
-            >
-              {formatSecondsToTimer(secondsRemaining)}
-            </div>
+            {isAnalogEligible ? (
+              <AnalogPieTimer
+                remainingFraction={remainingFraction}
+                label={formatSecondsToTimer(secondsRemaining)}
+                ariaLabel={`Time remaining: ${formatSecondsToTimer(secondsRemaining)}`}
+              />
+            ) : (
+              <div
+                className="solis-focus-time-display"
+                data-cursor="zen"
+                aria-label={
+                  timerMode === 'stopwatch'
+                    ? `Elapsed time: ${formatSecondsToTimer(stopwatchElapsedSeconds)}`
+                    : `Time remaining: ${formatSecondsToTimer(secondsRemaining)}`
+                }
+              >
+                {formatSecondsToTimer(displaySeconds)}
+              </div>
+            )}
 
             {/* Sanctuary Actions */}
             <div className="solis-focus-actions">

@@ -157,3 +157,46 @@
   font-size: 12px;
   line-height: 1;
 }
+
+/* Plan §7.1: mobile 7-day rolling matrix — the 7 columns must keep the 44px
+   touch floor (master.md §17.4) in both axes; horizontal padding is reclaimed
+   so each column reaches ≈45px wide at 375px instead of ≈36px. */
+@media (max-width: 767px) {
+  .solis-habits-week-matrix {
+    gap: 4px;
+  }
+
+  .solis-habit-row {
+    padding: 12px 10px;
+  }
+
+  .solis-habits-matrix-container {
+    padding: 8px;
+  }
+
+  .solis-habit-day-btn {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 2px;
+  }
+}
+
+/* Plan §3.5: daily completion summary pill — calm progress, never guilt */
+.solis-habits-summary-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.solis-habits-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(62, 114, 80, 0.1);
+  border: 1px solid rgba(62, 114, 80, 0.25);
+  color: var(--color-sage-600);
+  font-size: var(--text-caption);
+  font-weight: 600;
+}

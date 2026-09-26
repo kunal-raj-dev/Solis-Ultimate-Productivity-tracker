@@ -319,3 +319,59 @@
     height: 34px;
   }
 }
+
+/* Plan §8.3 — Passive Quiet Peer Presence pill (anonymous live count). */
+.solis-app-header__presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--bg-canvas-glass, transparent);
+  color: var(--text-secondary);
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 150ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.solis-app-header__presence:hover {
+  border-color: var(--color-sage-500, #2E7D5B);
+  color: var(--text-primary);
+}
+
+.solis-app-header__presence svg {
+  color: var(--color-sage-500, #2E7D5B);
+  flex-shrink: 0;
+}
+
+/* Calm sage heartbeat — presence is a quiet signal, never an alarm. */
+.solis-app-header__presence-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-sage-500, #2E7D5B);
+  animation: solis-presence-pulse 3s ease-in-out infinite;
+}
+
+@keyframes solis-presence-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solis-app-header__presence-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .solis-app-header__presence-label {
+    display: none;
+  }
+  .solis-app-header__presence {
+    padding: 8px;
+  }
+}

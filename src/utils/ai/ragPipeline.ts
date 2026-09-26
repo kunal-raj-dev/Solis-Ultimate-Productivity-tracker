@@ -16,7 +16,20 @@ export interface DocumentChunk {
   breadcrumb: string;
   content: string;
   tokenCount: number;
-  metadata?: Record<string, any>;
+  /**
+   * Plan §8.2 grounded citations: `sourceLineIndex` records the 0-based line
+   * in the original markdown where this chunk's first paragraph begins, so
+   * generated flashcards can cite (and link back to) the exact note paragraph.
+   */
+  metadata?: {
+    sourceLineIndex?: number;
+  } & Record<string, any>;
+}
+
+/** Typed accessor for the chunk's source-line lineage (defaults to 0). */
+export function getChunkSourceLineIndex(chunk: DocumentChunk): number {
+  const idx = chunk.metadata?.sourceLineIndex;
+  return typeof idx === 'number' && Number.isFinite(idx) && idx >= 0 ? idx : 0;
 }
 
 export interface RankedChunk {
@@ -68,83 +81,103 @@ export function chunkMarkdownDocument(
       title,
       breadcrumb: title,
       content: '',
-      tokenCount: 0
+      tokenCount: 0,
+      metadata: { sourceLineIndex: 0 }
     }];
   }
 
   const lines = markdown.split('\n');
-  const sections: Array<{ headingPath: string[]; content: string }> = [];
-  let currentHeadings: string[] = [title];
-  let currentBuffer: string[] = [];
 
-  for (const line of lines) {
+  // Pass 1: collect paragraphs with their source line so every chunk can cite
+  // the exact paragraph it was grounded in (plan §8.2).
+  interface SourceParagraph {
+    text: string;
+    startLine: number;
+  }
+  const sections: Array<{ headingPath: string[]; paragraphs: SourceParagraph[] }> = [];
+  let currentHeadings: string[] = [title];
+  let currentParagraphLines: string[] = [];
+  let currentParagraphStartLine = 0;
+  sections.push({ headingPath: [...currentHeadings], paragraphs: [] });
+
+  const flushParagraph = (): void => {
+    const text = currentParagraphLines.join('\n').trim();
+    if (text.length > 0) {
+      sections[sections.length - 1].paragraphs.push({
+        text,
+        startLine: currentParagraphStartLine
+      });
+    }
+    currentParagraphLines = [];
+  };
+
+  lines.forEach((line, lineIndex) => {
     const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
     if (headingMatch) {
-      if (currentBuffer.length > 0) {
-        sections.push({
-          headingPath: [...currentHeadings],
-          content: currentBuffer.join('\n')
-        });
-        currentBuffer = [];
-      }
+      flushParagraph();
       const level = headingMatch[1].length;
       const headingText = headingMatch[2].trim();
       currentHeadings = currentHeadings.slice(0, level);
       currentHeadings[level - 1] = headingText;
+      sections.push({ headingPath: [...currentHeadings], paragraphs: [] });
+    } else if (line.trim() === '') {
+      flushParagraph();
     } else {
-      currentBuffer.push(line);
+      if (currentParagraphLines.length === 0) {
+        currentParagraphStartLine = lineIndex;
+      }
+      currentParagraphLines.push(line);
     }
-  }
+  });
+  flushParagraph();
 
-  if (currentBuffer.length > 0) {
-    sections.push({
-      headingPath: [...currentHeadings],
-      content: currentBuffer.join('\n')
-    });
-  }
-
+  // Pass 2: same token-budget chunking as before, now carrying lineage.
   const chunks: DocumentChunk[] = [];
   let chunkIndex = 0;
 
   for (const section of sections) {
     const breadcrumb = section.headingPath.filter(Boolean).join(' > ');
-    const paragraphs = section.content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
 
     let activeTokens: string[] = [];
+    let chunkStartLine: number | null = null;
+    let lastParagraphLine: number | null = null;
 
-    for (const para of paragraphs) {
-      const paraWords = para.trim().split(/\s+/);
-      const estTokens = Math.ceil(paraWords.length * 1.3);
-
-      if (activeTokens.length > 0 && (activeTokens.length * 1.3 + estTokens) > targetTokens) {
-        // Emit current chunk
-        const chunkText = activeTokens.join(' ');
-        chunks.push({
-          id: `${docId}-chunk-${chunkIndex++}`,
-          docId,
-          title,
-          breadcrumb,
-          content: chunkText,
-          tokenCount: Math.ceil(activeTokens.length * 1.3)
-        });
-
-        // 15% sliding window overlap
-        const overlapWordCount = Math.max(0, Math.floor(overlapTokens / 1.3));
-        activeTokens = activeTokens.slice(-overlapWordCount);
-      }
-
-      activeTokens.push(...paraWords);
-    }
-
-    if (activeTokens.length > 0) {
+    const emitChunk = (): void => {
       chunks.push({
         id: `${docId}-chunk-${chunkIndex++}`,
         docId,
         title,
         breadcrumb,
         content: activeTokens.join(' '),
-        tokenCount: Math.ceil(activeTokens.length * 1.3)
+        tokenCount: Math.ceil(activeTokens.length * 1.3),
+        metadata: { sourceLineIndex: chunkStartLine ?? 0 }
       });
+    };
+
+    for (const para of section.paragraphs) {
+      const paraWords = para.text.trim().split(/\s+/);
+      const estTokens = Math.ceil(paraWords.length * 1.3);
+
+      if (activeTokens.length > 0 && (activeTokens.length * 1.3 + estTokens) > targetTokens) {
+        // Emit current chunk
+        emitChunk();
+
+        // 15% sliding window overlap — the tail belongs to the previous paragraph.
+        const overlapWordCount = Math.max(0, Math.floor(overlapTokens / 1.3));
+        activeTokens = activeTokens.slice(-overlapWordCount);
+        chunkStartLine = lastParagraphLine;
+      }
+
+      if (activeTokens.length === 0) {
+        chunkStartLine = para.startLine;
+      }
+
+      activeTokens.push(...paraWords);
+      lastParagraphLine = para.startLine;
+    }
+
+    if (activeTokens.length > 0) {
+      emitChunk();
     }
   }
 
@@ -154,7 +187,8 @@ export function chunkMarkdownDocument(
     title,
     breadcrumb: title,
     content: markdown.trim(),
-    tokenCount: estimateTokenCount(markdown)
+    tokenCount: estimateTokenCount(markdown),
+    metadata: { sourceLineIndex: 0 }
   }];
 }
 

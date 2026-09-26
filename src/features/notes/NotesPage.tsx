@@ -32,9 +32,11 @@ import { AIGenerationModal } from '../../components/features/Notes/AIGenerationM
 import { AITakeQuizModal } from '../../components/features/Notes/AITakeQuizModal';
 import { MarkdownReadingView } from '../../components/features/Notes/MarkdownReadingView';
 import { calculateNoteMetrics, serializeNoteToMarkdown } from '../../utils/notes/markdownParser';
+import { extractInlineFlashcards } from '../../utils/notes/inlineCardParser';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
+import { useDebouncedAutoSave, AutoSaveStatus } from '../../hooks/useDebouncedAutoSave';
 import { Note, NoteCategory } from '../../types/note';
 import { StudySubject, StudyTopic } from '../../types/study';
 import { StudyResource } from '../../types/resource';
@@ -52,6 +54,21 @@ const CATEGORIES: { value: NoteCategory; label: string }[] = [
   { value: 'reflection', label: 'Reflection' },
   { value: 'reference', label: 'Reference' }
 ];
+
+/**
+ * Auto-save payload (plan §1.2). Every payload is bound to the note the edits
+ * belong to (`noteId`) plus the full metadata snapshot, so a pending debounce
+ * that fires after the user switches notes still commits to the correct
+ * record with the correct metadata — never to the newly selected note.
+ */
+interface NoteAutoSavePayload {
+  noteId: string;
+  title: string;
+  content: string;
+  category: NoteCategory;
+  subjectId: string;
+  tags: string[];
+}
 
 export const NotesPage: React.FC = () => {
   const { addToast } = useToast();
@@ -86,11 +103,62 @@ export const NotesPage: React.FC = () => {
   const [newTagInput, setNewTagInput] = useState('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [noteViewMode, setNoteViewMode] = useState<'edit' | 'read' | 'split'>('edit');
+  // Plan §1.2: a newer local draft is offered back to the user, never forced.
+  const [draftRestorePrompt, setDraftRestorePrompt] = useState<{ title: string; content: string } | null>(null);
+
+  // ── Lossless 2-tier auto-save (plan §1.2) ──────────────────────────────────
+  // Tier 1: 1s debounce into localStorage['solis_note_draft_${id}'].
+  // Tier 2: 4s debounce through dataService.notes.updateNote. The status drives
+  // the header pill ("● Saving draft…" → "✓ Saved locally" → "✓ Cloud synced").
+  const autoSave = useDebouncedAutoSave<NoteAutoSavePayload>({
+    storageKey: selectedNote ? `solis_note_draft_${selectedNote.id}` : null,
+    serialize: (payload) => JSON.stringify({ ...payload, savedAt: new Date().toISOString() }),
+    onCloudSave: async (payload) => {
+      await dataService.notes.updateNote(payload.noteId, {
+        title: payload.title,
+        content: payload.content,
+        category: payload.category,
+        subjectId: payload.subjectId || undefined,
+        tags: payload.tags
+      });
+    }
+  });
+
+  const autoSaveStatusMeta: Record<AutoSaveStatus, { label: string; tone: string } | null> = {
+    idle: null,
+    dirty: { label: '● Saving draft…', tone: 'var(--text-muted)' },
+    'saved-locally': { label: '✓ Saved locally', tone: 'var(--text-secondary)' },
+    'cloud-synced': { label: '✓ Cloud synced', tone: 'var(--color-sage-600, #2E7D5B)' },
+    'cloud-error': { label: 'Draft saved locally — cloud sync pending', tone: 'var(--text-muted)' }
+  };
+  const autoSaveMeta = autoSaveStatusMeta[autoSave.status];
+
+  /** Builds a note-bound auto-save payload from the current editor state. */
+  const buildAutoSavePayload = (overrides?: { title?: string; content?: string }): NoteAutoSavePayload | null => {
+    if (!selectedNote) return null;
+    return {
+      noteId: selectedNote.id,
+      title: overrides?.title ?? title,
+      content: overrides?.content ?? content,
+      category,
+      subjectId,
+      tags
+    };
+  };
 
   useEffect(() => {
     const q = searchParams.get('q');
     if (q && q !== searchQuery) {
       setSearchQuery(q);
+    }
+  }, [searchParams]);
+
+  // Plan §3.6: /app/notes?subjectId=${subject.id} deep link from Subjects
+  // pre-applies the discipline filter.
+  useEffect(() => {
+    const paramSubject = searchParams.get('subjectId');
+    if (paramSubject && paramSubject !== filterSubjectId) {
+      setFilterSubjectId(paramSubject);
     }
   }, [searchParams]);
 
@@ -115,6 +183,23 @@ export const NotesPage: React.FC = () => {
   }, [searchParams, notes, selectedNote]);
 
   const noteMetrics = useMemo(() => calculateNoteMetrics(content), [content]);
+
+  // Plan §3.6: instant client-side filtering — 0 network calls per keystroke.
+  // Matches title, content, tags, and subject name.
+  const visibleNotes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return notes.filter((n) => {
+      if (filterCategory !== 'all' && n.category !== filterCategory) return false;
+      if (filterSubjectId !== 'all' && (n.subjectId || '') !== filterSubjectId) return false;
+      if (q) {
+        const haystack = [n.title || '', n.content || '', (n.tags || []).join(' '), n.subjectName || '']
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [notes, searchQuery, filterCategory, filterSubjectId]);
 
   const handleExportMarkdown = () => {
     if (!selectedNote) return;
@@ -208,8 +293,11 @@ export const NotesPage: React.FC = () => {
   };
 
   const handleCiteResource = (res: StudyResource) => {
-    setContent((prev) => `${prev}\n\n> **Reference Citation**: [${res.title}](${res.url || '#'}) — *${res.author || 'Unknown'}*\n> ${res.notes || ''}\n`);
+    const nextContent = `${content}\n\n> **Reference Citation**: [${res.title}](${res.url || '#'}) — *${res.author || 'Unknown'}*\n> ${res.notes || ''}\n`;
+    setContent(nextContent);
     setSaveStatus('unsaved');
+    const payload = buildAutoSavePayload({ content: nextContent });
+    if (payload) autoSave.schedule(payload);
     setIsResourceModalOpen(false);
     addToast({ title: 'Citation Appended', description: `Referenced "${res.title}" in active canvas.`, type: 'info' });
   };
@@ -219,12 +307,11 @@ export const NotesPage: React.FC = () => {
     else setSyncStatus('syncing');
 
     try {
+      // Plan §3.6: fetch the full note set once — search, category, and
+      // subject filters are applied client-side (see visibleNotes) so typing
+      // in the search box never triggers a network call.
       const [notesRes, subjectsRes, resourcesRes] = await Promise.allSettled([
-        dataService.notes.getNotes({
-          searchQuery,
-          category: filterCategory === 'all' ? undefined : (filterCategory as NoteCategory),
-          subjectId: filterSubjectId === 'all' ? undefined : filterSubjectId
-        }),
+        dataService.notes.getNotes(),
         dataService.study.getSubjects(),
         dataService.resources ? dataService.resources.getResources() : Promise.resolve([])
       ]);
@@ -297,13 +384,16 @@ export const NotesPage: React.FC = () => {
         return current;
       });
     }
-  }, [searchQuery, filterCategory, filterSubjectId, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     loadData(true);
+    // Plan §6.1 scoped entity pub/sub: notes are this page's primary entity,
+    // so it subscribes strictly to the 'notes' channel. Cross-domain sources
+    // it renders (subjects, resources) are refetched on remount.
     const unsubscribe = dataService.subscribe(() => {
       loadData(false);
-    });
+    }, ['notes']);
     return () => unsubscribe();
   }, [loadData]);
 
@@ -314,29 +404,39 @@ export const NotesPage: React.FC = () => {
   };
 
   const handleSelectNote = (note: Note) => {
+    // Protect uncommitted edits on the outgoing note before switching context.
+    if (selectedNote && selectedNote.id !== note.id && autoSave.isDirty()) {
+      autoSave.flushLocal();
+    }
+
+    // A pending restore prompt belongs to the outgoing note only.
+    setDraftRestorePrompt(null);
+
     setSelectedNote(note);
 
-    // Check for uncommitted local draft
+    // Check for uncommitted local draft (plan §1.2: prompt the user to restore
+    // a local draft that is newer than the DB record).
     const draftRaw = localStorage.getItem(`solis_note_draft_${note.id}`);
     if (draftRaw) {
       try {
         const draft = JSON.parse(draftRaw);
-        if (draft.content !== undefined && draft.content !== note.content) {
-          setTitle(draft.title || note.title);
-          setContent(draft.content);
-          setCategory(note.category);
-          setSubjectId(note.subjectId || '');
-          setTags(note.tags || []);
-          setSaveStatus('unsaved');
-          addToast({
-            title: 'Unsaved Draft Restored',
-            description: 'Restored your latest local edits from storage.',
-            type: 'info'
+        const contentDiffers = draft.content !== undefined && draft.content !== note.content;
+        const titleDiffers = draft.title !== undefined && draft.title !== note.title;
+        const draftTimestamp = typeof draft.savedAt === 'string' ? new Date(draft.savedAt).getTime() : NaN;
+        // New drafts carry `savedAt`; legacy drafts (no timestamp) restore on
+        // content difference alone.
+        const shouldPrompt =
+          (contentDiffers || titleDiffers) &&
+          (isNaN(draftTimestamp) || draftTimestamp > new Date(note.updatedAt).getTime());
+        if (shouldPrompt) {
+          // Load the saved version first, then let the user choose (plan §1.2).
+          setDraftRestorePrompt({
+            title: draft.title || note.title,
+            content: draft.content ?? note.content
           });
-          return;
         }
       } catch {
-        // ignore
+        // ignore malformed drafts
       }
     }
 
@@ -392,6 +492,13 @@ export const NotesPage: React.FC = () => {
 
     try {
       await dataService.notes.deleteNote(id);
+      // Remove the note's local draft so no orphaned payload (including one
+      // just flushed by the selection switch above) survives the delete.
+      try {
+        localStorage.removeItem(`solis_note_draft_${id}`);
+      } catch {
+        // ignore storage errors
+      }
       addToast({ title: 'Note removed', type: 'info' });
     } catch (err) {
       setNotes(prevNotes);
@@ -405,26 +512,89 @@ export const NotesPage: React.FC = () => {
   };
 
   const handleManualSave = async () => {
-    if (!selectedNote) return;
+    const payload = buildAutoSavePayload();
+    if (!payload) return;
     setSaveStatus('saving');
     try {
-      await dataService.notes.updateNote(selectedNote.id, {
-        title,
-        content,
-        category,
-        subjectId: subjectId || undefined,
-        tags
-      });
+      // Manual save bypasses the debounces and commits both tiers immediately.
+      await autoSave.saveNow(payload);
       setSaveStatus('saved');
       addToast({
         title: 'Note Saved',
-        description: `"${title || 'Untitled Thought'}" saved successfully.`,
+        description: `"${payload.title || 'Untitled Thought'}" saved successfully.`,
         type: 'success'
       });
+      // Plan §4.3: inline flashcard extraction (`Term :: Definition`) on save.
+      await extractInlineCardsFromSavedNote(payload);
     } catch (err) {
       setSaveStatus('unsaved');
       addToast({
         title: 'Save failed',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
+    }
+  };
+
+  /**
+   * Plan §4.3: on explicit save, parse `Term :: Definition` lines (Q:/A: form
+   * supported) and auto-create the missing Flashcard entities in the note's
+   * subject deck. Extraction only runs on explicit saves (⌘S / Save button) —
+   * the passive 4s auto-save draft never files half-typed lines. Cards are
+   * deduped against this note's existing deck so repeated saves never
+   * duplicate them.
+   */
+  const extractInlineCardsFromSavedNote = async (payload: NoteAutoSavePayload) => {
+    const inlineCards = extractInlineFlashcards(payload.content);
+    if (inlineCards.length === 0) return;
+
+    if (!payload.subjectId) {
+      addToast({
+        title: 'Inline flashcards found',
+        description: 'Link this note to a subject to file them into a Spaced Repetition deck.',
+        type: 'info'
+      });
+      return;
+    }
+
+    try {
+      // Scope the dedupe read to the note's subject deck (plan §4.3 cards are
+      // always filed under the note's subject) instead of the whole collection.
+      const existingCards = await dataService.flashcards.getFlashcards({ subjectId: payload.subjectId });
+      const existingPrompts = new Set(
+        existingCards
+          .filter((card) => card.noteId === payload.noteId)
+          .map((card) => card.frontPrompt.trim().toLowerCase())
+      );
+      // Dedupe within the save batch too: two identical `::` lines in one
+      // note must produce a single flashcard.
+      const seenPrompts = new Set<string>();
+      const freshCards = inlineCards.filter((card) => {
+        const promptKey = card.frontPrompt.trim().toLowerCase();
+        if (existingPrompts.has(promptKey) || seenPrompts.has(promptKey)) return false;
+        seenPrompts.add(promptKey);
+        return true;
+      });
+      if (freshCards.length === 0) return;
+
+      for (const card of freshCards) {
+        await dataService.flashcards.createFlashcard({
+          subjectId: payload.subjectId,
+          noteId: payload.noteId,
+          frontPrompt: card.frontPrompt,
+          backAnswer: card.backAnswer,
+          cardType: 'standard'
+        });
+      }
+
+      addToast({
+        title: `✓ ${freshCards.length} flashcard${freshCards.length === 1 ? '' : 's'} extracted into Spaced Repetition deck`,
+        description: `Filed from "${payload.title || 'Untitled Thought'}".`,
+        type: 'success'
+      });
+    } catch (err) {
+      addToast({
+        title: 'Flashcard extraction failed',
         description: formatErrorMessage(err),
         type: 'error'
       });
@@ -445,15 +615,41 @@ export const NotesPage: React.FC = () => {
   const handleTitleChange = (val: string) => {
     setTitle(val);
     setSaveStatus('unsaved');
+    const payload = buildAutoSavePayload({ title: val });
+    if (payload) autoSave.schedule(payload);
   };
 
   const handleContentChange = (val: string) => {
     setContent(val);
     setSaveStatus('unsaved');
+    const payload = buildAutoSavePayload({ content: val });
+    if (payload) autoSave.schedule(payload);
   };
 
-  const handleToggleMarkdownTask = (taskIndex: number, completed: boolean) => {
-    let currentMatchIndex = 0;
+  /**
+   * Plan §8.2: a grounded flashcard's citation chip jumps back to the exact
+   * note paragraph (`sourceLineIndex`, 0-based). Switches the canvas to edit
+   * mode, selects the source line, and scrolls it into view.
+   */
+  const handleJumpToSourceLine = (sourceLineIndex: number) => {
+    setNoteViewMode('edit');
+    requestAnimationFrame(() => {
+      const textarea = contentTextareaRef.current;
+      if (!textarea) return;
+      const lines = content.split('\n');
+      const target = Math.min(Math.max(0, sourceLineIndex), Math.max(0, lines.length - 1));
+      let charIndex = 0;
+      for (let i = 0; i < target; i++) {
+        charIndex += lines[i].length + 1;
+      }
+      textarea.focus();
+      textarea.setSelectionRange(charIndex, charIndex + lines[target].length);
+      const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 20;
+      textarea.scrollTop = Math.max(0, target * lineHeight - textarea.clientHeight / 3);
+    });
+  };
+
+  const handleToggleMarkdownTask = (taskIndex: number, completed: boolean) => {    let currentMatchIndex = 0;
     const updatedContent = content.replace(
       /^([-*]\s+\[)([ xX])(\]\s+.*)$/gm,
       (match, prefix, _check, suffix) => {
@@ -634,9 +830,18 @@ export const NotesPage: React.FC = () => {
               Capture the first idea worth keeping.
             </p>
           </div>
+        ) : visibleNotes.length === 0 ? (
+          <div style={{ padding: '24px', textAlign: 'center', background: 'var(--bg-surface-primary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)', margin: 0 }}>
+              No notes match your search or filters yet.
+            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--text-micro)', marginTop: '4px' }}>
+              Try a different word, or clear the category and discipline filters.
+            </p>
+          </div>
         ) : (
           <div className="solis-notes-stream">
-            {notes.map((note) => {
+            {visibleNotes.map((note) => {
               const isSelected = selectedNote?.id === note.id;
               return (
                 <div
@@ -713,6 +918,20 @@ export const NotesPage: React.FC = () => {
 
               {/* Right: Explicit Save & Quick Tools */}
               <div className="solis-notes-canvas__actions">
+                {autoSaveMeta && (
+                  <span
+                    aria-live="polite"
+                    style={{
+                      fontSize: 'var(--text-micro)',
+                      color: autoSaveMeta.tone,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {autoSaveMeta.label}
+                  </span>
+                )}
                 <Button
                   variant={saveStatus === 'unsaved' ? 'accent' : 'outline'}
                   size="sm"
@@ -991,6 +1210,30 @@ export const NotesPage: React.FC = () => {
         }}
       />
 
+      {/* Restore Newer Draft Prompt (plan §1.2 — user choice, never forced) */}
+      <ConfirmationDialog
+        isOpen={Boolean(draftRestorePrompt)}
+        onClose={() => setDraftRestorePrompt(null)}
+        onConfirm={() => {
+          if (draftRestorePrompt) {
+            setTitle(draftRestorePrompt.title);
+            setContent(draftRestorePrompt.content);
+            setSaveStatus('unsaved');
+            addToast({
+              title: 'Unsaved Draft Restored',
+              description: 'Restored your latest local edits from storage.',
+              type: 'info'
+            });
+          }
+          setDraftRestorePrompt(null);
+        }}
+        title="Newer Unsaved Draft Found"
+        description="This note has a newer local draft that was never synced. Restore it, or keep the saved version? The draft stays on this device until you restore it."
+        confirmLabel="Restore Draft"
+        cancelLabel="Keep Saved Version"
+        variant="info"
+      />
+
       {/* Delete Note Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={Boolean(deletingNoteId)}
@@ -1018,6 +1261,7 @@ export const NotesPage: React.FC = () => {
             noteContent={content}
             subjectId={subjectId}
             noteId={selectedNote.id}
+            onCitationClick={handleJumpToSourceLine}
           />
           
           <AITakeQuizModal

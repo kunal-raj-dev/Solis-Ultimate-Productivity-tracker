@@ -114,6 +114,8 @@ export interface IHabitService {
   deleteHabit(id: string): Promise<boolean>;
   toggleHabitToday(id: string): Promise<Habit>;
   toggleHabitDate(id: string, dateStr: string): Promise<Habit>;
+  /** Bulk-imports completed dates (guest-to-cloud migration, plan §1.3). */
+  importHabitCompletions(habitId: string, completionDates: string[]): Promise<Habit>;
 }
 
 export interface IGoalService {
@@ -192,8 +194,40 @@ export interface IRoomService {
   getRoomReflections(roomId: string): Promise<RoomReflection[]>;
   getUserRoomHistory(): Promise<RoomReflection[]>;
   deleteRoom(roomId: string): Promise<boolean>;
+  /**
+   * Host failover (plan §6.2): when the host is no longer among the room
+   * participants, the oldest remaining participant is auto-promoted to host.
+   * Returns the updated room, or null when no promotion applied (host still
+   * present, empty room, or caller not a participant).
+   */
+  promoteNextHost(roomId: string): Promise<StudyRoom | null>;
 }
 
+
+/**
+ * Scoped entity pub/sub channels (plan §6.1).
+ * A mutation notifies only the subscribers that declared an interest in its
+ * channel, so a single habit toggle no longer fires queries on every mounted
+ * page. Subscribing without channels (or with 'all') receives every event.
+ * Domains outside this enum (flashcards, reviews, routines, resources,
+ * reflections, rooms, auth) broadcast on 'all'.
+ */
+export type DataEntityChannel = 'tasks' | 'habits' | 'notes' | 'study' | 'focus' | 'goals' | 'all';
+
+/**
+ * Shared dispatch predicate for the scoped entity event bus.
+ * A global event (no channel or 'all') reaches every subscriber; a scoped
+ * event reaches unfiltered subscribers and those holding the channel.
+ */
+export function matchesChannelFilter(
+  subscribedChannels: DataEntityChannel[] | undefined,
+  eventChannel: DataEntityChannel | undefined
+): boolean {
+  if (!eventChannel || eventChannel === 'all') return true;
+  if (!subscribedChannels || subscribedChannels.length === 0) return true;
+  if (subscribedChannels.includes('all')) return true;
+  return subscribedChannels.includes(eventChannel);
+}
 
 export interface IDataService {
   auth: IAuthService;
@@ -210,5 +244,6 @@ export interface IDataService {
   resources: IResourceService;
   reflections: IReflectionService;
   rooms: IRoomService;
-  subscribe(listener: () => void): () => void;
+  subscribe(listener: () => void, channels?: DataEntityChannel[]): () => void;
+  notifySubscribers(channel: DataEntityChannel): void;
 }

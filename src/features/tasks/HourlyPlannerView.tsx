@@ -19,7 +19,7 @@ import { Button } from '../../components/ui/Button/Button';
 import { Progress } from '../../components/ui/Progress/Progress';
 import { getISODateString } from '../../utils/date';
 import { hapticsEngine } from '../../utils/focus/hapticsEngine';
-import { calculateWorkload } from '../../utils/tasks/workloadCalculator';
+import { calculateWorkload, getGentleStartDailyCapacityMinutes } from '../../utils/tasks/workloadCalculator';
 import { WorkloadCapacityBar } from './components/WorkloadCapacityBar';
 import { getReplanSuggestions } from '../../utils/tasks/replanEngine';
 
@@ -37,7 +37,11 @@ interface HourlyPlannerViewProps {
   onScheduleTaskToHour?: (task: Task, hour: number) => Promise<void>;
   onAutoReplanCandidates?: () => void;
   onQuickReplanBlock?: (block: TaskTimeBlock, targetDate: string, targetHour: number) => Promise<void>;
+  onRollPastBlocksToToday?: (blocks: TaskTimeBlock[]) => void;
 }
+
+/** Custom MIME type carrying the dragged unscheduled task id (plan §3.1). */
+const TASK_DRAG_MIME = 'application/x-solis-task-id';
 
 export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   selectedDate,
@@ -52,7 +56,8 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   onToggleBlockComplete,
   onScheduleTaskToHour,
   onAutoReplanCandidates,
-  onQuickReplanBlock
+  onQuickReplanBlock,
+  onRollPastBlocksToToday
 }) => {
   const navigate = useNavigate();
   const currentHourRef = useRef<HTMLDivElement>(null);
@@ -60,10 +65,34 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
   const [currentMinute, setCurrentMinute] = useState<number>(new Date().getMinutes());
   const [viewMode, setViewMode] = useState<'workday' | '24h'>('workday');
   const [isUnscheduledShelfOpen, setIsUnscheduledShelfOpen] = useState(false);
+  // Plan §3.1: hour currently hovered by a dragged task chip (drop-target highlight).
+  const [dragOverHour, setDragOverHour] = useState<number | null>(null);
 
   const handleToggleBlock = (block: TaskTimeBlock) => {
     hapticsEngine.playMechanicalTick();
     onToggleBlockComplete(block);
+  };
+
+  // Plan §3.1: direct drag-and-drop from the unscheduled shelf onto an hourly
+  // slot. Dropping a task chip on slot 14:00 creates a TaskTimeBlock with
+  // startHour = 14 and durationMinutes = task.estimatedMinutes || 60 (the
+  // page-level onScheduleTaskToHour handler owns that data contract).
+  const handleDropTaskOnHour = (hour: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOverHour(null);
+    if (!onScheduleTaskToHour) return;
+    const taskId = e.dataTransfer.getData(TASK_DRAG_MIME) || e.dataTransfer.getData('text/plain');
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    hapticsEngine.playMechanicalTick();
+    onScheduleTaskToHour(task, hour);
+  };
+
+  const handleDragOverHour = (hour: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    if (!onScheduleTaskToHour) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    if (dragOverHour !== hour) setDragOverHour(hour);
   };
 
   // Keep clock updated
@@ -87,7 +116,10 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
     return calculateWorkload({
       date: selectedDate,
       tasks,
-      timeBlocks
+      timeBlocks,
+      // Plan §3.4 "Gentle Start": shared day-scoped 50% capacity override so
+      // the Schedule view's capacity bar matches the Today page (P3F5).
+      dailyCapacityMinutes: getGentleStartDailyCapacityMinutes(selectedDate)
     });
   }, [selectedDate, tasks, timeBlocks]);
 
@@ -163,10 +195,10 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
         />
       </div>
 
-      {/* 1.5 Actionable Unreviewed Past Blocks Banner (Integrated Daily Review) */}
+      {/* 1.5 Calm Past-Blocks Roll Prompt (plan §3.3 — serene, never guilt-inducing) */}
       {unreviewedPastBlocks.length > 0 && (
         <div
-          className="solis-review-banner"
+          className="solis-calm-roll-banner"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -175,31 +207,27 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
             padding: '12px 16px',
             marginBottom: '14px',
             borderRadius: 'var(--radius-md, 8px)',
-            background: 'var(--color-amber-50, rgba(245, 158, 11, 0.08))',
-            border: '1px solid var(--color-amber-200, rgba(245, 158, 11, 0.3))'
+            background: 'var(--bg-surface-secondary)',
+            border: '1px solid var(--border-hairline)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <RotateCcw size={16} style={{ color: 'var(--color-amber-600, #d97706)', flexShrink: 0 }} />
-            <div>
-              <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                {unreviewedPastBlocks.length === 1
-                  ? '1 past block requires review'
-                  : `${unreviewedPastBlocks.length} past blocks require review`}
-              </span>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                Next: &ldquo;{unreviewedPastBlocks[0].taskTitle}&rdquo; ({formatHourLabel(unreviewedPastBlocks[0].startHour)})
-              </p>
-            </div>
+            <RotateCcw size={16} style={{ color: 'var(--color-sage-600)', flexShrink: 0 }} />
+            <p style={{ margin: 0, fontWeight: 500, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+              You have {unreviewedPastBlocks.length} past incomplete block
+              {unreviewedPastBlocks.length === 1 ? '' : 's'}. Roll to today&apos;s schedule?
+            </p>
           </div>
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={() => onOpenReviewBlock(unreviewedPastBlocks[0])}
-            leftIcon={<RotateCcw size={13} />}
-          >
-            Review Block
-          </Button>
+          {onRollPastBlocksToToday && (
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => onRollPastBlocksToToday(unreviewedPastBlocks)}
+              leftIcon={<RotateCcw size={13} />}
+            >
+              Roll to Today
+            </Button>
+          )}
         </div>
       )}
 
@@ -222,7 +250,18 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
           {isUnscheduledShelfOpen && (
             <div className="solis-unscheduled-tasks-list">
               {unscheduledTasks.map((t) => (
-                <div key={t.id} className="solis-unscheduled-task-chip">
+                <div
+                  key={t.id}
+                  className="solis-unscheduled-task-chip solis-unscheduled-task-chip--draggable"
+                  draggable={Boolean(onScheduleTaskToHour)}
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'copy';
+                    e.dataTransfer.setData(TASK_DRAG_MIME, t.id);
+                    e.dataTransfer.setData('text/plain', t.id);
+                  }}
+                  onDragEnd={() => setDragOverHour(null)}
+                  title={`Drag onto an hourly slot to schedule "${t.title}"`}
+                >
                   <span className="solis-unscheduled-task-name">{t.title}</span>
                   <div style={{ display: 'flex', gap: '4px' }}>
                     <button
@@ -346,7 +385,10 @@ export const HourlyPlannerView: React.FC<HourlyPlannerViewProps> = ({
             <div
               key={hour}
               ref={isNow ? currentHourRef : undefined}
-              className={`solis-hour-row ${isNow ? 'solis-hour-row--now' : ''} ${isPeakCircadian ? 'solis-hour-row--peak' : ''} ${isPastHour ? 'solis-hour-row--past' : ''} ${isUpcoming ? 'solis-hour-row--upcoming' : ''} ${isCompact ? 'solis-hour-row--compact' : ''}`}
+              className={`solis-hour-row ${isNow ? 'solis-hour-row--now' : ''} ${isPeakCircadian ? 'solis-hour-row--peak' : ''} ${isPastHour ? 'solis-hour-row--past' : ''} ${isUpcoming ? 'solis-hour-row--upcoming' : ''} ${isCompact ? 'solis-hour-row--compact' : ''} ${dragOverHour === hour ? 'solis-hour-row--drop-target' : ''}`}
+              onDragOver={handleDragOverHour(hour)}
+              onDragLeave={() => setDragOverHour((prev) => (prev === hour ? null : prev))}
+              onDrop={handleDropTaskOnHour(hour)}
             >
               {/* Living Time Needle for Current Hour */}
               {isNow && (

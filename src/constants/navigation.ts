@@ -104,36 +104,41 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
   }
 ];
 
+/**
+ * Plan §7.2 — dedicated 5-tab mobile bottom navigation (viewports < 1024px,
+ * per master.md §12.3 tablet/mobile chrome): Today, Focus, Subjects, Tasks,
+ * Progress. Rendered by MobileNav.tsx.
+ */
 export const MOBILE_NAVIGATION: NavItemConfig[] = [
   {
     id: 'dashboard',
-    label: 'Overview',
+    label: 'Today',
     path: '/app/dashboard',
-    iconName: 'Compass'
-  },
-  {
-    id: 'tasks',
-    label: 'Tasks',
-    path: '/app/tasks',
-    iconName: 'CheckCircle2'
-  },
-  {
-    id: 'study',
-    label: 'Study',
-    path: '/app/study',
-    iconName: 'BookOpen'
+    iconName: 'Home'
   },
   {
     id: 'focus',
     label: 'Focus',
     path: '/app/focus',
-    iconName: 'Flame'
+    iconName: 'Timer'
   },
   {
-    id: 'notes',
-    label: 'Notes',
-    path: '/app/notes',
-    iconName: 'FileText'
+    id: 'study',
+    label: 'Subjects',
+    path: '/app/study',
+    iconName: 'Brain'
+  },
+  {
+    id: 'tasks',
+    label: 'Tasks',
+    path: '/app/tasks',
+    iconName: 'CheckSquare'
+  },
+  {
+    id: 'analytics',
+    label: 'Progress',
+    path: '/app/analytics',
+    iconName: 'BarChart3'
   }
 ];
 

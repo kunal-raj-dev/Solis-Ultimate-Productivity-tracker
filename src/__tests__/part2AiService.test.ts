@@ -74,7 +74,7 @@ describe('SOLIS PART 2 — AI Service & Local Intelligence Suite (AIService)', (
       );
     });
 
-    it('uses the v1beta endpoint and gemini-2.5-flash model by default', async () => {
+    it('uses the v1beta endpoint and gemini-3.8-flash model by default', async () => {
       mockStorage['solis_gemini_api_key'] = 'AIzaSyFlashKey';
 
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
@@ -94,9 +94,116 @@ describe('SOLIS PART 2 — AI Service & Local Intelligence Suite (AIService)', (
 
       await aiService.generateFlashcards('Sample note');
       expect(fetchSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/v1beta/models/gemini-2.5-flash:generateContent'),
+        expect.stringContaining('/v1beta/models/gemini-3.8-flash:generateContent'),
         expect.any(Object)
       );
+    });
+
+    it('respects custom model when configured in localStorage', async () => {
+      mockStorage['solis_gemini_api_key'] = 'AIzaSyFlashKey';
+      mockStorage['solis_gemini_model'] = 'gemini-3.1-pro-preview';
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: JSON.stringify([{ front: 'Q', back: 'A', type: 'concept' }]) }]
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      await aiService.generateFlashcards('Sample note');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/v1beta/models/gemini-3.1-pro-preview:generateContent'),
+        expect.any(Object)
+      );
+    });
+
+    it('auto-migrates deprecated or hallucinated gemini-3.8-pro model to gemini-3.1-pro-preview', async () => {
+      mockStorage['solis_gemini_api_key'] = 'AIzaSyFlashKey';
+      mockStorage['solis_gemini_model'] = 'gemini-3.8-pro';
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: JSON.stringify([{ front: 'Q', back: 'A', type: 'concept' }]) }]
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      await aiService.generateFlashcards('Sample note');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/v1beta/models/gemini-3.1-pro-preview:generateContent'),
+        expect.any(Object)
+      );
+      expect(mockStorage['solis_gemini_model']).toBe('gemini-3.1-pro-preview');
+    });
+
+    it('auto-migrates deprecated gemini-2.5-flash model to gemini-3.8-flash', async () => {
+      mockStorage['solis_gemini_api_key'] = 'AIzaSyFlashKey';
+      mockStorage['solis_gemini_model'] = 'gemini-2.5-flash';
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: JSON.stringify([{ front: 'Q', back: 'A', type: 'concept' }]) }]
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      await aiService.generateFlashcards('Sample note');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('/v1beta/models/gemini-3.8-flash:generateContent'),
+        expect.any(Object)
+      );
+      expect(mockStorage['solis_gemini_model']).toBe('gemini-3.8-flash');
+    });
+
+    it('filters out thinking parts and extracts clean response text from gemini 3.8 models', async () => {
+      mockStorage['solis_gemini_api_key'] = 'AIzaSyKey';
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    { text: 'Analyzing context and formulating questions...', thought: true },
+                    { text: JSON.stringify([{ front: 'What is Raft?', back: 'Consensus', type: 'standard' }]) }
+                  ]
+                }
+              }
+            ]
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const result = await aiService.generateFlashcards('Note on Raft');
+      expect(result).toHaveLength(1);
+      expect(result[0].front).toBe('What is Raft?');
+      expect(result[0].back).toBe('Consensus');
     });
   });
 
@@ -476,6 +583,41 @@ Keep up the good work.`;
       expect(suggestions[1].type).toBe('study_topic');
       expect(suggestions[1].actionPayload.subjectId).toBe('sbj-dist-sys');
       expect(suggestions[2].type).toBe('take_quiz');
+    });
+  });
+
+  describe('Connection Verification (testConnection)', () => {
+    it('returns error when no API key is provided', async () => {
+      delete mockStorage['solis_gemini_api_key'];
+      const res = await aiService.testConnection();
+      expect(res.success).toBe(false);
+      expect(res.message).toContain('valid Gemini API key');
+    });
+
+    it('returns success when API responds with 200 OK', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Hello!' }] } }] }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const res = await aiService.testConnection('AIzaSyValidKey', 'gemini-3.1-pro-preview');
+      expect(res.success).toBe(true);
+      expect(res.message).toContain('gemini-3.1-pro-preview');
+    });
+
+    it('returns error details when API responds with an error status', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ error: { message: 'API_KEY_INVALID' } }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      );
+
+      const res = await aiService.testConnection('AIzaSyInvalidKey');
+      expect(res.success).toBe(false);
+      expect(res.message).toContain('API_KEY_INVALID');
     });
   });
 });

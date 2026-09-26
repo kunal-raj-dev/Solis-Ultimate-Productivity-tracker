@@ -7,12 +7,19 @@ import {
   Repeat,
   AlertTriangle,
   RotateCcw,
-  Check
+  Check,
+  ArrowRight,
+  Scissors
 } from 'lucide-react';
 import { Task } from '../../../types/task';
 import { StudySubject } from '../../../types/study';
 import { Badge, BadgeVariant } from '../../../components/ui/Badge/Badge';
+import { useToast } from '../../../context/ToastContext';
+import { dataService } from '../../../services/dataService';
+import { formatErrorMessage } from '../../../utils/errors';
 import { hapticsEngine } from '../../../utils/focus/hapticsEngine';
+import { getISODateString } from '../../../utils/date';
+import { buildMicroSteps, isMicroStepEligible } from '../../../utils/tasks/taskMicroStepper';
 import './TaskRow.css';
 
 interface TaskRowProps {
@@ -24,6 +31,8 @@ interface TaskRowProps {
   onDelete: (taskId: string) => void;
   onStartFocus: (task: Task) => void;
   onSlotToHour?: (task: Task, hour: number) => void;
+  /** Plan §3.3: one-tap Zeigarnik deferral for overdue tasks ("→ Tomorrow"). */
+  onDeferToTomorrow?: (task: Task) => void;
   showScheduleAction?: boolean;
 }
 
@@ -36,20 +45,74 @@ export const TaskRow: React.FC<TaskRowProps> = ({
   onDelete,
   onStartFocus,
   onSlotToHour,
+  onDeferToTomorrow,
   showScheduleAction = true
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isSlotMenuOpen, setIsSlotMenuOpen] = useState(false);
+  const [isBreakingDown, setIsBreakingDown] = useState(false);
+  const { addToast } = useToast();
 
   const isComplete = task.status === 'completed';
   const isPartial = task.status === 'partial';
   const isMissed = task.status === 'missed';
   const isInProgress = task.status === 'in_progress';
+  // Overdue = due before today's local calendar date (plan §3.3 deferral target).
+  const isOverdue =
+    !isComplete && Boolean(task.dueDate) && task.dueDate! < getISODateString(new Date());
+  // Plan §5.4: 60m+ tasks without existing subtasks can be broken into micro-steps.
+  const isBreakDownEligible =
+    !isComplete && isMicroStepEligible(task.estimatedMinutes) && (task.subTasks?.length ?? 0) === 0;
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     hapticsEngine.playMechanicalTick();
     onToggle(task.id);
+  };
+
+  // Plan §5.4: deterministic micro-step decomposition (3 sub-tasks < 20m each).
+  const handleBreakDown = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    hapticsEngine.playMechanicalTick();
+    const steps = buildMicroSteps(task.title, task.estimatedMinutes);
+    if (steps.length === 0 || isBreakingDown) return;
+
+    setIsBreakingDown(true);
+    const createdSubTaskIds: string[] = [];
+    try {
+      // Persisted via the canonical addSubTask API so both Mock and Supabase
+      // backends store the micro-steps (subtasks table / mock collection).
+      for (const step of steps) {
+        const created = await dataService.tasks.addSubTask(
+          task.id,
+          `${step.title} (~${step.suggestedMinutes}m)`
+        );
+        createdSubTaskIds.push(created.id);
+      }
+
+      addToast({
+        title: 'Task broken into micro-steps',
+        description: `3 low-activation steps (< 20m each) were added to "${task.title}".`,
+        type: 'success'
+      });
+    } catch (err) {
+      // Roll back any micro-steps created before the failure so the task is
+      // never left with a partial subset (P5F9).
+      for (const subTaskId of createdSubTaskIds.reverse()) {
+        try {
+          await dataService.tasks.deleteSubTask(task.id, subTaskId);
+        } catch {
+          // Best-effort rollback; the error toast below reports the failure.
+        }
+      }
+      addToast({
+        title: 'Could not break down task',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
+    } finally {
+      setIsBreakingDown(false);
+    }
   };
 
   const getPriorityVariant = (p: Task['priority']): BadgeVariant => {
@@ -198,6 +261,38 @@ export const TaskRow: React.FC<TaskRowProps> = ({
           >
             <Flame size={13} />
             <span>Focus</span>
+          </button>
+        )}
+
+        {/* Plan §5.4: deterministic micro-stepping assistant for large tasks */}
+        {isBreakDownEligible && (
+          <button
+            type="button"
+            className="solis-task-action-btn tactile-press"
+            onClick={handleBreakDown}
+            disabled={isBreakingDown}
+            title="Break into 3 gentle micro-steps under 20 minutes each"
+            aria-label={`Break down ${task.title} into 3 micro-steps`}
+          >
+            <Scissors size={13} />
+            <span>{isBreakingDown ? 'Breaking…' : 'Break Down'}</span>
+          </button>
+        )}
+
+        {/* Plan §3.3: calm one-tap deferral for overdue tasks */}
+        {isOverdue && onDeferToTomorrow && (
+          <button
+            type="button"
+            className="solis-task-action-btn solis-task-action-btn--defer tactile-press"
+            onClick={() => {
+              hapticsEngine.playMechanicalTick();
+              onDeferToTomorrow(task);
+            }}
+            title="Move to tomorrow — it will be waiting for you"
+            aria-label={`Defer ${task.title} to tomorrow`}
+          >
+            <ArrowRight size={13} />
+            <span>Tomorrow</span>
           </button>
         )}
 

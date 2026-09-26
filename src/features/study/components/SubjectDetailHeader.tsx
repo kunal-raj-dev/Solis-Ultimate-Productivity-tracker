@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Archive, MoreVertical, Layers, Edit2, RotateCcw, Trash2, AlertCircle, Flame } from 'lucide-react';
+import { BookOpen, Archive, MoreVertical, Layers, Edit2, RotateCcw, Trash2, AlertCircle, Flame, Timer } from 'lucide-react';
 import { Card } from '../../../components/ui/Card/Card';
 import { Badge, BadgeVariant } from '../../../components/ui/Badge/Badge';
 import { Button } from '../../../components/ui/Button/Button';
@@ -9,6 +9,8 @@ import { EmptyState } from '../../../components/feedback/EmptyState/EmptyState';
 import { Progress } from '../../../components/ui/Progress/Progress';
 import { StudySubject } from '../../../types/study';
 import { LearningIntelligenceSnapshot } from '../../../types/learningIntelligence';
+import { useFocus } from '../../../context/FocusContext';
+import { hapticsEngine } from '../../../utils/focus/hapticsEngine';
 
 export interface SubjectDetailHeaderProps {
   displayedSubjects: StudySubject[];
@@ -51,6 +53,18 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
   onSetDeletingSubject
 }) => {
   const navigate = useNavigate();
+  // Plan §5.2: one-tap subject-bound count-up stopwatch (docks in MiniFocusPlayer).
+  const {
+    startQuickStopwatch,
+    timerMode,
+    status: focusStatus,
+    selectedSubjectId: activeStopwatchSubjectId
+  } = useFocus();
+
+  const isStopwatchActiveFor = (subjectId: string) =>
+    timerMode === 'stopwatch' &&
+    activeStopwatchSubjectId === subjectId &&
+    (focusStatus === 'running' || focusStatus === 'paused');
 
   if (initialLoadStatus === 'loading' && subjects.length === 0) {
     return (
@@ -380,24 +394,61 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
               <span>{subject.notesCount} thoughts synthesized</span>
-              {subject.status === 'archived' ? (
-                <Button
-                  variant="subtle"
-                  size="sm"
-                  leftIcon={<RotateCcw size={13} />}
-                  onClick={() => onRestoreSubject(subject.id)}
-                >
-                  Unarchive
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onOpenTopicsModal(subject)}
-                >
-                  Syllabus Roadmap →
-                </Button>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {/* Plan §5.2: 1-tap Quick Stopwatch bound to this subject.
+                    While this subject's stopwatch is active the same tap
+                    pauses/resumes it; it is never silently reset (P5F2). */}
+                {subject.status !== 'archived' && (
+                  <button
+                    type="button"
+                    className="tactile-press"
+                    onClick={() => {
+                      hapticsEngine.playMechanicalTick();
+                      startQuickStopwatch(subject.id);
+                    }}
+                    title={
+                      isStopwatchActiveFor(subject.id)
+                        ? `Pause or resume the stopwatch for ${subject.name}`
+                        : `Quick Stopwatch — count-up timer for ${subject.name}`
+                    }
+                    aria-label={
+                      isStopwatchActiveFor(subject.id)
+                        ? `Pause or resume the stopwatch for ${subject.name}`
+                        : `Start quick stopwatch for ${subject.name}`
+                    }
+                    style={{
+                      background: isStopwatchActiveFor(subject.id) ? 'rgba(230, 90, 65, 0.15)' : 'none',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: isStopwatchActiveFor(subject.id) ? 'var(--color-coral-500)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      padding: '5px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Timer size={14} />
+                  </button>
+                )}
+                {subject.status === 'archived' ? (
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    leftIcon={<RotateCcw size={13} />}
+                    onClick={() => onRestoreSubject(subject.id)}
+                  >
+                    Unarchive
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onOpenTopicsModal(subject)}
+                  >
+                    Syllabus Roadmap →
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

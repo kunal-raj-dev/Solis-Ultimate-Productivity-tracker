@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
@@ -11,7 +11,8 @@ import {
   Save,
   CheckCircle2,
   ListTodo,
-  Play
+  Play,
+  Quote
 } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
@@ -34,6 +35,10 @@ import { FocusSession } from '../../types/focus';
 import { Flashcard } from '../../types/learning';
 import { StudyResource } from '../../types/resource';
 import { generateSolisIntelligenceReport } from '../../utils/intelligence';
+import {
+  generateWeeklyNarrativeReport,
+  getPreviousWeekStudyMinutes
+} from '../../utils/intelligence/narrativeReport';
 import { getISODateString, addDays } from '../../utils/date';
 import './WeeklyReviewPage.css';
 
@@ -60,7 +65,7 @@ export const WeeklyReviewPage: React.FC = () => {
   const [breakthroughs, setBreakthroughs] = useState('');
   const [frictionPoints, setFrictionPoints] = useState('');
   const [nextWeekCommitment, setNextWeekCommitment] = useState('');
-  const [nextWeekTargetHours, setNextWeekTargetHours] = useState('20');
+  const [nextWeekTargetHours, setNextWeekTargetHours] = useState('0');
   const [createActionableTask, setCreateActionableTask] = useState(true);
   const [createGoalHorizon, setCreateGoalHorizon] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
@@ -68,6 +73,10 @@ export const WeeklyReviewPage: React.FC = () => {
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [aiSynthesis, setAiSynthesis] = useState<{ summary: string, observations: string[], suggestions: string[] } | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  // Set once the weekly data has actually loaded (P5F10): the next-week target
+  // default must derive from loaded data, never from the empty initial state.
+  const sessionsLoadedRef = useRef(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -91,7 +100,10 @@ export const WeeklyReviewPage: React.FC = () => {
         dataService.resources ? dataService.resources.getResources() : Promise.resolve([])
       ]);
 
-      if (sessRes.status === 'fulfilled') setSessions(sessRes.value);
+      if (sessRes.status === 'fulfilled') {
+        sessionsLoadedRef.current = true;
+        setSessions(sessRes.value);
+      }
       if (focusRes.status === 'fulfilled') setFocusSessions(focusRes.value);
       if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
       if (noteRes.status === 'fulfilled') setNotes(noteRes.value);
@@ -115,9 +127,11 @@ export const WeeklyReviewPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // Plan §6.1 scoped entity pub/sub: the weekly review aggregates study,
+    // focus, tasks, notes, and habits; flashcards/resources broadcast 'all'.
     const unsubscribe = dataService.subscribe(() => {
       loadData();
-    });
+    }, ['study', 'focus', 'tasks', 'notes', 'habits']);
     return () => unsubscribe();
   }, [loadData]);
 
@@ -146,6 +160,30 @@ export const WeeklyReviewPage: React.FC = () => {
   const pendingTasks = tasks.filter((t) => t.status === 'todo' || t.status === 'in_progress');
 
   const topRecommendation = intelReport.recommendations[0]?.title || 'Maintain balanced rhythm';
+
+  // Plan §5.6: deterministic 5-sentence weekly narrative surfaced in Step 1.
+  const weeklyNarrative = useMemo(() => generateWeeklyNarrativeReport(intelReport), [intelReport]);
+
+  // Plan §5.6 (audit item #27): default next week's target to literally
+  // last week's actual study hours × 1.1 — '0' when last week had no sessions,
+  // never a hardcoded constant (P5F10).
+  const lastWeekActualMinutes = useMemo(
+    () => getPreviousWeekStudyMinutes(sessions),
+    [sessions]
+  );
+  const lastWeekActualHours = lastWeekActualMinutes / 60;
+  const hasEditedTargetHours = useRef(false);
+
+  useEffect(() => {
+    if (hasEditedTargetHours.current || !sessionsLoadedRef.current) return;
+    const suggested = Math.round(lastWeekActualHours * 1.1 * 10) / 10;
+    setNextWeekTargetHours(String(suggested));
+  }, [lastWeekActualMinutes, lastWeekActualHours]);
+
+  const handleChangeTargetHours = (value: string) => {
+    hasEditedTargetHours.current = true;
+    setNextWeekTargetHours(value);
+  };
 
   const handleGenerateAiSynthesis = async () => {
     setIsGeneratingAi(true);
@@ -357,6 +395,21 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                 <strong>Study Status:</strong> {intelReport.rhythm.hasSufficientData ? 'Study momentum active and measured.' : 'Initial study calibration cycle in progress.'}
               </div>
 
+              {/* Plan §5.6: deterministic 5-sentence weekly narrative */}
+              <div
+                className="solis-review-intel-banner"
+                style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginTop: '10px' }}
+                aria-label="Your week in five sentences"
+              >
+                <Quote size={16} color="var(--color-coral-500)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>Your Week in Five Sentences:</strong>
+                  <p style={{ margin: '4px 0 0', fontSize: 'var(--text-body-sm)', lineHeight: 1.55, color: 'var(--text-primary)' }}>
+                    {weeklyNarrative.paragraph}
+                  </p>
+                </div>
+              </div>
+
               <div className="solis-review-actions">
                 <Button type="button" variant="accent" size="md" rightIcon={<ArrowRight size={16} />} onClick={() => setStep(2)}>
                   Next: What did you learn?
@@ -564,15 +617,22 @@ ${frictionPoints.trim() || '_No major friction reported._'}
               </div>
             </CardHeader>
             <CardContent>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Input
-                    label="Target Study Hours Next Week"
-                    type="number"
-                    value={nextWeekTargetHours}
-                    onChange={(e) => setNextWeekTargetHours(e.target.value)}
-                    required
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {sessionsLoadedRef.current && (
+                    <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                      {lastWeekActualMinutes > 0
+                        ? `Suggested from last week's actual ${lastWeekActualHours.toFixed(1)} hrs × 1.1 (plan §5.6 gentle growth target).`
+                        : 'No sessions were logged last week, so the default starts at 0 — set any target that feels right.'}
+                    </span>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Input
+                      label="Target Study Hours Next Week"
+                      type="number"
+                      value={nextWeekTargetHours}
+                      onChange={(e) => handleChangeTargetHours(e.target.value)}
+                      required
+                    />
                   <Button 
                     variant="accent" 
                     size="sm" 

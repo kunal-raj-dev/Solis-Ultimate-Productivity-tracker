@@ -8,9 +8,9 @@ import {
   Sparkles,
   Play,
   FileText,
-  Layers,
   Moon,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
@@ -20,6 +20,7 @@ import { TimeBlockGrid } from '../../components/features/Planning/TimeBlockGrid'
 import { RecurringRoutinesModal } from '../../components/features/Planning/RecurringRoutinesModal';
 import { EveningClosureModal } from '../../components/features/Reflection/EveningClosureModal';
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
+import { PartialDataWarningBanner } from '../../components/feedback/PartialDataWarningBanner';
 import { KnowledgeResurfacingCard } from '../../components/features/Notes/KnowledgeResurfacingCard';
 import { ExamHorizonBar } from '../../components/features/Goals/ExamHorizonBar';
 import { SolarArc } from '../../components/illustrations';
@@ -30,18 +31,21 @@ import { Task, TaskTimeBlock } from '../../types/task';
 import { WorkloadCapacityBar } from '../tasks/components/WorkloadCapacityBar';
 import { SmartTaskInput } from '../tasks/components/SmartTaskInput';
 import { TaskRow } from '../tasks/components/TaskRow';
-import { calculateWorkload } from '../../utils/tasks/workloadCalculator';
+import { calculateWorkload, getDefaultDailyCapacityMinutes, getGentleStartDailyCapacityMinutes } from '../../utils/tasks/workloadCalculator';
 import { StudyPlanItem, StudySubject, StudySession, StudyTopic } from '../../types/study';
 import { Note } from '../../types/note';
 import { Habit } from '../../types/habit';
+import { Goal } from '../../types/goal';
+import { Flashcard } from '../../types/learning';
 import { FocusSession } from '../../types/focus';
 import { DailySummary } from '../../types/analytics';
 import { RecurringStudyRoutine, TimeBlock } from '../../types/planning';
 import { DailyReflection } from '../../types/reflection';
-import { getTimeOfDayGreeting, formatFriendlyDate, formatFullDate, getISODateString } from '../../utils/date';
+import { getTimeOfDayGreeting, formatFriendlyDate, formatFullDate, getISODateString, addDays } from '../../utils/date';
 import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntelligence';
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
 import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
+import { WelcomeBackModal } from '../../components/features/Activation/WelcomeBackModal';
 import { NextBestActionCard } from '../../components/features/Activation/NextBestActionCard';
 import { getActivationState, calculateNextBestAction } from '../../utils/activation';
 import { queryCache } from '../../services/cache';
@@ -63,6 +67,8 @@ export const DashboardPage: React.FC = () => {
   const [topics, setTopics] = useState<StudyTopic[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
   const [recentSessions, setRecentSessions] = useState<StudySession[]>([]);
   const [recentFocus, setRecentFocus] = useState<FocusSession[]>([]);
   const [routines, setRoutines] = useState<RecurringStudyRoutine[]>([]);
@@ -71,8 +77,56 @@ export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DailySummary | null>(() => queryCache.get<DailySummary>('daily_summary'));
   const [viewMode, setViewMode] = useState<'lists' | 'timeline'>('lists');
 
+  // Plan §6.3: number of slices that rejected in Promise.allSettled during
+  // the last load — > 0 renders the gentle partial-data warning banner.
+  const [partialFailureCount, setPartialFailureCount] = useState(0);
+
   const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const lastCompletedTaskIdRef = useRef<{ id: string; timestamp: number } | null>(null);
+
+  // Plan §3.2: "Show all (N) tasks" accordion state (top-5 view is the default).
+  const [showAllTasks, setShowAllTasks] = useState(false);
+
+  // Plan §3.4: gentle re-entry after a 3+ day absence. The day-scoped choice
+  // key keeps the Gentle Start / Priority Triage effect alive across reloads
+  // for the rest of the day. The key is frozen at mount so a page left open
+  // across midnight never copies yesterday's choice under the new day's key (P3F4).
+  type WelcomeBackChoice = 'gentle_start' | 'priority_triage';
+  const [welcomeBackChoiceKey] = useState(() => `solis_welcome_back_choice_${getISODateString(new Date())}`);
+  const [isWelcomeBackOpen, setIsWelcomeBackOpen] = useState(false);
+  const [welcomeBackChoice, setWelcomeBackChoice] = useState<WelcomeBackChoice | null>(() => {
+    try {
+      const raw = localStorage.getItem(welcomeBackChoiceKey);
+      return raw === 'gentle_start' || raw === 'priority_triage' ? raw : null;
+    } catch {
+      return null;
+    }
+  });
+  const lastActiveTimestampRef = useRef<number>(0);
+
+  useEffect(() => {
+    let previous = 0;
+    try {
+      previous = Number(localStorage.getItem('solis_last_active_timestamp')) || 0;
+    } catch {
+      previous = 0;
+    }
+    lastActiveTimestampRef.current = previous;
+    const now = Date.now();
+    // 3+ day absence triggers the gentle re-entry flow (first-ever visit never does).
+    if (previous > 0 && now - previous >= 3 * 24 * 60 * 60 * 1000) {
+      setIsWelcomeBackOpen(true);
+    }
+    try {
+      localStorage.setItem('solis_last_active_timestamp', String(now));
+    } catch {
+      // storage unavailable — absence detection silently disabled
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(welcomeBackChoiceKey, welcomeBackChoice || '');
+  }, [welcomeBackChoiceKey, welcomeBackChoice]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 15000);
@@ -81,12 +135,18 @@ export const DashboardPage: React.FC = () => {
 
   // Workload Realism Calculation
   const workload = useMemo(() => {
+    const date = getISODateString(currentTime);
     return calculateWorkload({
-      date: getISODateString(currentTime),
+      date,
       tasks,
-      timeBlocks: taskTimeBlocks
+      timeBlocks: taskTimeBlocks,
+      // Plan §3.4 "Gentle Start": shared day-scoped 50% capacity override,
+      // resolved from the same key the Tasks page reads (P3F5).
+      dailyCapacityMinutes: getGentleStartDailyCapacityMinutes(date)
     });
-  }, [currentTime, tasks, taskTimeBlocks]);
+    // `welcomeBackChoice` is a reactive trigger: it changes the moment the
+    // gentle option is picked, forcing the memo to re-read the choice key.
+  }, [currentTime, tasks, taskTimeBlocks, welcomeBackChoice]);
 
   // Modals
   const [isClosureModalOpen, setIsClosureModalOpen] = useState(false);
@@ -131,6 +191,48 @@ export const DashboardPage: React.FC = () => {
     return localStorage.getItem(todayKey) || '';
   });
   const [intentionSaved, setIntentionSaved] = useState(false);
+  // Plan §3.2: the intention persists through a 1,000ms debounce so the
+  // "✓ Saved" pill no longer flickers on every keystroke.
+  const intentionSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestIntentionRef = useRef(dailyIntention);
+  const todayKeyRef = useRef(todayKey);
+
+  useEffect(() => {
+    todayKeyRef.current = todayKey;
+  }, [todayKey]);
+
+  const handleSaveIntention = (val: string) => {
+    setDailyIntention(val);
+    latestIntentionRef.current = val;
+    const scheduledKey = todayKey;
+    if (intentionSaveTimerRef.current) clearTimeout(intentionSaveTimerRef.current);
+    intentionSaveTimerRef.current = setTimeout(() => {
+      intentionSaveTimerRef.current = null;
+      try {
+        localStorage.setItem(scheduledKey, latestIntentionRef.current);
+      } catch {
+        // storage unavailable — intention stays in session state only
+      }
+      setIntentionSaved(true);
+      setTimeout(() => setIntentionSaved(false), 2000);
+    }, 1000);
+  };
+
+  // Flush a pending intention write on unmount so navigating away within the
+  // debounce window never loses the tail of the edit (zero silent data loss).
+  useEffect(() => {
+    return () => {
+      if (intentionSaveTimerRef.current) {
+        clearTimeout(intentionSaveTimerRef.current);
+        intentionSaveTimerRef.current = null;
+        try {
+          localStorage.setItem(todayKeyRef.current, latestIntentionRef.current);
+        } catch {
+          // ignore storage errors
+        }
+      }
+    };
+  }, []);
 
   const greetingInfo = getTimeOfDayGreeting(user?.name || 'Scholar');
 
@@ -147,7 +249,9 @@ export const DashboardPage: React.FC = () => {
         dailySumRes,
         rtnRes,
         refRes,
-        blocksRes
+        blocksRes,
+        goalRes,
+        flashRes
       ] = await Promise.allSettled([
         dataService.tasks.getTasks(),
         dataService.study.getTodayPlan(),
@@ -159,8 +263,23 @@ export const DashboardPage: React.FC = () => {
         dataService.analytics.getDailySummary(),
         dataService.routines ? dataService.routines.getRoutines() : Promise.resolve([]),
         dataService.reflections ? dataService.reflections.getReflections(5) : Promise.resolve([]),
-        dataService.tasks.getTimeBlocks ? dataService.tasks.getTimeBlocks(getISODateString(new Date())) : Promise.resolve([])
+        dataService.tasks.getTimeBlocks ? dataService.tasks.getTimeBlocks(getISODateString(new Date())) : Promise.resolve([]),
+        dataService.goals ? dataService.goals.getGoals() : Promise.resolve([]),
+        dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([])
       ]);
+
+      // Plan §6.3 partial fetch failure resilience: fulfilled slices still
+      // populate the page (cached data first), while the rejected count
+      // drives the gentle retry banner.
+      const failedFetches = [taskRes, planRes, subRes, noteRes, habitRes, sessRes, focusRes, dailySumRes, rtnRes, refRes, blocksRes, goalRes, flashRes]
+        .filter((res) => res.status === 'rejected');
+      if (failedFetches.length > 0) {
+        console.warn(
+          `[Dashboard] ${failedFetches.length} data slice(s) failed to load:`,
+          failedFetches.map((res) => (res as PromiseRejectedResult).reason)
+        );
+      }
+      setPartialFailureCount(failedFetches.length);
 
       if (taskRes.status === 'fulfilled') setTasks(taskRes.value);
       if (planRes.status === 'fulfilled') setStudyPlan(planRes.value);
@@ -181,6 +300,8 @@ export const DashboardPage: React.FC = () => {
       if (rtnRes.status === 'fulfilled') setRoutines(rtnRes.value);
       if (refRes.status === 'fulfilled') setReflections(refRes.value);
       if (blocksRes.status === 'fulfilled') setTaskTimeBlocks(blocksRes.value);
+      if (goalRes.status === 'fulfilled') setGoals(goalRes.value || []);
+      if (flashRes.status === 'fulfilled') setFlashcards(flashRes.value || []);
 
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -191,18 +312,14 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadDashboardData();
+    // Plan §6.1 scoped entity pub/sub: the Today hub renders every canonical
+    // entity channel. Domains outside the enum (routines, reflections,
+    // flashcards, analytics) broadcast on 'all' and still reach it.
     const unsubscribe = dataService.subscribe(() => {
       loadDashboardData();
-    });
+    }, ['tasks', 'habits', 'notes', 'study', 'focus', 'goals']);
     return () => unsubscribe();
   }, [loadDashboardData]);
-
-  const handleSaveIntention = (val: string) => {
-    setDailyIntention(val);
-    localStorage.setItem(todayKey, val);
-    setIntentionSaved(true);
-    setTimeout(() => setIntentionSaved(false), 2000);
-  };
 
   const handleCreateFromNLP = async (taskPayload: Partial<Task>) => {
     try {
@@ -327,6 +444,137 @@ export const DashboardPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Plan §3.3: one-tap Zeigarnik deferral — "→ Tomorrow" moves an overdue task
+  // to tomorrow, increments its deferral count, and offers an undo toast.
+  const handleDeferTaskToTomorrow = async (task: Task) => {
+    const tomorrowKey = getISODateString(addDays(new Date(), 1));
+    const prevDueDate = task.dueDate;
+    const nextDeferralCount = (task.deferralCount || 0) + 1;
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, dueDate: tomorrowKey, deferralCount: nextDeferralCount } : t))
+    );
+    try {
+      const updated = await dataService.tasks.updateTask(task.id, {
+        dueDate: tomorrowKey,
+        deferralCount: nextDeferralCount
+      });
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? { ...updated, deferralCount: nextDeferralCount } : t)));
+      const undoDeferral = async () => {
+        try {
+          const restored = await dataService.tasks.updateTask(task.id, {
+            ...(prevDueDate ? { dueDate: prevDueDate } : {}),
+            deferralCount: task.deferralCount || 0
+          });
+          setTasks((prev) => prev.map((t) => (t.id === restored.id ? restored : t)));
+          addToast({ title: 'Deferral Undone', description: restored.title, type: 'info' });
+        } catch {
+          addToast({ title: 'Undo failed', type: 'error' });
+        }
+      };
+      addToast({
+        title: 'Moved to Tomorrow',
+        description: `"${updated.title}" — no rush, it will be waiting for you.`,
+        type: 'info',
+        durationMs: 5000,
+        action: { label: 'Undo', onClick: undoDeferral }
+      });
+    } catch {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, dueDate: prevDueDate, deferralCount: task.deferralCount || 0 } : t))
+      );
+      addToast({ title: 'Could not defer task', type: 'error' });
+    }
+  };
+
+  // Plan §3.4 helpers — gentle re-entry options chosen in WelcomeBackModal.
+
+  /** Local dates strictly between the last active day and today (the absence). */
+  const computeAbsenceDayKeys = (): string[] => {
+    const previous = lastActiveTimestampRef.current;
+    if (!previous) return [];
+    const days: string[] = [];
+    const cursor = new Date(previous);
+    cursor.setHours(12, 0, 0, 0);
+    cursor.setDate(cursor.getDate() + 1);
+    const todayKey = getISODateString(new Date());
+    while (getISODateString(cursor) < todayKey) {
+      days.push(getISODateString(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  };
+
+  const handleGentleStart = () => {
+    // Written synchronously so the workload memo's re-read of the choice key
+    // (triggered by the state change below) sees the gentle flag immediately.
+    try {
+      localStorage.setItem(welcomeBackChoiceKey, 'gentle_start');
+    } catch {
+      // storage unavailable — gentle start applies to this session's state only
+    }
+    setWelcomeBackChoice('gentle_start');
+    addToast({
+      title: 'Gentle Start Active',
+      description: 'Today’s capacity is set to half — ease back in.',
+      type: 'info'
+    });
+  };
+
+  const handleStreakAmnesty = async () => {
+    const absenceDays = computeAbsenceDayKeys();
+    if (habits.length === 0 || absenceDays.length === 0) {
+      addToast({
+        title: 'Nothing To Excuse',
+        description: 'Your habit streaks are already intact.',
+        type: 'info'
+      });
+      return;
+    }
+    // P3F6: settle per habit so a partial server failure only leaves the
+    // failed habits untouched — successful amnesties stay applied instead of
+    // a single catch rolling back the whole batch.
+    const results = await Promise.allSettled(
+      habits.map((h) =>
+        dataService.habits.updateHabit(h.id, {
+          amnestyDates: Array.from(new Set([...(h.amnestyDates || []), ...absenceDays])).sort()
+        })
+      )
+    );
+    const fulfilledById = new Map<string, Habit>();
+    results.forEach((res, index) => {
+      if (res.status === 'fulfilled') fulfilledById.set(habits[index].id, res.value);
+    });
+    const failedCount = results.length - fulfilledById.size;
+
+    if (fulfilledById.size > 0) {
+      setHabits((prev) => prev.map((h) => fulfilledById.get(h.id) || h));
+    }
+    if (failedCount === 0) {
+      addToast({
+        title: 'Streaks Protected',
+        description: 'Your absence days are excused — habit continuity stays intact.',
+        type: 'success'
+      });
+    } else if (fulfilledById.size > 0) {
+      addToast({
+        title: 'Amnesty Partially Applied',
+        description: `${fulfilledById.size} of ${habits.length} rituals excused — retry the rest anytime.`,
+        type: 'warning'
+      });
+    } else {
+      addToast({ title: 'Could not apply streak amnesty', type: 'error' });
+    }
+  };
+
+  const handlePriorityTriage = () => {
+    setWelcomeBackChoice('priority_triage');
+    addToast({
+      title: 'Priority Triage Active',
+      description: 'Showing only your Top 3 tasks — the backlog can wait.',
+      type: 'info'
+    });
+  };
 
   const handleToggleHabit = async (id: string) => {
     const prevHabits = habits;
@@ -496,6 +744,22 @@ export const DashboardPage: React.FC = () => {
     });
   }, [recentFocus, recentSessions, reflections]);
 
+  // Plan §3.2: priority triage — sort active tasks by priority
+  // (urgent → high → medium → low) and due date before rendering.
+  const activeTasks = useMemo(() => {
+    const priorityRank: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+    return tasks
+      .filter((t) => t.status !== 'completed')
+      .sort((a, b) => {
+        const priorityDelta = (priorityRank[a.priority] ?? 2) - (priorityRank[b.priority] ?? 2);
+        if (priorityDelta !== 0) return priorityDelta;
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      });
+  }, [tasks]);
+
   if (isLoading) {
     return (
       <div className="solis-cockpit-layout">
@@ -508,10 +772,12 @@ export const DashboardPage: React.FC = () => {
     );
   }
 
-  const activeTasks = tasks.filter((t) => t.status !== 'completed');
-
   return (
     <div className="solis-cockpit-layout">
+      {/* Plan §6.3: gentle notice when some slices of the last load could not
+          be fetched — cached data stays visible, retry is one click away. */}
+      <PartialDataWarningBanner failedCount={partialFailureCount} onRetry={loadDashboardData} />
+
       {/* 01 // THE SOLAR HORIZON (Arrival Hero & Living Sky) */}
       <header className="solis-solar-hero" role="banner">
         <div className="solis-solar-hero__main">
@@ -583,6 +849,16 @@ export const DashboardPage: React.FC = () => {
           )}
         </div>
       </header>
+
+      {/* 01.5 // ACADEMIC EXAM HORIZON (Full-Width Banner when Exam Mode is Active) */}
+      <ExamHorizonBar
+        goals={goals}
+        topics={topics}
+        flashcards={flashcards}
+        habits={habits}
+        dailyCapacity={getDefaultDailyCapacityMinutes()}
+        onRefresh={loadDashboardData}
+      />
  
       {/* Cognitive Load Alert if needed */}
       {cognitiveReport.status !== 'optimal' && (
@@ -628,7 +904,8 @@ export const DashboardPage: React.FC = () => {
               />
             </div>
 
-            {/* Task Rows */}
+            {/* Task Rows — top-5 triage view with a "Show all" accordion (plan §3.2);
+                Priority Triage (plan §3.4) narrows the view to the Top 3 only */}
             {activeTasks.length === 0 ? (
               <div className="solis-empty-stub">
                 <span>All deliberate intentions completed. Ready to reflect or rest.</span>
@@ -638,7 +915,12 @@ export const DashboardPage: React.FC = () => {
               </div>
             ) : (
               <div className="solis-actions-list">
-                {activeTasks.slice(0, 5).map((task) => {
+                {(welcomeBackChoice === 'priority_triage'
+                  ? activeTasks.slice(0, 3)
+                  : showAllTasks
+                  ? activeTasks
+                  : activeTasks.slice(0, 5)
+                ).map((task) => {
                   const linkedSub = subjects.find((s) => s.id === task.subjectId);
                   return (
                     <TaskRow
@@ -650,9 +932,22 @@ export const DashboardPage: React.FC = () => {
                       onDelete={handleDeleteTask}
                       onStartFocus={handleStartFocusOnTask}
                       showScheduleAction={false}
+                      onDeferToTomorrow={handleDeferTaskToTomorrow}
                     />
                   );
                 })}
+                {welcomeBackChoice !== 'priority_triage' && activeTasks.length > 5 && (
+                  <button
+                    type="button"
+                    className="solis-tasks-show-all-btn"
+                    onClick={() => setShowAllTasks((prev) => !prev)}
+                    aria-expanded={showAllTasks}
+                  >
+                    {showAllTasks
+                      ? 'Show top 5 only'
+                      : `Show all (${activeTasks.length}) tasks`}
+                  </button>
+                )}
               </div>
             )}
           </section>
@@ -755,8 +1050,8 @@ export const DashboardPage: React.FC = () => {
         </aside>
       </div>
 
-      {/* ZONE 5 — BOTTOM ROW: DUE RECALL, DAILY HABITS & EXAM HORIZONS */}
-      <section className="solis-zone-strip" aria-label="Due Recall, Daily Habits & Exam Horizons">
+      {/* ZONE 5 — BOTTOM ROW: DUE RECALL & DAILY HABITS (Balanced 2-Column Foundation) */}
+      <section className="solis-zone-strip" aria-label="Due Recall & Daily Habits">
         {/* Knowledge Studio Resurfacing (Due Recall) */}
         <section className="solis-panel" aria-label="Knowledge Studio Resurfacing">
           <div className="solis-panel__header">
@@ -789,14 +1084,18 @@ export const DashboardPage: React.FC = () => {
 
           {habits.length === 0 ? (
             <div className="solis-empty-stub">
-              <span>No daily rituals active today.</span>
-              <Button variant="subtle" size="sm" onClick={() => navigate('/app/habits')}>
+              <Repeat size={20} className="solis-empty-stub-icon" aria-hidden="true" />
+              <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>No Daily Rituals Active</span>
+              <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)', maxWidth: '360px' }}>
+                Build long-term momentum through small, consistent daily study habits.
+              </span>
+              <Button variant="subtle" size="sm" leftIcon={<Plus size={13} />} onClick={() => navigate('/app/habits')}>
                 Create Habit
               </Button>
             </div>
           ) : (
-            <div className="solis-habit-pulse-list">
-              {habits.slice(0, 4).map((h) => (
+            <div className="solis-habit-pulse-list solis-habit-pulse-list--all">
+              {habits.map((h) => (
                 <div key={h.id} className="solis-habit-pulse-item">
                   <div className="solis-habit-pulse-item__info">
                     <span
@@ -819,18 +1118,6 @@ export const DashboardPage: React.FC = () => {
               ))}
             </div>
           )}
-        </section>
-
-        {/* Exam & Goal Horizons */}
-        <section className="solis-panel" aria-label="Exam Horizons">
-          <div className="solis-panel__header">
-            <div className="solis-panel__title-group">
-              <Layers size={16} className="solis-panel__icon" aria-hidden="true" />
-              <h2 className="solis-panel__title">Exam Horizons</h2>
-            </div>
-          </div>
-
-          <ExamHorizonBar />
         </section>
       </section>
 
@@ -872,6 +1159,15 @@ export const DashboardPage: React.FC = () => {
           habits: habits.length
         }}
         userId={user?.id}
+      />
+
+      {/* Plan §3.4: Gentle Re-Entry after a 3+ day absence */}
+      <WelcomeBackModal
+        isOpen={isWelcomeBackOpen}
+        onClose={() => setIsWelcomeBackOpen(false)}
+        onGentleStart={handleGentleStart}
+        onStreakAmnesty={handleStreakAmnesty}
+        onPriorityTriage={handlePriorityTriage}
       />
     </div>
   );

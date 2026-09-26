@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../feedback/Modal/Modal';
 import { Button } from '../../ui/Button/Button';
 import { Badge } from '../../ui/Badge/Badge';
@@ -9,9 +10,20 @@ import { StudyTopic } from '../../../types/study';
 import { Flashcard } from '../../../types/learning';
 import { StudyResource } from '../../../types/resource';
 import { Habit } from '../../../types/habit';
+import { RecurringStudyRoutine } from '../../../types/planning';
+import { dataService } from '../../../services/dataService';
 import { calculateExamReadiness } from '../../../utils/intelligence/masteryIntelligence';
+import {
+  calculateTimeCushion,
+  formatCushionHours,
+  projectRoutineCommitmentsByDay,
+  TIME_CUSHION_STATUS_META
+} from '../../../utils/planning/timeCushion';
+import { getDefaultDailyCapacityMinutes } from '../../../utils/tasks/workloadCalculator';
+import { formatErrorMessage } from '../../../utils/errors';
+import { getISODateString, isPast } from '../../../utils/date';
 import { ExamReadinessCard } from '../Analytics/ExamReadinessCard';
-import { BrainCircuit, Play, Bookmark, ExternalLink, Flame } from 'lucide-react';
+import { BrainCircuit, Play, Bookmark, ExternalLink, Flame, CalendarPlus } from 'lucide-react';
 import './ExamWorkspaceModal.css';
 
 export interface ExamWorkspaceModalProps {
@@ -22,10 +34,15 @@ export interface ExamWorkspaceModalProps {
   flashcards: Flashcard[];
   resources?: StudyResource[];
   habits?: Habit[];
+  /** Daily deep-work capacity in minutes (user.dailyGoalMinutes || 360). */
+  dailyCapacityMinutes?: number;
   onToggleMilestone: (goalId: string, milestoneId: string) => Promise<void>;
   onStartRecallDrill: (topicCards: Flashcard[]) => void;
   onLaunchFocus: (subjectId?: string, title?: string) => void;
 }
+
+/** Service-layer ceiling: validateTimeBlockInput rejects durations > 720 minutes (12h). */
+const MAX_BLOCK_DURATION_MINUTES = 720;
 
 export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
   isOpen,
@@ -35,16 +52,41 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
   flashcards,
   resources,
   habits,
+  dailyCapacityMinutes,
   onToggleMilestone,
   onStartRecallDrill,
   onLaunchFocus
 }) => {
-  if (!isOpen || !goal) return null;
+  const navigate = useNavigate();
+  const [routines, setRoutines] = useState<RecurringStudyRoutine[]>([]);
+  const [routinesUnavailable, setRoutinesUnavailable] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const isWorkspaceActive = isOpen && goal !== null;
 
-  const targetDateObj = new Date(goal.targetDate);
-  const today = new Date();
-  const diffTime = targetDateObj.getTime() - today.getTime();
-  const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  // Recurring routines project onto the exam horizon as scheduled commitments
+  // for the Time Cushion diagnostic (master.md §6). Single cached read on open.
+  useEffect(() => {
+    if (!isWorkspaceActive) return;
+    let isMounted = true;
+    setRoutinesUnavailable(false);
+    if (dataService.routines) {
+      dataService.routines
+        .getRoutines()
+        .then((res) => {
+          if (isMounted) setRoutines(res || []);
+        })
+        .catch(() => {
+          // Honest degradation: without routines the cushion would silently
+          // overstate available hours, so the card says so (master.md §16.1).
+          if (isMounted) setRoutinesUnavailable(true);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isWorkspaceActive, goal?.id]);
+
+  if (!isOpen || !goal) return null;
 
   const subjectTopics = goal.subjectId ? topics.filter((t) => t.subjectId === goal.subjectId) : [];
   const subjectFlashcards = goal.subjectId ? flashcards.filter((c) => c.subjectId === goal.subjectId) : [];
@@ -60,6 +102,56 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
     flashcards: subjectFlashcards,
     habits: habits || []
   });
+
+  // Forward Time Cushion (plan §2.1/§2.3): open routine hours vs required
+  // syllabus hours between now and the exam, in hours — not percentages.
+  const cushion = calculateTimeCushion({
+    examDate: goal.targetDate,
+    subjectId: goal.subjectId || '',
+    topics: subjectTopics,
+    dailyCapacityMinutes: dailyCapacityMinutes ?? getDefaultDailyCapacityMinutes(),
+    existingCommitmentsMinutesByDay: projectRoutineCommitmentsByDay(routines, goal.targetDate)
+  });
+  const cushionMeta = TIME_CUSHION_STATUS_META[cushion.status];
+
+  // The scheduled block honors the service validation cap (720m / 12h); when
+  // the required pace exceeds it, the CTA labels the actual block size while
+  // the diagnostic card above keeps showing the true pace.
+  const scheduleBlockMinutes = Math.min(
+    MAX_BLOCK_DURATION_MINUTES,
+    Math.max(30, Math.round(cushion.requiredHoursPerDay * 60))
+  );
+
+  // Days Remaining 0 covers both exam-day and overdue/past target dates —
+  // label them honestly instead of showing "Exam today" indefinitely.
+  const horizonLabel =
+    cushion.daysRemaining > 0
+      ? `${cushion.daysRemaining}d remaining`
+      : isPast(goal.targetDate)
+        ? 'Past due'
+        : 'Exam today';
+
+  const handleScheduleDailyFocusBlock = async () => {
+    setScheduleError(null);
+    try {
+      await dataService.tasks.createTimeBlock({
+        taskTitle: `Exam Prep: ${goal.title}`,
+        date: getISODateString(new Date()),
+        startHour: Math.min(23, new Date().getHours() + 1),
+        durationMinutes: scheduleBlockMinutes,
+        goalId: goal.id,
+        subjectId: goal.subjectId,
+        priority: 'high',
+        status: 'planned'
+      });
+      onClose();
+      navigate('/app/tasks?view=schedule');
+    } catch (err) {
+      setScheduleError(
+        formatErrorMessage(err, 'Could not schedule the focus block just now. Please try again.')
+      );
+    }
+  };
 
   return (
     <Modal
@@ -91,11 +183,38 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
             </p>
           </div>
 
-          <div style={{ textAlign: 'center', minWidth: '100px' }}>
-            <div className="solis-exam-countdown-num">{daysRemaining}</div>
-            <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Days Remaining
-            </span>
+          {/* Time Cushion Diagnostic (plan §2.3): available vs required hours */}
+          <div style={{ textAlign: 'right', minWidth: '190px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+              <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Time Cushion
+              </span>
+              <Badge variant={cushionMeta.badgeVariant}>{cushionMeta.label}</Badge>
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontVariantNumeric: 'tabular-nums',
+                fontSize: 'var(--text-heading-2)',
+                fontWeight: 600,
+                color: cushionMeta.colorToken,
+                margin: '2px 0 1px'
+              }}
+            >
+              {cushion.cushionHours >= 0 ? '+' : '-'}
+              {formatCushionHours(cushion.cushionHours)}h
+            </div>
+            <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {formatCushionHours(cushion.netAvailableStudyHours)}h available vs{' '}
+              {formatCushionHours(cushion.estimatedHoursRequired)}h required
+              <br />
+              {formatCushionHours(cushion.requiredHoursPerDay)} hrs/day needed • {horizonLabel}
+            </div>
+            {routinesUnavailable && (
+              <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', marginTop: '4px' }}>
+                Fixed commitments unavailable — cushion shown without routine hours.
+              </div>
+            )}
           </div>
         </div>
 
@@ -278,10 +397,25 @@ export const ExamWorkspaceModal: React.FC<ExamWorkspaceModalProps> = ({
         </div>
 
         {/* Primary Action Launcher */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: 'var(--space-xs)' }}>
+        {scheduleError && (
+          <span role="alert" style={{ fontSize: 'var(--text-caption)', color: 'var(--status-error)', textAlign: 'right' }}>
+            {scheduleError}
+          </span>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: 'var(--space-xs)', flexWrap: 'wrap' }}>
           <Button variant="ghost" onClick={onClose}>
             Close
           </Button>
+          {cushion.estimatedHoursRequired > 0 && (
+            <Button
+              variant="accent"
+              leftIcon={<CalendarPlus size={14} />}
+              onClick={handleScheduleDailyFocusBlock}
+              title="Pre-fills today's daily planner with a focus block at the required pace"
+            >
+              Schedule Daily Focus Block ({formatCushionHours(scheduleBlockMinutes / 60)}h)
+            </Button>
+          )}
           <Button
             variant="primary"
             leftIcon={<Play size={14} />}

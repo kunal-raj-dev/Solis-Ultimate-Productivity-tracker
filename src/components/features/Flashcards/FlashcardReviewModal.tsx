@@ -4,6 +4,11 @@ import { Button } from '../../ui/Button/Button';
 import { Progress } from '../../ui/Progress/Progress';
 import { Badge } from '../../ui/Badge/Badge';
 import { Flashcard, CardRating } from '../../../types/learning';
+import {
+  requeueCardInSession,
+  resolvePresentationOrder,
+  ReviewSessionQueues
+} from '../../../utils/learning/spacedRepetition';
 import { Sparkles, RotateCw, CheckCircle2, BookOpen } from 'lucide-react';
 import './FlashcardReviewModal.css';
 
@@ -15,6 +20,16 @@ export interface FlashcardReviewModalProps {
   onCompleteSession?: (totalReviewed: number) => void;
 }
 
+/**
+ * Active Recall session state machine (plan §1.4 — intra-day re-queueing).
+ *
+ * Two queues drive the session: `activeQueue` (cards not yet passed) and
+ * `learningQueue` (cards rated `again`, FIFO failure order). A failed card is
+ * never ejected from the session — it re-surfaces after the active queue is
+ * exhausted or after 5 intervening cards, and the final SM-2 schedule
+ * (`nextReviewDate = tomorrow`) is only committed once the card is passed
+ * (`hard` / `good` / `easy`) within the session.
+ */
 export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
   isOpen,
   onClose,
@@ -22,40 +37,86 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
   onRecordAttempt,
   onCompleteSession
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeQueue, setActiveQueue] = useState<string[]>([]);
+  const [learningQueue, setLearningQueue] = useState<string[]>([]);
+  const [presentedSinceLearning, setPresentedSinceLearning] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [reviewedCount, setReviewedCount] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setCurrentIndex(0);
+      setActiveQueue(cards.map((card) => card.id));
+      setLearningQueue([]);
+      setPresentedSinceLearning(0);
       setIsFlipped(false);
-      setReviewedCount(0);
       setIsFinished(false);
     }
-  }, [isOpen]);
+  }, [isOpen, cards]);
+
+  const presentationOrder = resolvePresentationOrder(
+    { activeQueue, learningQueue } as ReviewSessionQueues,
+    presentedSinceLearning
+  );
+  const currentCardId = presentationOrder[0];
+  const currentCard = cards.find((card) => card.id === currentCardId);
+  const isRepresenting = currentCardId !== undefined && learningQueue.includes(currentCardId);
+
+  const totalCards = cards.length;
+  const resolvedCount = totalCards - (activeQueue.length + learningQueue.length);
+  const progressPercent = totalCards > 0 ? (resolvedCount / totalCards) * 100 : 0;
 
   const handleFlip = useCallback(() => {
     setIsFlipped((prev) => !prev);
   }, []);
 
+  // In-flight guard: a rapid second rating while onRecordAttempt is awaited
+  // must never commit the same card's SM-2 schedule twice.
+  const isCommittingRef = React.useRef(false);
+
   const handleRating = useCallback(async (rating: CardRating) => {
-    const currentCard = cards[currentIndex];
-    if (!currentCard) return;
+    if (isCommittingRef.current) return;
+    const cardId = presentationOrder[0];
+    if (!cardId) return;
+    isCommittingRef.current = true;
 
-    await onRecordAttempt(currentCard.id, rating);
-    const nextReviewed = reviewedCount + 1;
-    setReviewedCount(nextReviewed);
+    try {
+      let nextActive = activeQueue;
+      let nextLearning = learningQueue;
+      let nextPresentedSinceLearning = presentedSinceLearning;
 
-    if (currentIndex + 1 < cards.length) {
+      if (rating === 'again') {
+        // Intra-day re-queue: the card stays in the session (step 0) and the
+        // final tomorrow schedule is NOT committed yet.
+        const next = requeueCardInSession({ activeQueue, learningQueue }, cardId);
+        nextActive = next.activeQueue;
+        nextLearning = next.learningQueue;
+        nextPresentedSinceLearning = 0;
+      } else {
+        // Successful recall (hard / good / easy) commits the SM-2 schedule.
+        await onRecordAttempt(cardId, rating);
+        if (learningQueue.includes(cardId)) {
+          nextLearning = learningQueue.filter((id) => id !== cardId);
+          nextPresentedSinceLearning = 0;
+        } else {
+          nextActive = activeQueue.filter((id) => id !== cardId);
+          nextPresentedSinceLearning = presentedSinceLearning + 1;
+        }
+      }
+
+      setActiveQueue(nextActive);
+      setLearningQueue(nextLearning);
+      setPresentedSinceLearning(nextPresentedSinceLearning);
       setIsFlipped(false);
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      setIsFinished(true);
-      if (onCompleteSession) onCompleteSession(nextReviewed);
+
+      // The session only completes once every failed card has been passed.
+      if (nextActive.length === 0 && nextLearning.length === 0) {
+        setIsFinished(true);
+        onCompleteSession?.(totalCards);
+      }
+    } finally {
+      isCommittingRef.current = false;
     }
-  }, [cards, currentIndex, onRecordAttempt, onCompleteSession, reviewedCount]);
+  }, [presentationOrder, activeQueue, learningQueue, presentedSinceLearning, onRecordAttempt, onCompleteSession, totalCards]);
 
   // Keyboard navigation for active recall power users
   useEffect(() => {
@@ -91,9 +152,6 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentCard = cards[currentIndex];
-  const progressPercent = cards.length > 0 ? (reviewedCount / cards.length) * 100 : 0;
-
   return (
     <Modal
       isOpen={isOpen}
@@ -112,9 +170,12 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
                     • {currentCard.topicTitle}
                   </span>
                 )}
+                {isRepresenting && (
+                  <Badge variant="amber">Re-testing in this session</Badge>
+                )}
               </div>
               <span style={{ fontSize: 'var(--text-caption)', color: 'var(--text-muted)' }}>
-                Card {currentIndex + 1} of {cards.length}
+                Card {Math.min(resolvedCount + 1, totalCards)} of {totalCards}
               </span>
             </div>
 
@@ -207,7 +268,7 @@ export const FlashcardReviewModal: React.FC<FlashcardReviewModalProps> = ({
             </h3>
 
             <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-body-sm)', maxWidth: '420px', margin: '0 auto var(--space-xl)', lineHeight: 1.6 }}>
-              You completed active recall on {reviewedCount} flashcards. Spaced repetition intervals and syllabus mastery signals have been updated.
+              You completed active recall on {totalCards} flashcards. Spaced repetition intervals and syllabus mastery signals have been updated.
             </p>
 
             <Button variant="primary" onClick={onClose} leftIcon={<Sparkles size={16} />}>

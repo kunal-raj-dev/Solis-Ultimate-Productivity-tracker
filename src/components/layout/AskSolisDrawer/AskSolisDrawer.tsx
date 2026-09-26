@@ -89,11 +89,19 @@ export const AskSolisDrawer: React.FC<AskSolisDrawerProps> = ({ isOpen, onClose 
         }
       ]);
     } catch (err: any) {
+      const errorMsg = err?.message || 'AI request failed.';
+      const isKeyError = errorMsg.toLowerCase().includes('api key') ||
+        errorMsg.includes('401') ||
+        errorMsg.includes('403') ||
+        errorMsg.includes('UNAUTHENTICATED') ||
+        errorMsg.includes('API_KEY_INVALID');
+      const guidance = isKeyError ? ' Ensure you have provided a valid API key in settings.' : '';
+      const formattedError = errorMsg.endsWith('.') ? errorMsg : `${errorMsg}.`;
       setConversation(prev => [
         ...prev,
         {
           role: 'solis',
-          text: `Error: ${err.message}. Ensure you have provided a valid API key in settings.`
+          text: `Error: ${formattedError}${guidance}`
         }
       ]);
     } finally {

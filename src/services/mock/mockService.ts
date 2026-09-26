@@ -13,7 +13,9 @@ import {
   IRoutineService,
   IResourceService,
   IReflectionService,
-  IRoomService
+  IRoomService,
+  DataEntityChannel,
+  matchesChannelFilter
 } from '../api.interface';
 import {
   MOCK_USER,
@@ -57,6 +59,7 @@ import {
 
 import { DailySummary, ProductivityMetric, DayStudyHeatmap } from '../../types/analytics';
 import { UserProfile, UserPreferences, LoginCredentials, SignupCredentials, AuthSession } from '../../types/auth';
+import type { GuestWorkspaceSnapshot } from '../migration/guestMigration';
 import { isToday, isPast, isFuture, getISODateString, isThisWeek } from '../../utils/date';
 import { spawnNextRecurringOccurrence } from '../../utils/tasks/recurrenceEngine';
 import { calculateStreaks } from '../../utils/streaks';
@@ -78,7 +81,10 @@ import { validateStudyPlanInput, calculatePlannedVsActual } from '../../utils/st
 const delay = (ms = 30) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class MockDataService implements IDataService {
-  private listeners: Set<() => void> = new Set();
+  private listeners: Set<{
+    fn: (channel?: DataEntityChannel) => void;
+    channels?: DataEntityChannel[];
+  }> = new Set();
 
   private _user: UserProfile | null = (() => {
     if (typeof window !== 'undefined') {
@@ -263,21 +269,41 @@ export class MockDataService implements IDataService {
     }
   ];
 
-  constructor() {
+  constructor(snapshot?: GuestWorkspaceSnapshot | null) {
+    if (snapshot) {
+      // Restore a previously captured guest workspace (guest-to-cloud migration
+      // protocol, plan §1.3) instead of the fresh demo seeds, so returning to
+      // mock mode after a failed real auth attempt never strands local work.
+      this._subjects = snapshot.subjects.map((s) => ({ ...s }));
+      this._topics = snapshot.topics.map((t) => ({ ...t }));
+      this._tasks = snapshot.tasks.map((t) => ({ ...t }));
+      this._notes = snapshot.notes.map((n) => ({ ...n }));
+      this._habits = snapshot.habits.map((h) => ({ ...h, history: { ...(h.history || {}) } }));
+      this._flashcards = snapshot.flashcards.map((f) => ({ ...f }));
+    }
     this.recalculateAllStreaks();
   }
 
-  public subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
+  public subscribe(
+    listener: (channel?: DataEntityChannel) => void,
+    channels?: DataEntityChannel[]
+  ): () => void {
+    const entry = { fn: listener, channels };
+    this.listeners.add(entry);
     return () => {
-      this.listeners.delete(listener);
+      this.listeners.delete(entry);
     };
   }
 
-  private notify(): void {
-    for (const listener of this.listeners) {
+  public notifySubscribers(channel: DataEntityChannel): void {
+    this.notify(channel);
+  }
+
+  private notify(channel?: DataEntityChannel): void {
+    for (const entry of this.listeners) {
+      if (!matchesChannelFilter(entry.channels, channel)) continue;
       try {
-        listener();
+        entry.fn(channel);
       } catch (err) {
         console.error('Error in Solis repository listener:', err);
       }
@@ -287,7 +313,15 @@ export class MockDataService implements IDataService {
   private recalculateAllStreaks(): void {
     const today = getISODateString(new Date());
     this._habits = this._habits.map((habit) => {
-      const { currentStreak, longestStreak } = calculateStreaks(habit.history || {}, today);
+      const { currentStreak, longestStreak } = calculateStreaks(habit.history || {}, {
+        frequency: habit.frequency,
+        customDays: habit.customDays,
+        // "Never miss twice" (master.md §4.7): one isolated miss never zeroes a streak.
+        allowGraceDays: true,
+        // Plan §3.4 "Streak Amnesty": excused absence days stay transparent.
+        amnestyDates: habit.amnestyDates,
+        referenceDate: new Date(`${today}T12:00:00`)
+      });
       return {
         ...habit,
         currentStreak,
@@ -295,6 +329,22 @@ export class MockDataService implements IDataService {
         completedToday: !!habit.history?.[today]
       };
     });
+  }
+
+  /**
+   * Snapshot of the live guest workspace for the guest-to-cloud migration
+   * protocol (plan §1.3). Called by ServiceContainer BEFORE the container
+   * switches away from MockDataService.
+   */
+  getGuestWorkspaceSnapshot(): GuestWorkspaceSnapshot {
+    return {
+      subjects: this._subjects.map((s) => ({ ...s })),
+      topics: this._topics.map((t) => ({ ...t })),
+      tasks: this._tasks.map((t) => ({ ...t })),
+      notes: this._notes.map((n) => ({ ...n })),
+      habits: this._habits.map((h) => ({ ...h, history: { ...(h.history || {}) } })),
+      flashcards: this._flashcards.map((f) => ({ ...f }))
+    };
   }
 
   /* ==========================================================================
@@ -421,7 +471,19 @@ export class MockDataService implements IDataService {
             'solis_user_profile',
             JSON.stringify({ name: nextName, email: nextEmail, focusField: nextFocusField })
           );
-          localStorage.setItem('solis_user_preferences', JSON.stringify(nextPreferences));
+          // Merge over the stored JSON so local-only appearance choices
+          // (e.g. plan §7.3 readableFont) survive profile updates.
+          let storedPrefs: Record<string, unknown> = {};
+          try {
+            const rawPrefs = localStorage.getItem('solis_user_preferences');
+            storedPrefs = rawPrefs ? JSON.parse(rawPrefs) : {};
+          } catch {
+            storedPrefs = {};
+          }
+          localStorage.setItem(
+            'solis_user_preferences',
+            JSON.stringify({ ...storedPrefs, ...nextPreferences })
+          );
         } catch {
           // Ignore storage errors
         }
@@ -512,7 +574,7 @@ export class MockDataService implements IDataService {
       };
 
       this._tasks.unshift(newTask);
-      this.notify();
+      this.notify('tasks');
       return { ...newTask };
     },
 
@@ -561,7 +623,7 @@ export class MockDataService implements IDataService {
         });
       }
 
-      this.notify();
+      this.notify('tasks');
       return { ...updated };
     },
 
@@ -570,7 +632,7 @@ export class MockDataService implements IDataService {
       const before = this._tasks.length;
       this._tasks = this._tasks.filter((t) => t.id !== id);
       const deleted = this._tasks.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('tasks');
       return deleted;
     },
 
@@ -617,7 +679,7 @@ export class MockDataService implements IDataService {
 
       task.subTasks.push(sub);
       task.updatedAt = new Date().toISOString();
-      this.notify();
+      this.notify('tasks');
       return { ...sub };
     },
 
@@ -641,7 +703,7 @@ export class MockDataService implements IDataService {
       }
 
       task.updatedAt = new Date().toISOString();
-      this.notify();
+      this.notify('tasks');
       return JSON.parse(JSON.stringify(task));
     },
 
@@ -652,7 +714,7 @@ export class MockDataService implements IDataService {
 
       task.subTasks = task.subTasks.filter((s) => s.id !== subTaskId);
       task.updatedAt = new Date().toISOString();
-      this.notify();
+      this.notify('tasks');
       return JSON.parse(JSON.stringify(task));
     },
 
@@ -670,7 +732,7 @@ export class MockDataService implements IDataService {
 
       sub.title = title.trim();
       task.updatedAt = new Date().toISOString();
-      this.notify();
+      this.notify('tasks');
       return JSON.parse(JSON.stringify(task));
     },
 
@@ -730,7 +792,7 @@ export class MockDataService implements IDataService {
       };
 
       this._timeBlocks.push(newBlock);
-      this.notify();
+      this.notify('tasks');
       return JSON.parse(JSON.stringify(newBlock));
     },
 
@@ -765,7 +827,7 @@ export class MockDataService implements IDataService {
         }
       }
 
-      this.notify();
+      this.notify('tasks');
       return JSON.parse(JSON.stringify(updated));
     },
 
@@ -774,7 +836,7 @@ export class MockDataService implements IDataService {
       const before = this._timeBlocks.length;
       this._timeBlocks = this._timeBlocks.filter((b) => b.id !== id);
       const changed = this._timeBlocks.length < before;
-      if (changed) this.notify();
+      if (changed) this.notify('tasks');
       return changed;
     },
 
@@ -881,7 +943,7 @@ export class MockDataService implements IDataService {
       };
 
       this._subjects.push(newSub);
-      this.notify();
+      this.notify('study');
       return { ...newSub };
     },
 
@@ -898,7 +960,7 @@ export class MockDataService implements IDataService {
       };
 
       this._subjects[index] = updated;
-      this.notify();
+      this.notify('study');
       return { ...updated };
     },
 
@@ -915,7 +977,7 @@ export class MockDataService implements IDataService {
       const before = this._subjects.length;
       this._subjects = this._subjects.filter((s) => s.id !== id);
       const deleted = this._subjects.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('study');
       return deleted;
     },
 
@@ -948,7 +1010,7 @@ export class MockDataService implements IDataService {
       };
 
       this._topics.push(newTopic);
-      this.notify();
+      this.notify('study');
       return { ...newTopic };
     },
 
@@ -965,7 +1027,7 @@ export class MockDataService implements IDataService {
       };
 
       this._topics[index] = updated;
-      this.notify();
+      this.notify('study');
       return { ...updated };
     },
 
@@ -974,7 +1036,7 @@ export class MockDataService implements IDataService {
       const before = this._topics.length;
       this._topics = this._topics.filter((t) => t.id !== id);
       const deleted = this._topics.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('study');
       return deleted;
     },
 
@@ -1017,7 +1079,7 @@ export class MockDataService implements IDataService {
       };
 
       this._studySessions.unshift(newSession);
-      this.notify();
+      this.notify('study');
       return { ...newSession };
     },
 
@@ -1026,7 +1088,7 @@ export class MockDataService implements IDataService {
       const before = this._studySessions.length;
       this._studySessions = this._studySessions.filter((s) => s.id !== id);
       const deleted = this._studySessions.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('study');
       return deleted;
     },
 
@@ -1067,7 +1129,7 @@ export class MockDataService implements IDataService {
       };
 
       this._studyPlan.push(newPlan);
-      this.notify();
+      this.notify('study');
       return { ...newPlan };
     },
 
@@ -1083,7 +1145,7 @@ export class MockDataService implements IDataService {
       };
 
       this._studyPlan[index] = updated;
-      this.notify();
+      this.notify('study');
       return { ...updated };
     },
 
@@ -1098,7 +1160,7 @@ export class MockDataService implements IDataService {
       const before = this._studyPlan.length;
       this._studyPlan = this._studyPlan.filter((p) => p.id !== id);
       const deleted = this._studyPlan.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('study');
       return deleted;
     }
   };
@@ -1152,7 +1214,7 @@ export class MockDataService implements IDataService {
       };
 
       this._notes.unshift(newNote);
-      this.notify();
+      this.notify('notes');
       return { ...newNote };
     },
 
@@ -1181,7 +1243,7 @@ export class MockDataService implements IDataService {
       };
 
       this._notes[index] = updated;
-      this.notify();
+      this.notify('notes');
       return { ...updated };
     },
 
@@ -1190,7 +1252,7 @@ export class MockDataService implements IDataService {
       const before = this._notes.length;
       this._notes = this._notes.filter((n) => n.id !== id);
       const deleted = this._notes.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('notes');
       return deleted;
     },
 
@@ -1241,21 +1303,25 @@ export class MockDataService implements IDataService {
         targetOutcome: session.targetOutcome,
         checkpointCompleted: session.checkpointCompleted,
         parkedThoughts: session.parkedThoughts ? [...session.parkedThoughts] : undefined,
+        // Plan §5.1: pre-session energy calibration travels with the record.
+        preSessionEnergy: session.preSessionEnergy,
         notes: session.notes?.trim() || undefined,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
       this._focusSessions.unshift(newSession);
-      this.notify();
+      this.notify('focus');
       return { ...newSession };
     },
 
     getTodayFocusMinutes: async (): Promise<number> => {
       await delay(10);
       const todayStr = getISODateString(new Date());
+      // createdAt is a UTC ISO string — key it through the local-timezone
+      // helper instead of startsWith, which mis-buckets near local midnight.
       return this._focusSessions
-        .filter((s) => s.completed && s.createdAt.startsWith(todayStr))
+        .filter((s) => s.completed && getISODateString(new Date(s.createdAt)) === todayStr)
         .reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
     }
   };
@@ -1294,7 +1360,7 @@ export class MockDataService implements IDataService {
       };
 
       this._habits.push(newHabit);
-      this.notify();
+      this.notify('habits');
       return { ...newHabit };
     },
 
@@ -1312,7 +1378,7 @@ export class MockDataService implements IDataService {
 
       this._habits[index] = updated;
       this.recalculateAllStreaks();
-      this.notify();
+      this.notify('habits');
       return { ...updated };
     },
 
@@ -1321,7 +1387,7 @@ export class MockDataService implements IDataService {
       const before = this._habits.length;
       this._habits = this._habits.filter((h) => h.id !== id);
       const deleted = this._habits.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('habits');
       return deleted;
     },
 
@@ -1340,7 +1406,23 @@ export class MockDataService implements IDataService {
 
       this.recalculateAllStreaks();
       const updated = this._habits.find((h) => h.id === id)!;
-      this.notify();
+      this.notify('habits');
+      return JSON.parse(JSON.stringify(updated));
+    },
+
+    importHabitCompletions: async (habitId: string, completionDates: string[]): Promise<Habit> => {
+      await delay(20);
+      const habit = this._habits.find((h) => h.id === habitId);
+      if (!habit) throw new Error(`Habit ${habitId} not found`);
+
+      if (!habit.history) habit.history = {};
+      for (const date of new Set(completionDates.filter(Boolean))) {
+        habit.history[date] = true;
+      }
+
+      this.recalculateAllStreaks();
+      const updated = this._habits.find((h) => h.id === habitId)!;
+      this.notify('habits');
       return JSON.parse(JSON.stringify(updated));
     }
   };
@@ -1404,7 +1486,7 @@ export class MockDataService implements IDataService {
       };
 
       this._goals.push(newGoal);
-      this.notify();
+      this.notify('goals');
       return { ...newGoal };
     },
 
@@ -1426,7 +1508,7 @@ export class MockDataService implements IDataService {
       if ('deliverables' in updates && (!updates.deliverables || updates.deliverables.length === 0)) updated.deliverables = [];
 
       this._goals[index] = updated;
-      this.notify();
+      this.notify('goals');
       return { ...updated };
     },
 
@@ -1435,7 +1517,7 @@ export class MockDataService implements IDataService {
       const before = this._goals.length;
       this._goals = this._goals.filter((g) => g.id !== id);
       const deleted = this._goals.length < before;
-      if (deleted) this.notify();
+      if (deleted) this.notify('goals');
       return deleted;
     },
 
@@ -1466,7 +1548,7 @@ export class MockDataService implements IDataService {
       }
       goal.updatedAt = new Date().toISOString();
 
-      this.notify();
+      this.notify('goals');
       return JSON.parse(JSON.stringify(goal));
     },
 
@@ -1493,7 +1575,7 @@ export class MockDataService implements IDataService {
       else if (goal.status === 'completed') goal.status = 'active';
 
       goal.updatedAt = new Date().toISOString();
-      this.notify();
+      this.notify('goals');
       return JSON.parse(JSON.stringify(goal));
     },
 
@@ -1516,7 +1598,7 @@ export class MockDataService implements IDataService {
       else if (goal.status === 'completed') goal.status = 'active';
 
       goal.updatedAt = new Date().toISOString();
-      this.notify();
+      this.notify('goals');
       return JSON.parse(JSON.stringify(goal));
     },
 
@@ -1536,7 +1618,7 @@ export class MockDataService implements IDataService {
       }
       goal.updatedAt = new Date().toISOString();
 
-      this.notify();
+      this.notify('goals');
       return JSON.parse(JSON.stringify(goal));
     }
   };
@@ -2468,6 +2550,35 @@ export class MockDataService implements IDataService {
       const changed = this._rooms.length !== prevLen;
       if (changed) this.notify();
       return changed;
+    },
+
+    // Host failover (plan §6.2): when the host is no longer among the room
+    // participants, the oldest remaining participant (earliest joinedAt)
+    // is auto-promoted. No-op when the host is still present, the room is
+    // empty, the caller is not a participant, or the room does not exist.
+    promoteNextHost: async (roomId: string): Promise<StudyRoom | null> => {
+      await delay(20);
+      const room = this._rooms.find((r) => r.id === roomId);
+      if (!room) return null;
+
+      const participants = this._roomParticipants.filter((p) => p.roomId === roomId);
+      if (participants.length === 0) return null;
+      if (participants.some((p) => p.userId === room.hostId)) return null;
+
+      // Caller-must-be-participant guard (parity with the Supabase RPC).
+      const callerId = this._user?.id || 'user_mock_scholar';
+      if (!participants.some((p) => p.userId === callerId)) return null;
+
+      const oldest = [...participants].sort(
+        (a, b) => a.joinedAt.localeCompare(b.joinedAt) || a.userId.localeCompare(b.userId)
+      )[0];
+
+      room.hostId = oldest.userId;
+      room.hostName = oldest.userName;
+      room.updatedAt = new Date().toISOString();
+
+      this.notify();
+      return JSON.parse(JSON.stringify(room));
     }
   };
 

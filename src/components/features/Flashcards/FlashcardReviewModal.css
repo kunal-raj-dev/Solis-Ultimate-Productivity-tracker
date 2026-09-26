@@ -84,6 +84,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  /* Plan §7.2: Apple HIG 48px minimum touch target for the SM-2 rating
+     buttons, enforced on every viewport (not only small screens). */
+  min-height: 48px;
+  min-width: 48px;
   padding: var(--space-sm) var(--space-xs);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
@@ -135,7 +139,6 @@
   }
 
   .solis-recall-btn {
-    min-height: 48px;
     padding: 8px 6px;
   }
 

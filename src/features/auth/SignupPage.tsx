@@ -184,7 +184,7 @@ export const SignupPage: React.FC = () => {
             clearError();
             try {
               ServiceContainer.switchToMock();
-              await login({ email: 'scholar@solis.space', password: 'guest-session' });
+              await login({ email: 'scholar@solis.space', password: 'guest-session' }, { guest: true });
               addToast({
                 title: 'Demo Sanctuary Ready',
                 description: 'Loaded with complete mock study curriculum and goals.',

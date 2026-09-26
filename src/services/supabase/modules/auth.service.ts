@@ -52,7 +52,19 @@ export class SupabaseAuthService implements IAuthService {
       const mapped = mapProfile(profile);
       if (typeof window !== 'undefined' && mapped.preferences) {
         try {
-          localStorage.setItem('solis_user_preferences', JSON.stringify(mapped.preferences));
+          // Merge over the stored JSON so local-only appearance choices
+          // (e.g. plan §7.3 readableFont) survive profile refreshes.
+          let storedPrefs: Record<string, unknown> = {};
+          try {
+            const rawPrefs = localStorage.getItem('solis_user_preferences');
+            storedPrefs = rawPrefs ? JSON.parse(rawPrefs) : {};
+          } catch {
+            storedPrefs = {};
+          }
+          localStorage.setItem(
+            'solis_user_preferences',
+            JSON.stringify({ ...storedPrefs, ...mapped.preferences })
+          );
         } catch {
           // Ignore storage errors
         }
@@ -223,7 +235,19 @@ export class SupabaseAuthService implements IAuthService {
 
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem('solis_user_preferences', JSON.stringify(nextPreferences));
+        // Merge over the stored JSON so local-only appearance choices
+        // (e.g. plan §7.3 readableFont) survive profile updates.
+        let storedPrefs: Record<string, unknown> = {};
+        try {
+          const rawPrefs = localStorage.getItem('solis_user_preferences');
+          storedPrefs = rawPrefs ? JSON.parse(rawPrefs) : {};
+        } catch {
+          storedPrefs = {};
+        }
+        localStorage.setItem(
+          'solis_user_preferences',
+          JSON.stringify({ ...storedPrefs, ...nextPreferences })
+        );
       } catch {
         // Ignore storage errors
       }

@@ -18,6 +18,7 @@ import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { EmptyState } from '../../components/feedback/EmptyState/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { dataService } from '../../services/dataService';
 import { Habit, HabitFrequency } from '../../types/habit';
 import { Goal } from '../../types/goal';
@@ -54,7 +55,37 @@ export const HabitsPage: React.FC = () => {
   const [quickTitle, setQuickTitle] = useState('');
   const [isQuickSubmitting, setIsQuickSubmitting] = useState(false);
 
-  const past14Days = getPastNDaysISO(14);
+  // Plan §7.1: on viewports < 768px the 14-day matrix collapses into a
+  // 7-day rolling window (M T W T F S S) so every column fits a 375px screen.
+  const isMobileViewport = useIsMobile();
+
+  const matrixDays = getPastNDaysISO(isMobileViewport ? 7 : 14);
+
+  // Plan §3.5: top summary pill — calm daily progress, never guilt.
+  const ritualsCompletedToday = habits.filter((h) => h.completedToday).length;
+
+  /**
+   * Plan §3.5 "Rhythm Story": completions this month framed as a positive
+   * rhythm title. Deterministic and encouragement-only — no tier shames a
+   * low count.
+   */
+  const getRhythmStory = useCallback((habit: Habit): { completions: number; title: string } => {
+    const monthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const completions = Object.entries(habit.history || {}).filter(
+      ([date, completed]) => completed === true && date.startsWith(monthKey)
+    ).length;
+    const title =
+      completions >= 12
+        ? 'Consistent Scholar'
+        : completions >= 6
+        ? 'Steady Rhythm'
+        : completions >= 2
+        ? 'Building Momentum'
+        : completions >= 1
+        ? 'Gentle Return'
+        : 'Ready When You Are';
+    return { completions, title };
+  }, []);
 
   const loadHabits = useCallback(async (isInitial = false) => {
     if (isInitial) setInitialLoadStatus('loading');
@@ -90,9 +121,11 @@ export const HabitsPage: React.FC = () => {
 
   useEffect(() => {
     loadHabits(true);
+    // Plan §6.1 scoped entity pub/sub: this page renders habits only, so it
+    // subscribes strictly to the 'habits' channel instead of every mutation.
     const unsubscribe = dataService.subscribe(() => {
       loadHabits(false);
-    });
+    }, ['habits']);
     return () => unsubscribe();
   }, [loadHabits]);
 
@@ -103,11 +136,14 @@ export const HabitsPage: React.FC = () => {
   };
 
   const handleToggleDay = async (habitId: string, dateStr: string) => {
-    hapticsEngine.playMechanicalTick();
     const prevHabits = habits;
     try {
       const updated = await dataService.habits.toggleHabitDate(habitId, dateStr);
       setHabits((prev) => prev.map((h) => (h.id === habitId ? updated : h)));
+
+      // Plan §3.5: haptic fires only AFTER a confirmed successful toggle —
+      // never before the request, avoiding false sensory feedback.
+      hapticsEngine.playMechanicalTick();
 
       if (isToday(dateStr)) {
         addToast({
@@ -317,6 +353,16 @@ export const HabitsPage: React.FC = () => {
             </Button>
           </form>
 
+          {/* Plan §3.5: daily completion summary pill */}
+          {habits.length > 0 && (
+            <div className="solis-habits-summary-row" aria-live="polite">
+              <span className="solis-habits-summary-pill">
+                {ritualsCompletedToday} of {habits.length} ritual
+                {habits.length === 1 ? '' : 's'} complete today
+              </span>
+            </div>
+          )}
+
           {habits.map((habit) => (
             <div key={habit.id} className="solis-habit-row">
               <div
@@ -361,9 +407,31 @@ export const HabitsPage: React.FC = () => {
                         <Flame size={18} />
                         <span>{habit.currentStreak} days</span>
                       </div>
-                      <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
-                        Best: {habit.longestStreak} days
-                      </div>
+                      {/* Plan §3.5: "Best" only surfaces when a real record exists
+                          (not a fresh 0/0 habit) and the current streak matches or
+                          beats it — never dangled over a low streak. */}
+                      {habit.longestStreak > 0 && habit.currentStreak >= habit.longestStreak && (
+                        <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                          Best: {habit.longestStreak} days
+                        </div>
+                      )}
+                      {/* Plan §3.5: Rhythm Story — positive framing of this month's rhythm */}
+                      {(() => {
+                        const story = getRhythmStory(habit);
+                        return (
+                          <div
+                            style={{
+                              fontSize: 'var(--text-micro)',
+                              color: 'var(--color-sage-600)',
+                              fontWeight: 600,
+                              marginTop: '2px',
+                              maxWidth: '200px'
+                            }}
+                          >
+                            {story.completions} completion{story.completions === 1 ? '' : 's'} this month • {story.title}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div style={{ display: 'flex', gap: '4px' }}>
@@ -383,15 +451,17 @@ export const HabitsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Bottom Row: 14-Day Interactive Matrix */}
+                {/* Bottom Row: Interactive Consistency Matrix (7-day on mobile, 14-day on desktop) */}
                 <div className="solis-habits-matrix-container">
                   <span className="solis-habits-matrix-title">
-                    14-Day Consistency Horizon
+                    {isMobileViewport ? '7-Day' : '14-Day'} Consistency Horizon
                   </span>
 
                   <div className="solis-habits-week-matrix">
-                    {past14Days.map((dateStr) => {
+                    {matrixDays.map((dateStr) => {
                       const isDone = habit.history[dateStr] === true;
+                      // Plan §3.4/§3.5: amnesty-excused days are "Excused", not "Missed".
+                      const isExcused = (habit.amnestyDates || []).includes(dateStr);
                       const isCurrToday = isToday(dateStr);
                       const d = new Date(dateStr + 'T00:00:00');
                       const dayLabel = d.toLocaleDateString('en-US', { weekday: 'narrow' });
@@ -402,7 +472,7 @@ export const HabitsPage: React.FC = () => {
                           key={dateStr}
                           type="button"
                           onClick={() => handleToggleDay(habit.id, dateStr)}
-                          title={`${d.toLocaleDateString('en-US', { weekday: 'short' })} ${dateStr}${isCurrToday ? ' (Today)' : ''}: ${isDone ? 'Completed' : 'Missed'}`}
+                          title={`${d.toLocaleDateString('en-US', { weekday: 'short' })} ${dateStr}${isCurrToday ? ' (Today)' : ''}: ${isDone ? 'Completed' : isExcused ? 'Excused' : 'Missed'}`}
                           className={`solis-habit-day-btn press-tactile ${isCurrToday ? 'solis-habit-day-btn--today' : ''} ${isDone ? 'solis-habit-day-btn--done' : ''}`}
                         >
                           <span className="solis-habit-day-label">

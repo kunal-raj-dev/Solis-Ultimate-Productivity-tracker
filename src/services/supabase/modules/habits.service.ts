@@ -77,6 +77,8 @@ export class SupabaseHabitService implements IHabitService {
     if (updates.frequency !== undefined) payload.frequency = updates.frequency;
     if (updates.color !== undefined) payload.color = updates.color;
     if (updates.goalId !== undefined) payload.goal_id = updates.goalId || null;
+    // Plan §3.4 "Streak Amnesty": persist excused absence dates (YYYY-MM-DD[]).
+    if (updates.amnestyDates !== undefined) payload.amnesty_dates = updates.amnestyDates;
 
     const { data, error } = await this.ctx.client
       .from('habits')
@@ -150,5 +152,39 @@ export class SupabaseHabitService implements IHabitService {
     this.ctx.notify();
     const all = await this.getHabits();
     return all.find((h) => h.id === id)!;
+  };
+
+  importHabitCompletions = async (habitId: string, completionDates: string[]): Promise<Habit> => {
+    const userId = await this.ctx.getUserId();
+    const dates = Array.from(new Set(completionDates.filter(Boolean)));
+
+    if (dates.length > 0) {
+      // Deduplicate against already-recorded dates so re-runs never duplicate.
+      const { data: existing } = await this.ctx.client
+        .from('habit_records')
+        .select('completion_date')
+        .eq('habit_id', habitId)
+        .eq('user_id', userId);
+      const existingDates = new Set((existing || []).map((row: any) => row.completion_date));
+      const missing = dates.filter((date) => !existingDates.has(date));
+
+      if (missing.length > 0) {
+        const { error } = await this.ctx.client.from('habit_records').insert(
+          missing.map((completion_date) => ({
+            habit_id: habitId,
+            user_id: userId,
+            completion_date,
+            completed: true
+          }))
+        );
+        if (error) throw error;
+      }
+    }
+
+    this.ctx.notify();
+    const all = await this.getHabits();
+    const imported = all.find((h) => h.id === habitId);
+    if (!imported) throw new Error(`Habit ${habitId} not found`);
+    return imported;
   };
 }

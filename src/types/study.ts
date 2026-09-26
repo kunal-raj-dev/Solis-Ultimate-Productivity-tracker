@@ -16,12 +16,23 @@ export interface StudySubject extends BaseEntity {
 
 export type TopicMasteryLevel = 'unstudied' | 'learning' | 'mastered';
 
+/** Position in the hierarchical syllabus tree (Unit → Chapter → Concept, plan §4.2). */
+export type TopicHierarchyLevel = 'unit' | 'chapter' | 'concept';
+
 export interface StudyTopic extends BaseEntity {
   subjectId: ID;
   title: string;
   description?: string;
   orderIndex: number;
   masteryLevel: TopicMasteryLevel;
+  /** Optional parent topic id. Absent (or pointing at a missing topic) = top-level topic. */
+  parentId?: ID;
+  /**
+   * Position in the syllabus hierarchy (plan §4.2). Shipped optional — rather
+   * than the plan's bare `level:` — so existing topics, services, and fixtures
+   * keep compiling; absent topics render as leaf concepts.
+   */
+  level?: TopicHierarchyLevel;
 }
 
 export type StudySessionType =

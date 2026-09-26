@@ -114,3 +114,40 @@
   align-items: center;
   gap: 6px;
 }
+
+/* ==========================================================================
+   Plan §7.1 — MOBILE VERTICAL AGENDA LIST (< 768px)
+   The horizontal hour-grid presentation collapses into a stacked,
+   chronological agenda: time, checkbox, and action on the lead line,
+   title and duration below. No horizontal overflow at 375px.
+   ========================================================================== */
+@media (max-width: 767px) {
+  .solis-timeblock-card {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .solis-timeblock-card:hover {
+    transform: none;
+  }
+
+  .solis-timeblock-card__time {
+    min-width: 0;
+    margin-right: auto;
+  }
+
+  .solis-timeblock-card__content {
+    flex-basis: 100%;
+    order: 5;
+    margin: 0;
+  }
+
+  .solis-timeblock-card__actions {
+    margin-left: auto;
+  }
+
+  .solis-timeblock-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

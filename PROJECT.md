@@ -2,7 +2,7 @@
 
 ## Architecture
 Solis Part 2 transforms Solis from a passive tracking web app into an integrated, active learning operating system ("The system that helps me remember what I learn").
-The architecture maintains a strict separation between **Canonical Deterministic State** (stored locally in IndexedDB/MockDataService/PostgreSQL) and **Advisory AI Intelligence** (Gemini 1.5 Flash/Pro with client-side key storage and zero-dependency REST).
+The architecture maintains a strict separation between **Canonical Deterministic State** (stored locally in IndexedDB/MockDataService/PostgreSQL) and **Advisory AI Intelligence** (Gemini 3.8 Flash with client-side key storage and zero-dependency REST).
 
 ```
                       [ User / Student ]

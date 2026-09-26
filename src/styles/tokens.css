@@ -400,15 +400,178 @@
 }
 
 /* ==========================================================================
-   LIVING HORIZON CIRCADIAN BIOLOGICAL LIGHTING STATES
-   Smooth temporal shifts without layout jumps
+   SEPIA THEME — LOW-STIMULATION READING MODE (Plan §7.3)
+   Activated via [data-theme="sepia"]. Warm monochrome (espresso/ochre/olive
+   family only): zero saturated blues or reds — every status, accent, and
+   subject color is remapped into the warm scale so alerts stay calm.
    ========================================================================== */
-html[data-circadian="dawn"]:not([data-theme="dark"]) {
+[data-theme="sepia"] {
+  color-scheme: light;
+  accent-color: #A9714B;
+
+  --bg-canvas: #F1E9D8;
+  --bg-canvas-glass: rgba(241, 233, 216, 0.9);
+  --bg-surface-primary: #FAF5E9;
+  --bg-surface-secondary: #EAE1CC;
+  --bg-surface-tertiary: #DFD3B8;
+  --bg-surface-elevated: #FAF5E9;
+  --bg-surface-floating: #FAF5E9;
+  --bg-surface-subtle: rgba(234, 225, 204, 0.65);
+  --bg-surface-hover: rgba(62, 47, 26, 0.04);
+  --bg-surface-active: rgba(62, 47, 26, 0.08);
+
+  /* Depths in Sepia Mode (Aged Paper & Sepia Ink Hairlines) */
+  --depth-0-bg: #F1E9D8;
+  --depth-0-border: transparent;
+  --depth-1-bg: #FAF5E9;
+  --depth-1-border: rgba(78, 60, 38, 0.09);
+  --depth-1-shadow: none;
+  --depth-2-bg: #FAF5E9;
+  --depth-2-border: rgba(78, 60, 38, 0.13);
+  --depth-2-shadow: none;
+  --depth-3-bg: #FAF5E9;
+  --depth-3-border: rgba(78, 60, 38, 0.18);
+  --depth-3-shadow: 0 1px 3px rgba(62, 47, 26, 0.05);
+  --depth-4-bg: #FAF5E9;
+  --depth-4-border: rgba(78, 60, 38, 0.24);
+  --depth-4-shadow: 0 4px 16px rgba(62, 47, 26, 0.07);
+
+  /* Inverted / Dark Card Surfaces (Focus Sanctuary, warm deep brown) */
+  --bg-dark-surface: #241C10;
+  --bg-dark-surface-elevated: #332814;
+  --text-dark-primary: #F2EAD6;
+  --text-dark-secondary: #B7A88B;
+  --text-dark-muted: #8E8064;
+
+  /* Typography / Text Semantics (Sepia Mode) */
+  --text-primary: #2E2312;
+  --text-secondary: #5F5138;
+  --text-muted: #6E5F44; /* WCAG AA 5.1:1 against #F1E9D8 */
+  --text-inverse: #F7F1E0;
+  --text-accent: #8A5A28;
+
+  /* Primary Button Semantics (Sepia Mode: warm espresso ink) */
+  --btn-primary-bg: #2E2312;
+  --btn-primary-text: #F7F1E0;
+  --btn-primary-hover: #463921;
+
+  /* Navigation Semantic Tokens (Sepia Mode) */
+  --nav-bg-transparent: transparent;
+  --nav-bg-scrolled: rgba(245, 238, 222, 0.9);
+  --nav-text: #2E2312;
+  --nav-text-muted: #5F5138;
+  --nav-text-active: #8A5A28;
+  --nav-border: rgba(62, 47, 26, 0.08);
+  --nav-hover: rgba(62, 47, 26, 0.05);
+  --nav-focus: #8A5A28;
+  --nav-shadow: 0 1px 4px rgba(62, 47, 26, 0.04);
+
+  /* Border Semantics (Sepia Mode) */
+  --border-hairline: rgba(78, 60, 38, 0.07);
+  --border-subtle: rgba(78, 60, 38, 0.13);
+  --border-default: rgba(78, 60, 38, 0.19);
+  --border-strong: rgba(78, 60, 38, 0.28);
+  --border-focus: #8A5A28;
+  --border-chamfer: inset 0 1px 0 rgba(255, 253, 246, 0.6);
+
+  /* Horological & Material Accents (Sepia Mode) */
+  --accent-brass: #9A7420;
+  --accent-brass-subtle: rgba(154, 116, 32, 0.12);
+  --accent-terracotta: #A9714B;
+
+  /* Skeletons (Sepia Mode) */
+  --skeleton-base: #EAE1CC;
+  --skeleton-shimmer: #DFD3B8;
+
+  /* Functional Status (Sepia Mode: warm monochrome — olive / ochre / muted
+     brick / taupe; no saturated red or blue alert tones) */
+  --status-success: #6E6F3F;
+  --status-success-bg: rgba(110, 111, 63, 0.12);
+  --status-warning: #9A7420;
+  --status-warning-bg: rgba(154, 116, 32, 0.12);
+  --status-error: #8C4A32;
+  --status-error-bg: rgba(140, 74, 50, 0.12);
+  --status-info: #7D6B52;
+  --status-info-bg: rgba(125, 107, 82, 0.12);
+
+  /* Subject Identity Accents (Sepia Mode: clay / ochre / taupe / olive) */
+  --subject-coral-accent: #A9714B;
+  --subject-coral-subtle: rgba(169, 113, 75, 0.1);
+  --subject-amber-accent: #9A7420;
+  --subject-amber-subtle: rgba(154, 116, 32, 0.1);
+  --subject-lavender-accent: #7D6B52;
+  --subject-lavender-subtle: rgba(125, 107, 82, 0.1);
+  --subject-sage-accent: #6E6F3F;
+  --subject-sage-subtle: rgba(110, 111, 63, 0.1);
+
+  /* Raw brand scales (Sepia Mode): components consume --color-* primitives
+     directly, so every saturated family is remapped into the warm monochrome
+     family — clay, ochre, dusty rose, taupe, olive. The ivory and charcoal
+     scales are already warm neutrals and carry over unchanged. */
+  --color-coral-50: #FAF1E8;
+  --color-coral-100: #F3E2D3;
+  --color-coral-200: #E7C9AE;
+  --color-coral-300: #D9A87C;
+  --color-coral-400: #BC8252;
+  --color-coral-500: #A9714B;
+  --color-coral-600: #8A5A28;
+  --color-coral-700: #6E4720;
+
+  --color-amber-50: #FAF3E3;
+  --color-amber-100: #F3E7C9;
+  --color-amber-200: #E8D4A4;
+  --color-amber-300: #D9BC7C;
+  --color-amber-400: #C09A4A;
+  --color-amber-500: #9A7420;
+  --color-amber-600: #7D5D18;
+
+  --color-rose-50: #F9F0EA;
+  --color-rose-100: #F0E0D5;
+  --color-rose-300: #D9B49C;
+  --color-rose-500: #A9654F;
+  --color-rose-600: #8C523F;
+
+  --color-lavender-50: #F7F4EC;
+  --color-lavender-100: #EDE7D8;
+  --color-lavender-300: #C9BCA0;
+  --color-lavender-400: #9A8A6B;
+  --color-lavender-500: #7D6B52;
+  --color-lavender-600: #645543;
+
+  --color-sage-50: #F6F4E8;
+  --color-sage-100: #EAE8D2;
+  --color-sage-300: #BDBE94;
+  --color-sage-400: #8F9160;
+  --color-sage-500: #6E6F3F;
+  --color-sage-600: #585933;
+
+  /* Atmospheric Gradients (Sepia Mode) */
+  --gradient-calm: radial-gradient(circle at 50% 0%, rgba(234, 225, 204, 0.5) 0%, rgba(241, 233, 216, 0) 70%);
+  --gradient-focus: linear-gradient(135deg, #241C10 0%, #332814 100%);
+  --gradient-momentum: linear-gradient(135deg, #A9714B 0%, #8A5A28 100%);
+  --gradient-achievement: linear-gradient(135deg, #9A7420 0%, #A9714B 100%);
+  --gradient-reflection: linear-gradient(135deg, #7D6B52 0%, #6B5B45 100%);
+  --gradient-subtle-glow: none;
+
+  /* Ambient Shadows (Sepia Mode) */
+  --shadow-subtle: 0 1px 2px rgba(62, 47, 26, 0.04);
+  --shadow-card: 0 1px 3px rgba(62, 47, 26, 0.05);
+  --shadow-elevated: 0 3px 8px rgba(62, 47, 26, 0.06);
+  --shadow-floating: 0 6px 18px rgba(62, 47, 26, 0.07);
+  --shadow-inner: inset 0 1px 2px rgba(62, 47, 26, 0.04);
+}
+
+/* ==========================================================================
+   LIVING HORIZON CIRCADIAN BIOLOGICAL LIGHTING STATES
+   Smooth temporal shifts without layout jumps. Sepia opts out: its
+   low-stimulation canvas must not be shifted by circadian tinting.
+   ========================================================================== */
+html[data-circadian="dawn"]:not([data-theme="dark"]):not([data-theme="sepia"]) {
   --bg-canvas: #F8F6F2;
   --bg-surface-secondary: #F2EFE8;
 }
 
-html[data-circadian="twilight"]:not([data-theme="dark"]) {
+html[data-circadian="twilight"]:not([data-theme="dark"]):not([data-theme="sepia"]) {
   --bg-canvas: #F4F0E8;
   --bg-surface-secondary: #EBE4D8;
 }

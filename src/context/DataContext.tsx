@@ -38,11 +38,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchSummary();
 
-    // Subscribe to repository mutation events
+    // Plan §6.1 scoped entity pub/sub: this provider aggregates every entity
+    // (getDailySummary derives from tasks/study/focus/habits, and refreshCount
+    // consumers such as useGuideCompletion also track notes, goals, and
+    // flashcards), so it subscribes to all six canonical channels. Domains
+    // outside the enum broadcast on 'all' and still reach it.
     const unsubscribe = dataService.subscribe(() => {
       setRefreshCount((prev) => prev + 1);
       fetchSummary();
-    });
+    }, ['tasks', 'habits', 'notes', 'study', 'focus', 'goals']);
 
     return () => {
       unsubscribe();

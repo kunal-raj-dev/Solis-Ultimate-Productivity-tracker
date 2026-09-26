@@ -6,4 +6,5 @@ export * from './ErrorBoundary/ErrorBoundary';
 export * from './ConfirmationDialog/ConfirmationDialog';
 export * from './OfflineBanner/OfflineBanner';
 export * from './RouteFallback/RouteFallback';
+export * from './PartialDataWarningBanner';
 

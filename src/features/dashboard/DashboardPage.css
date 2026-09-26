@@ -219,18 +219,18 @@
   gap: var(--space-xl);
 }
 
-/* Zone 5 — compact 3-card bottom strip (Due Recall / Habits / Exam Horizons) */
+/* Zone 5 — compact 2-card bottom strip (Due Recall / Habits) */
 .solis-zone-strip {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-xl);
-  align-items: start;
+  align-items: stretch;
   margin-top: var(--space-xl);
 }
 
 @media (min-width: 1024px) {
   .solis-zone-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-2xl);
   }
 }
@@ -247,6 +247,12 @@
   position: relative;
   transition: border-color var(--duration-swift) ease;
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+}
+
+.solis-panel > *:last-child {
+  flex: 1;
 }
 
 .solis-panel:hover {
@@ -480,6 +486,24 @@
   gap: 6px;
 }
 
+/* Plan §3.2: "Show all (N) tasks" accordion toggle */
+.solis-tasks-show-all-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 6px 2px;
+  font-family: var(--font-interface);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-coral-500);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+}
+
+.solis-tasks-show-all-btn:hover {
+  text-decoration: underline;
+}
+
 /* Empty Stubs */
 .solis-empty-stub {
   display: flex;
@@ -493,6 +517,12 @@
   gap: var(--space-sm);
   color: var(--text-secondary);
   font-size: var(--text-body-sm);
+}
+
+.solis-empty-stub-icon {
+  color: var(--accent-terracotta);
+  opacity: 0.85;
+  margin-bottom: 2px;
 }
 
 /* --------------------------------------------------------------------------
@@ -572,6 +602,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* Plan §3.2: no slice(0, 4) cap — every active habit renders in a
+   scrollable 2-column grid instead of a truncated list. */
+.solis-habit-pulse-list--all {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .solis-habit-pulse-item {

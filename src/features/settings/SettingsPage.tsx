@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar } from 'lucide-react';
+import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Check, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -8,12 +8,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Input } from '../../components/ui/Input/Input';
 import { TimePicker } from '../../components/ui/DatePicker';
 import { Switch } from '../../components/ui/Switch/Switch';
+import { Select } from '../../components/ui/Select/Select';
 import { ImportModal } from '../../components/features/ImportModal/ImportModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
+import { aiService } from '../../services/ai/ai.service';
 import { resetActivation } from '../../utils/activation';
 import './SettingsPage.css';
 import {
@@ -29,11 +31,53 @@ import {
 } from '../../utils/export';
 import { notificationService } from '../../services/notifications/notification.service';
 import type { SmartNotificationPreferences } from '../../types/notification';
+import type { UserPreferences } from '../../types/auth';
 import { getISODateString } from '../../utils/date';
+import { generateIcsCalendar } from '../../utils/calendar/icsGenerator';
+
+/** Plan §1.6 — the Gemini key is a session-scoped secret, never a persistent one. */
+const GEMINI_KEY_STORAGE = 'solis_gemini_api_key';
+
+/** Reads the key from sessionStorage; lifts any legacy plaintext localStorage copy up. */
+function readStoredGeminiKey(): string {
+  try {
+    const sessionKey = sessionStorage.getItem(GEMINI_KEY_STORAGE);
+    if (sessionKey) return sessionKey;
+    const legacyKey = localStorage.getItem(GEMINI_KEY_STORAGE);
+    if (legacyKey) {
+      // Secrets hygiene: remove the long-lived plaintext copy.
+      sessionStorage.setItem(GEMINI_KEY_STORAGE, legacyKey);
+      localStorage.removeItem(GEMINI_KEY_STORAGE);
+    }
+    return legacyKey || '';
+  } catch {
+    return '';
+  }
+}
+
+/** Inline validation message below a bounded numeric input (plan §1.6). */
+const FieldError: React.FC<{ message?: string }> = ({ message }) => {
+  if (!message) return null;
+  return (
+    <p
+      role="alert"
+      style={{
+        margin: '6px 0 0',
+        fontSize: 'var(--text-caption, 12px)',
+        color: 'var(--status-warning, #B45309)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px'
+      }}
+    >
+      <AlertCircle size={12} /> {message}
+    </p>
+  );
+};
 
 export const SettingsPage: React.FC = () => {
   const { user, logout, isLoggingOut, updateProfile } = useAuth();
-  const { theme, setTheme, density, setDensity } = useTheme();
+  const { theme, setTheme, density, setDensity, readableFont, setReadableFont } = useTheme();
   const { openGuide } = useGuide();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -63,12 +107,32 @@ export const SettingsPage: React.FC = () => {
     String(user?.preferences?.dailyStudyGoalMinutes ?? savedLocalPrefs?.dailyStudyGoalMinutes ?? 360)
   );
   const [weekStart, setWeekStart] = useState(() => localStorage.getItem('solis_week_start') || 'monday');
-  const [geminiApiKey, setGeminiApiKey] = useState(() => localStorage.getItem('solis_gemini_api_key') || '');
+  const [geminiApiKey, setGeminiApiKey] = useState(() => readStoredGeminiKey());
+  const [geminiModel, setGeminiModel] = useState(() => {
+    const stored = localStorage.getItem('solis_gemini_model');
+    if (stored && (stored === 'gemini-2.5-flash' || stored.startsWith('gemini-1.5') || stored.startsWith('gemini-2.0'))) {
+      return 'gemini-3.8-flash';
+    }
+    if (stored === 'gemini-3.8-pro' || stored === 'gemini-3.1-pro') {
+      return 'gemini-3.1-pro-preview';
+    }
+    return stored || 'gemini-3.8-flash';
+  });
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isAiTesting, setIsAiTesting] = useState(false);
+  const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [notifPrefs, setNotifPrefs] = useState<SmartNotificationPreferences>(
     () => notificationService.getPreferences()
   );
   const [isExporting, setIsExporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [cloudSyncError, setCloudSyncError] = useState<string | null>(null);
+  const [isRetryingSync, setIsRetryingSync] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    focusDuration?: string;
+    breakDuration?: string;
+    dailyGoal?: string;
+  }>({});
 
   useEffect(() => {
     if (user) {
@@ -168,6 +232,39 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  /**
+   * Plan §8.1 — One-Way Read-Only `.ics` Calendar Feed: exports every
+   * scheduled time block plus active exam-horizon dates as an RFC 5545
+   * calendar file that Google Calendar / Apple Calendar can import or
+   * subscribe to, with no two-way OAuth involved.
+   */
+  const handleDownloadIcsFeed = async () => {
+    setIsExporting(true);
+    try {
+      const [timeBlocks, goals] = await Promise.all([
+        fetchAllTimeBlocks(dataService),
+        dataService.goals.getGoals()
+      ]);
+      const icsContent = generateIcsCalendar({ timeBlocks, examGoals: goals });
+      const dateStr = getISODateString(new Date());
+      triggerDownload(icsContent, `solis-calendar-feed-${dateStr}.ics`, 'text/calendar;charset=utf-8;');
+      addToast({
+        title: 'Calendar Feed Downloaded',
+        description: 'Import the .ics file into Google Calendar or Apple Calendar to mirror your time blocks and exam dates.',
+        type: 'success'
+      });
+    } catch (err) {
+      console.error('ICS export failed:', err);
+      addToast({
+        title: 'Calendar Export Failed',
+        description: 'Could not generate the .ics calendar feed. Please try again.',
+        type: 'error'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleExportCSV = async (entity: 'tasks' | 'study' | 'focus' | 'notes' | 'habits' | 'goals') => {
     setIsExporting(true);
     try {
@@ -213,8 +310,41 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  /** Plan §1.6 — integer bounds: focus 1–180m, break 1–60m, daily goal 15–960m. */
+  const validateBounds = (): boolean => {
+    const errors: typeof fieldErrors = {};
+    const focus = Number.parseInt(focusDuration, 10);
+    if (!Number.isInteger(focus) || focus < 1 || focus > 180) {
+      errors.focusDuration = 'Focus block must be a whole number between 1 and 180 minutes.';
+    }
+    const brk = Number.parseInt(breakDuration, 10);
+    if (!Number.isInteger(brk) || brk < 1 || brk > 60) {
+      errors.breakDuration = 'Short rest must be a whole number between 1 and 60 minutes.';
+    }
+    const goal = Number.parseInt(dailyGoal, 10);
+    if (!Number.isInteger(goal) || goal < 15 || goal > 960) {
+      errors.dailyGoal = 'Daily capacity must be a whole number between 15 and 960 minutes.';
+    }
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const persistProfileToCloud = async (nextPreferences: Partial<UserPreferences>) => {
+    await updateProfile({
+      name: name.trim(),
+      email: email.trim(),
+      focusField: focusField.trim(),
+      preferences: nextPreferences
+    });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateBounds()) {
+      // Inline FieldError messages guide the fix; nothing is saved while
+      // values are out of bounds.
+      return;
+    }
     const parsedFocus = Math.max(1, parseInt(focusDuration, 10) || 25);
     const parsedBreak = Math.max(1, parseInt(breakDuration, 10) || 5);
     const parsedDailyGoal = Math.max(15, parseInt(dailyGoal, 10) || 360);
@@ -222,7 +352,17 @@ export const SettingsPage: React.FC = () => {
     notificationService.updatePreferences(notifPrefs);
     localStorage.setItem('solis_week_start', weekStart);
     localStorage.setItem('solis_density', density);
-    localStorage.setItem('solis_gemini_api_key', geminiApiKey);
+    try {
+      // Plan §1.6 — the Gemini key is session-scoped (see Solis Intelligence card).
+      if (geminiApiKey.trim()) {
+        sessionStorage.setItem(GEMINI_KEY_STORAGE, geminiApiKey.trim());
+      } else {
+        sessionStorage.removeItem(GEMINI_KEY_STORAGE);
+      }
+    } catch {
+      // Storage unavailable — non-fatal.
+    }
+    localStorage.setItem('solis_gemini_model', geminiModel);
 
     const nextPreferences = {
       ...(user?.preferences || {}),
@@ -234,18 +374,16 @@ export const SettingsPage: React.FC = () => {
     };
 
     try {
-      localStorage.setItem('solis_user_preferences', JSON.stringify(nextPreferences));
+      // Plan §7.3: keep the readable-font choice in the same sanctioned
+      // preferences JSON so a general Save never clobbers it.
+      localStorage.setItem('solis_user_preferences', JSON.stringify({ ...nextPreferences, readableFont }));
     } catch {
       // Ignore storage errors
     }
 
     try {
-      await updateProfile({
-        name: name.trim(),
-        email: email.trim(),
-        focusField: focusField.trim(),
-        preferences: nextPreferences
-      });
+      await persistProfileToCloud(nextPreferences);
+      setCloudSyncError(null);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('solis:preferences-updated', { detail: nextPreferences }));
       }
@@ -255,14 +393,129 @@ export const SettingsPage: React.FC = () => {
         type: 'success'
       });
     } catch (err: any) {
+      // Local cache already written above; surface the cloud failure honestly.
+      setCloudSyncError(err?.message || 'Could not reach the cloud.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('solis:preferences-updated', { detail: nextPreferences }));
+      }
+    }
+  };
+
+  const retryCloudSync = async () => {
+    if (!validateBounds()) return;
+    const parsedFocus = Math.max(1, parseInt(focusDuration, 10) || 25);
+    const parsedBreak = Math.max(1, parseInt(breakDuration, 10) || 5);
+    const parsedDailyGoal = Math.max(15, parseInt(dailyGoal, 10) || 360);
+    const nextPreferences = {
+      ...(user?.preferences || {}),
+      theme,
+      soundEnabled,
+      defaultFocusDurationMinutes: parsedFocus,
+      defaultBreakDurationMinutes: parsedBreak,
+      dailyStudyGoalMinutes: parsedDailyGoal
+    };
+    setIsRetryingSync(true);
+    try {
+      await persistProfileToCloud(nextPreferences);
+      setCloudSyncError(null);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('solis:preferences-updated', { detail: nextPreferences }));
       }
       addToast({
-        title: 'Preferences Saved Locally',
-        description: err?.message || 'Settings saved in browser; cloud sync will retry when online.',
-        type: 'info'
+        title: 'Cloud Sync Restored',
+        description: 'Your preferences are now synced to your account.',
+        type: 'success'
       });
+    } catch (err: any) {
+      setCloudSyncError(err?.message || 'Could not reach the cloud.');
+      addToast({
+        title: 'Retry failed',
+        description: err?.message || 'Cloud sync is still unavailable.',
+        type: 'error'
+      });
+    } finally {
+      setIsRetryingSync(false);
+    }
+  };
+
+  const handleSaveIntelligence = () => {
+    const trimmedKey = geminiApiKey.trim();
+    try {
+      if (trimmedKey) {
+        sessionStorage.setItem(GEMINI_KEY_STORAGE, trimmedKey);
+      } else {
+        sessionStorage.removeItem(GEMINI_KEY_STORAGE);
+      }
+      localStorage.setItem('solis_gemini_model', geminiModel);
+    } catch {
+      // Honest failure: no simulated success state (master.md §1.2 rule 5).
+      addToast({
+        title: 'Could Not Save Key',
+        description: 'Browser storage rejected the write. The key was not saved for this session.',
+        type: 'error'
+      });
+      return;
+    }
+    const modelFriendlyName = geminiModel === 'gemini-3.1-pro-preview'
+      ? 'Gemini 3.1 Pro'
+      : geminiModel === 'gemini-3.8-flash'
+        ? 'Gemini 3.8 Flash'
+        : geminiModel;
+    addToast({
+      title: 'Intelligence Settings Saved',
+      description: trimmedKey
+        ? `API key saved for this browser session with ${modelFriendlyName}.`
+        : 'API key cleared.',
+      type: 'success'
+    });
+  };
+
+  const handleTestIntelligence = async () => {
+    const keyToTest =
+      geminiApiKey.trim() ||
+      (() => {
+        try {
+          return sessionStorage.getItem(GEMINI_KEY_STORAGE) || localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+        } catch {
+          return '';
+        }
+      })();
+    if (!keyToTest) {
+      addToast({
+        title: 'API Key Required',
+        description: 'Please enter a Gemini API Key before testing.',
+        type: 'warning'
+      });
+      return;
+    }
+    setIsAiTesting(true);
+    setAiTestResult(null);
+    try {
+      const res = await aiService.testConnection(keyToTest, geminiModel);
+      setAiTestResult(res);
+      if (res.success) {
+        addToast({
+          title: 'Connection Succeeded',
+          description: res.message,
+          type: 'success'
+        });
+      } else {
+        addToast({
+          title: 'Connection Failed',
+          description: res.message,
+          type: 'error'
+        });
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Could not reach Gemini API.';
+      setAiTestResult({ success: false, message: msg });
+      addToast({
+        title: 'Connection Error',
+        description: msg,
+        type: 'error'
+      });
+    } finally {
+      setIsAiTesting(false);
     }
   };
 
@@ -350,25 +603,46 @@ export const SettingsPage: React.FC = () => {
             <CardContent>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div className="solis-settings-form-grid">
-                  <Input
-                    label="Focus Block (Minutes)"
-                    type="number"
-                    value={focusDuration}
-                    onChange={(e) => setFocusDuration(e.target.value)}
-                  />
-                  <Input
-                    label="Short Rest (Minutes)"
-                    type="number"
-                    value={breakDuration}
-                    onChange={(e) => setBreakDuration(e.target.value)}
-                  />
+                  <div>
+                    <Input
+                      label="Focus Block (Minutes)"
+                      type="number"
+                      value={focusDuration}
+                      onChange={(e) => {
+                        setFocusDuration(e.target.value);
+                        setFieldErrors((prev) => ({ ...prev, focusDuration: undefined }));
+                      }}
+                      aria-invalid={Boolean(fieldErrors.focusDuration)}
+                    />
+                    <FieldError message={fieldErrors.focusDuration} />
+                  </div>
+                  <div>
+                    <Input
+                      label="Short Rest (Minutes)"
+                      type="number"
+                      value={breakDuration}
+                      onChange={(e) => {
+                        setBreakDuration(e.target.value);
+                        setFieldErrors((prev) => ({ ...prev, breakDuration: undefined }));
+                      }}
+                      aria-invalid={Boolean(fieldErrors.breakDuration)}
+                    />
+                    <FieldError message={fieldErrors.breakDuration} />
+                  </div>
                 </div>
-                <Input
-                  label="Daily Study Goal Target (Minutes)"
-                  type="number"
-                  value={dailyGoal}
-                  onChange={(e) => setDailyGoal(e.target.value)}
-                />
+                <div>
+                  <Input
+                    label="Daily Study Goal Target (Minutes)"
+                    type="number"
+                    value={dailyGoal}
+                    onChange={(e) => {
+                      setDailyGoal(e.target.value);
+                      setFieldErrors((prev) => ({ ...prev, dailyGoal: undefined }));
+                    }}
+                    aria-invalid={Boolean(fieldErrors.dailyGoal)}
+                  />
+                  <FieldError message={fieldErrors.dailyGoal} />
+                </div>
                 <div style={{ paddingTop: '8px' }}>
                   <Switch
                     label="Play ambient bell upon session completion"
@@ -433,23 +707,144 @@ export const SettingsPage: React.FC = () => {
           {/* AI Intelligence Configuration */}
           <Card>
             <CardHeader>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={18} color="var(--color-coral-500)" />
-                <CardTitle>Solis Intelligence</CardTitle>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={18} color="var(--color-coral-500)" />
+                  <CardTitle>Solis Intelligence</CardTitle>
+                </div>
+                {geminiApiKey.trim() ? (
+                  <Badge variant="sage" showDot>Active (this session)</Badge>
+                ) : (
+                  <Badge variant="neutral">Key Not Configured</Badge>
+                )}
               </div>
             </CardHeader>
             <CardContent>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                  Provide a Gemini API Key to enable AI-powered study features (Flashcard Generation, Semantic Search, Weekly Synthesis, and "Ask Solis"). The key is stored locally in your browser.
+                  Provide a Google Gemini API Key to enable AI-powered study features (Flashcard Generation, Semantic Search, Weekly Synthesis, and &ldquo;Ask Solis&rdquo;). All core features work deterministically without a key.
                 </p>
+                <div
+                  role="note"
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md, 8px)',
+                    background: 'rgba(217, 119, 6, 0.08)',
+                    border: '1px solid rgba(217, 119, 6, 0.35)',
+                    fontSize: 'var(--text-body-sm, 13px)',
+                    color: 'var(--text-primary, #1C1917)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px'
+                  }}
+                >
+                  <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '1px', color: 'var(--color-amber-500, #D97706)' }} />
+                  <span>
+                    <strong>Session-only storage:</strong> your API key is kept in this browser tab&rsquo;s
+                    sessionStorage and is cleared when the tab closes. It never leaves your device except in
+                    direct requests to Google&rsquo;s Gemini API.
+                  </span>
+                </div>
                 <Input
                   label="Gemini API Key"
-                  type="password"
+                  type={showApiKey ? 'text' : 'password'}
                   value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  onChange={(e) => {
+                    setGeminiApiKey(e.target.value);
+                    if (aiTestResult) setAiTestResult(null);
+                  }}
                   placeholder="AIzaSy..."
+                  rightIcon={
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        color: 'var(--text-secondary)'
+                      }}
+                    >
+                      {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
+                  helperText="Stored in this browser tab's sessionStorage only — never written to persistent storage, never transmitted to external servers."
                 />
+                <Select
+                  label="Gemini Model"
+                  value={geminiModel}
+                  onChange={(e) => {
+                    setGeminiModel(e.target.value);
+                    if (aiTestResult) setAiTestResult(null);
+                  }}
+                  options={[
+                    { value: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Recommended — Fast & Intelligent)' },
+                    { value: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (High Reasoning)' },
+                    { value: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' }
+                  ]}
+                  helperText="Default: gemini-3.8-flash. Choose Gemini 3.8 Flash for fast daily operations or Gemini 3.1 Pro for deep multi-step reasoning."
+                />
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', paddingTop: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      leftIcon={<Save size={16} />}
+                      onClick={handleSaveIntelligence}
+                    >
+                      Save Intelligence Settings
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      leftIcon={<Sparkles size={16} />}
+                      onClick={handleTestIntelligence}
+                      disabled={isAiTesting || !geminiApiKey.trim()}
+                    >
+                      {isAiTesting ? 'Testing Connection...' : 'Test Connection'}
+                    </Button>
+                  </div>
+                  {(() => {
+                    let hasSessionKey = false;
+                    try {
+                      hasSessionKey = Boolean(sessionStorage.getItem(GEMINI_KEY_STORAGE));
+                    } catch {
+                      hasSessionKey = false;
+                    }
+                    return hasSessionKey ? (
+                      <span style={{ fontSize: 'var(--text-body-xs, 12px)', color: 'var(--color-sage-600, #10b981)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Check size={13} /> Active in this session
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
+
+                {aiTestResult && (
+                  <div
+                    role="status"
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md, 8px)',
+                      fontSize: 'var(--text-body-sm, 13px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: aiTestResult.success ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                      border: `1px solid ${aiTestResult.success ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)'}`,
+                      color: aiTestResult.success ? 'var(--color-sage-600, #10b981)' : 'var(--color-coral-500, #ef4444)'
+                    }}
+                  >
+                    {aiTestResult.success ? <Check size={16} /> : <AlertCircle size={16} />}
+                    <span>{aiTestResult.message}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -490,6 +885,16 @@ export const SettingsPage: React.FC = () => {
                 </Button>
                 <Button
                   type="button"
+                  variant={theme === 'sepia' ? 'primary' : 'outline'}
+                  size="md"
+                  leftIcon={<BookOpen size={16} />}
+                  onClick={() => setTheme('sepia')}
+                  aria-pressed={theme === 'sepia'}
+                >
+                  Sepia (Low-Stimulation)
+                </Button>
+                <Button
+                  type="button"
                   variant={theme === 'system' ? 'primary' : 'outline'}
                   size="md"
                   onClick={() => setTheme('system')}
@@ -501,10 +906,51 @@ export const SettingsPage: React.FC = () => {
               <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>
                 {theme === 'dark'
                   ? 'Active: Deep Charcoal sanctuary with warm graphite tones.'
+                  : theme === 'sepia'
+                  ? 'Active: Sepia low-stimulation reading mode — warm monochrome palette with no saturated alert colors.'
                   : theme === 'light'
                   ? 'Active: Warm Ivory sunlit editorial environment.'
                   : 'Active: Automatically matches your operating system appearance.'}
               </p>
+
+              {/* Plan §7.3: hyper-legible readable typefaces (OpenDyslexic / Atkinson) */}
+              <div style={{ marginTop: '16px' }}>
+                <label style={{ display: 'block', fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+                  Hyper-Legible Typeface
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <Button
+                    type="button"
+                    variant={readableFont === 'default' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setReadableFont('default')}
+                    aria-pressed={readableFont === 'default'}
+                  >
+                    Default
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={readableFont === 'opendyslexic' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setReadableFont('opendyslexic')}
+                    aria-pressed={readableFont === 'opendyslexic'}
+                  >
+                    OpenDyslexic
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={readableFont === 'atkinson' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setReadableFont('atkinson')}
+                    aria-pressed={readableFont === 'atkinson'}
+                  >
+                    Atkinson Hyperlegible
+                  </Button>
+                </div>
+                <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginTop: '8px', marginBottom: 0 }}>
+                  Both typefaces ship with Solis and apply instantly. Timers and code keep their monospaced face for alignment.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -596,12 +1042,79 @@ export const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
 
+          {/* Plan §1.6 — honest cloud-sync failure surfacing (never a "saved" claim). */}
+          {cloudSyncError && (
+            <div
+              role="alert"
+              style={{
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-md, 8px)',
+                background: 'rgba(225, 90, 71, 0.08)',
+                border: '1px solid rgba(225, 90, 71, 0.45)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}
+            >
+              <span style={{ fontSize: 'var(--text-body-sm, 13px)', color: 'var(--text-primary, #1C1917)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} style={{ color: 'var(--status-error, #E11D48)', flexShrink: 0 }} />
+                <span>
+                  <strong>Cloud Sync Failed:</strong> Changes cached locally on this device only.
+                </span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={retryCloudSync}
+                isLoading={isRetryingSync}
+              >
+                Retry Sync
+              </Button>
+            </div>
+          )}
+
           <div>
             <Button type="submit" variant="accent" size="lg" leftIcon={<Save size={16} />}>
               Save Preferences
             </Button>
           </div>
         </form>
+
+        {/* Plan §8.1 — One-Way Read-Only .ics Calendar Feed */}
+        <Card>
+          <CardHeader>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Calendar size={18} color="var(--color-coral-500)" />
+              <CardTitle>Calendar Feed (.ics)</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                Export your scheduled time blocks and upcoming exam dates as a standard RFC 5545
+                <code style={{ fontFamily: 'var(--font-mono)', padding: '0 4px' }}>.ics</code> calendar file.
+                Import it into Google Calendar or Apple Calendar — a one-way, read-only mirror of your Solis
+                schedule with no two-way OAuth connection required. The file is a snapshot of the moment you
+                download it: re-download after schedule changes to refresh what your calendar app shows.
+              </p>
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  leftIcon={<Calendar size={16} />}
+                  onClick={handleDownloadIcsFeed}
+                  isLoading={isExporting}
+                >
+                  Download .ics Calendar Feed
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Data Ownership & Export Hub */}
         <Card>

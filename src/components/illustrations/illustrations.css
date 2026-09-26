@@ -8,52 +8,49 @@
   overflow: visible;
 }
 
+/* Deactivate perpetual vertical bobbing across all editorial illustrations */
 .solis-illustration--floating {
-  animation: solis-illus-float 6s ease-in-out infinite;
+  animation: none;
+  transform: none;
 }
 
+/* Deactivate perpetual pulsing loops — editorial vector artwork remains calm and grounded */
 .solis-illustration--pulsing {
-  animation: solis-illus-pulse 4s ease-in-out infinite;
+  animation: none;
+  opacity: 1;
+  transform: none;
 }
 
 .solis-illustration--orbiting {
-  transform-origin: center;
-  animation: solis-illus-rotate 40s linear infinite;
+  animation: none;
+  transform: none;
 }
 
 @keyframes solis-illus-float {
   0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-8px);
+    transform: none;
   }
 }
 
 @keyframes solis-illus-pulse {
   0%, 100% {
-    opacity: 0.85;
-    transform: scale(1);
-  }
-  50% {
     opacity: 1;
-    transform: scale(1.02);
+    transform: none;
   }
 }
 
 @keyframes solis-illus-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+  0%, 100% {
+    transform: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .solis-illustration,
   .solis-illustration--floating,
   .solis-illustration--pulsing,
   .solis-illustration--orbiting {
     animation: none !important;
+    transform: none !important;
   }
 }

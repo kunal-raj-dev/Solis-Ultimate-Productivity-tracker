@@ -228,6 +228,18 @@
   opacity: 0.85;
 }
 
+/* Plan §3.1: hourly slot highlights while a task chip is dragged over it */
+.solis-hour-row--drop-target {
+  outline: 1.5px dashed var(--color-coral-500);
+  outline-offset: -2px;
+  background: rgba(230, 90, 65, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+.solis-hour-row--drop-target .solis-hour-empty-hint {
+  color: var(--color-coral-500);
+}
+
 .solis-hour-row--compact {
   min-height: 28px;
   padding: 4px 16px;
@@ -397,6 +409,21 @@
   border-radius: var(--radius-sm);
   padding: 4px 8px;
   font-size: var(--text-caption);
+}
+
+/* Plan §3.1: task chips are drag sources for direct time blocking */
+.solis-unscheduled-task-chip--draggable {
+  cursor: grab;
+  transition: border-color var(--duration-instant) ease, background-color var(--duration-instant) ease;
+}
+
+.solis-unscheduled-task-chip--draggable:hover {
+  border-color: var(--color-coral-500);
+  background: var(--bg-surface-elevated);
+}
+
+.solis-unscheduled-task-chip--draggable:active {
+  cursor: grabbing;
 }
 
 .solis-unscheduled-task-name {

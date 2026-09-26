@@ -373,6 +373,11 @@ export async function executeWorkspaceImport(
         subjectId: targetSubjectId,
         tags: t.tags || []
       });
+      // master.md §16.3 restore fidelity: carry the plan §3.3 deferral counter
+      // through the task update path (supported by both storage backends).
+      if (typeof t.deferralCount === 'number') {
+        await service.tasks.updateTask(created.id, { deferralCount: t.deferralCount }).catch(() => {});
+      }
       taskIdMap.set(t.id, created.id);
 
       // Import subtasks if present
@@ -430,6 +435,13 @@ export async function executeWorkspaceImport(
       const completedDates = Object.keys(h.history || {}).filter((date) => h.history && h.history[date] === true);
       for (const date of completedDates) {
         await service.habits.toggleHabitDate(created.id, date).catch(() => {});
+      }
+      // master.md §16.3 restore fidelity: re-attach the plan §3.4 amnesty
+      // dates after the completion history so the streak engine re-evaluates
+      // with both in place and Streak Amnesty's continuity promise survives
+      // a backup/restore round-trip.
+      if (h.amnestyDates && h.amnestyDates.length > 0) {
+        await service.habits.updateHabit(created.id, { amnestyDates: [...h.amnestyDates] }).catch(() => {});
       }
       totalImported++;
     } catch {

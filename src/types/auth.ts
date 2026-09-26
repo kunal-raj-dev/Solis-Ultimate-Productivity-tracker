@@ -1,7 +1,7 @@
 import { BaseEntity } from './common';
 
 export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system';
+  theme: 'light' | 'dark' | 'sepia' | 'system';
   soundEnabled: boolean;
   defaultFocusDurationMinutes: number;
   defaultBreakDurationMinutes: number;

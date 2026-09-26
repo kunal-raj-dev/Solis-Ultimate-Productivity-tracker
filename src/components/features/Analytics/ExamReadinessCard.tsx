@@ -11,6 +11,11 @@ export interface ExamReadinessCardProps {
 }
 
 export const ExamReadinessCard: React.FC<ExamReadinessCardProps> = ({ result, goalTitle }) => {
+  // Label components with the weights actually applied (the 20% habit weight
+  // redistributes to 50/35/0/15 when no habit is linked — plan §2.2).
+  const weights = result.appliedWeights ?? { topics: 0.35, retention: 0.3, habit: 0.2, milestone: 0.15 };
+  const weightLabel = (weight: number) => `(${Math.round(weight * 100)}%)`;
+
   return (
     <div className="solis-readiness-card">
       <div className="solis-readiness-header">
@@ -38,7 +43,7 @@ export const ExamReadinessCard: React.FC<ExamReadinessCardProps> = ({ result, go
       <div className="solis-readiness-grid">
         <div className="solis-readiness-component">
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Topics (35%)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Topics {weightLabel(weights.topics)}</span>
             <strong>{result.componentScores.topicsScore}%</strong>
           </div>
           <Progress value={result.componentScores.topicsScore} variant="coral" size="sm" />
@@ -46,7 +51,7 @@ export const ExamReadinessCard: React.FC<ExamReadinessCardProps> = ({ result, go
 
         <div className="solis-readiness-component">
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>SM-2 Recall (30%)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>SM-2 Recall {weightLabel(weights.retention)}</span>
             <strong>{result.componentScores.retentionScore}%</strong>
           </div>
           <Progress value={result.componentScores.retentionScore} variant="amber" size="sm" />
@@ -54,7 +59,7 @@ export const ExamReadinessCard: React.FC<ExamReadinessCardProps> = ({ result, go
 
         <div className="solis-readiness-component">
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Habits (20%)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Habits {weightLabel(weights.habit)}</span>
             <strong>{result.componentScores.habitScore}%</strong>
           </div>
           <Progress value={result.componentScores.habitScore} variant="sage" size="sm" />
@@ -62,7 +67,7 @@ export const ExamReadinessCard: React.FC<ExamReadinessCardProps> = ({ result, go
 
         <div className="solis-readiness-component">
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-caption)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>Milestones (15%)</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Milestones {weightLabel(weights.milestone)}</span>
             <strong>{result.componentScores.milestoneScore}%</strong>
           </div>
           <Progress value={result.componentScores.milestoneScore} variant="lavender" size="sm" />

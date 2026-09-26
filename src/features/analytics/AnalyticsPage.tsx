@@ -15,8 +15,13 @@ import { Button } from '../../components/ui/Button/Button';
 import { Skeleton } from '../../components/ui/Skeleton/Skeleton';
 import { SegmentedControl } from '../../components/ui/SegmentedControl/SegmentedControl';
 import { CognitiveLoadAlert } from '../../components/features/Analytics/CognitiveLoadAlert';
+import { PartialDataWarningBanner } from '../../components/feedback/PartialDataWarningBanner';
 import { ExamReadinessCard } from '../../components/features/Analytics/ExamReadinessCard';
 import { RetentionForecastGraph } from '../../components/features/Analytics/RetentionForecastGraph';
+import {
+  ThermalDifficultyMatrix,
+  buildThermalDifficultyPoints
+} from '../../components/features/Analytics/ThermalDifficultyMatrix';
 import { ContextualHelp } from '../../components/ui/ContextualHelp/ContextualHelp';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
@@ -34,6 +39,7 @@ import {
   TimeRangeScope,
   SolisIntelligenceReport
 } from '../../utils/intelligence';
+import { getISODateString } from '../../utils/date';
 import {
   evaluateCognitiveLoad,
   calculateExamReadiness,
@@ -71,6 +77,10 @@ export const AnalyticsPage: React.FC = () => {
   const [resources, setResources] = useState<StudyResource[]>([]);
   const [reflections, setReflections] = useState<DailyReflection[]>([]);
 
+  // Plan §6.3: number of slices that rejected in Promise.allSettled during
+  // the last load — > 0 renders the gentle partial-data warning banner.
+  const [partialFailureCount, setPartialFailureCount] = useState(0);
+
   const loadAllAnalyticsData = useCallback(async () => {
     try {
       const [
@@ -98,6 +108,19 @@ export const AnalyticsPage: React.FC = () => {
         dataService.resources ? dataService.resources.getResources() : Promise.resolve([]),
         dataService.reflections ? dataService.reflections.getReflections(10) : Promise.resolve([])
       ]);
+
+      // Plan §6.3 partial fetch failure resilience: fulfilled slices still
+      // populate the report (cached data first), while the rejected count
+      // drives the gentle retry banner.
+      const failedFetches = [subRes, sessRes, planRes, focusRes, taskRes, habitRes, goalRes, cardRes, noteRes, resourceRes, refRes]
+        .filter((res) => res.status === 'rejected');
+      if (failedFetches.length > 0) {
+        console.warn(
+          `[Analytics] ${failedFetches.length} data slice(s) failed to load:`,
+          failedFetches.map((res) => (res as PromiseRejectedResult).reason)
+        );
+      }
+      setPartialFailureCount(failedFetches.length);
 
       if (subRes.status === 'fulfilled') {
         setSubjects(subRes.value);
@@ -130,9 +153,12 @@ export const AnalyticsPage: React.FC = () => {
 
   useEffect(() => {
     loadAllAnalyticsData();
+    // Plan §6.1 scoped entity pub/sub: Progress aggregates every entity
+    // channel (its report spans tasks, habits, notes, study, focus, and
+    // goals); flashcards/resources/reflections broadcast on 'all'.
     const unsubscribe = dataService.subscribe(() => {
       loadAllAnalyticsData();
-    });
+    }, ['tasks', 'habits', 'notes', 'study', 'focus', 'goals']);
     return () => unsubscribe();
   }, [loadAllAnalyticsData]);
 
@@ -155,15 +181,40 @@ export const AnalyticsPage: React.FC = () => {
     );
   }, [sessions, planItems, subjects, topics, focusSessions, tasks, habits, flashcards, notes, resources, scope]);
 
-  // Mastery Intelligence 2.0 Calculations
+  // Plan §5.5 (audit item #10): the scope toggle drives ONE window that every
+  // section consumes — the report computes it, downstream sections filter by it.
+  const scopedData = useMemo(() => {
+    const { startDate, endDate } = report.window;
+    const inWindow = (iso?: string) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return false;
+      const key = getISODateString(d);
+      return key >= startDate && key <= endDate;
+    };
+    return {
+      sessions: sessions.filter((s) => inWindow(s.completedAt || s.createdAt)),
+      focusSessions: focusSessions.filter((f) => inWindow(f.createdAt)),
+      reflections: reflections.filter((r) => {
+        // `date` is a local YYYY-MM-DD key — anchor to local midnight before keying.
+        if (!r.date) return false;
+        const d = new Date(`${r.date}T00:00:00`);
+        if (Number.isNaN(d.getTime())) return false;
+        const key = getISODateString(d);
+        return key >= startDate && key <= endDate;
+      })
+    };
+  }, [report.window, sessions, focusSessions, reflections]);
+
+  // Mastery Intelligence 2.0 Calculations (scope-consistent inputs)
   const cognitiveReport = useMemo(() => {
     return evaluateCognitiveLoad({
-      focusSessions,
-      studySessions: sessions,
-      reflections,
+      focusSessions: scopedData.focusSessions,
+      studySessions: scopedData.sessions,
+      reflections: scopedData.reflections,
       topics
     });
-  }, [focusSessions, sessions, reflections, topics]);
+  }, [scopedData, topics]);
 
   const examReadinessList = useMemo(() => {
     return goals
@@ -175,18 +226,65 @@ export const AnalyticsPage: React.FC = () => {
           topics,
           flashcards,
           habits,
-          studySessions: sessions
+          studySessions: scopedData.sessions
         })
       }));
-  }, [goals, topics, flashcards, habits, sessions]);
+  }, [goals, topics, flashcards, habits, scopedData]);
 
+  // Plan §5.5 (audit items #9 + #10): the retention section obeys the scope
+  // toggle. Decay math is anchored to "now" (a state, not a window), so the
+  // scope selects the candidate set: topics engaged within the selected window.
+  // When nothing was engaged in the window, the most urgent topics overall are
+  // shown so overdue decay is never hidden from the scholar.
   const retentionForecasts = useMemo(() => {
     const histories = report.snapshot?.topicHistories;
-    return topics.slice(0, 4).map((top) => ({
-      topic: top,
-      forecast: calculateTopicRetentionForecast(top, flashcards, histories?.get(top.id))
-    }));
-  }, [topics, flashcards, report.snapshot]);
+    const { startDate, endDate } = report.window;
+    const inScope = (iso?: string | null) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return false;
+      const key = getISODateString(d);
+      return key >= startDate && key <= endDate;
+    };
+    const lastStudiedByTopic = new Map(
+      report.mastery.topics.map((signal) => [signal.topicId, signal.lastStudiedAt])
+    );
+    const scopedTopics = topics.filter((t) => inScope(lastStudiedByTopic.get(t.id)));
+    const candidates = scopedTopics.length > 0 ? scopedTopics : topics;
+
+    return candidates
+      .map((top) => ({
+        topic: top,
+        forecast: calculateTopicRetentionForecast(top, flashcards, histories?.get(top.id))
+      }))
+      .sort(
+        (a, b) =>
+          Number(b.forecast.isOverdue) - Number(a.forecast.isOverdue) ||
+          a.forecast.daysUntilDecayBelow80 - b.forecast.daysUntilDecayBelow80 ||
+          a.topic.title.localeCompare(b.topic.title)
+      )
+      .slice(0, 4);
+  }, [topics, flashcards, report.snapshot, report.mastery.topics, report.window]);
+
+  // Plan §5.5 (audit item #25): mastery × self-reported difficulty plane.
+  const thermalPoints = useMemo(
+    () => buildThermalDifficultyPoints(report.mastery.topics),
+    [report.mastery.topics]
+  );
+
+  // Heatmap cells span the exact scope window (P5F6) — Monday-anchored for
+  // 'this_week', trailing 28 for '28_days', a single day for 'today' — so no
+  // cell ever carries a date outside the selected scope.
+  const heatmapDays = useMemo(() => {
+    const days: string[] = [];
+    const cursor = new Date(`${report.window.startDate}T00:00:00`);
+    const end = new Date(`${report.window.endDate}T00:00:00`);
+    while (cursor <= end) {
+      days.push(getISODateString(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  }, [report.window]);
 
   const handleActionClick = (actionPayload?: {
     type: string;
@@ -221,6 +319,10 @@ export const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="solis-analytics-view">
+      {/* Plan §6.3: gentle notice when some slices of the last load could not
+          be fetched — cached data stays visible, retry is one click away. */}
+      <PartialDataWarningBanner failedCount={partialFailureCount} onRetry={loadAllAnalyticsData} />
+
       {/* 01 // EDITORIAL HEADER & TIME SCOPE SELECTOR */}
       <header className="solis-analytics-header">
         <div>
@@ -434,26 +536,29 @@ export const AnalyticsPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <Calendar size={18} color="var(--color-coral-500)" />
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-heading-2)', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>
-              Cognitive Rhythm & 28-Day Constellation
+              Cognitive Rhythm & Consistency Constellation
             </h2>
           </div>
           <p style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', margin: 0 }}>
-            Visual intensity of completed study minutes over the last 28 days.
+            Visual intensity of completed study minutes across the selected scope ({scope === 'today' ? 'Today' : scope === 'this_week' ? 'This Week' : '28 Days'}).
           </p>
         </div>
 
-        {/* Heatmap Grid */}
+        {/* Heatmap Grid — window follows the scope toggle (plan §5.5, item #10) */}
         <div>
           <div style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Intensity Matrix (Recent 28 Days)
+            Intensity Matrix ({scope === 'today' ? 'Today' : scope === 'this_week' ? 'This Week' : 'Recent 28 Days'})
           </div>
           <div className="solis-heatmap-grid">
-            {Array.from({ length: 28 }, (_, i) => {
-              const d = new Date();
-              d.setDate(d.getDate() - (27 - i));
-              const dateStr = d.toISOString().split('T')[0];
-              const dayMins = sessions
-                .filter((s) => (s.completedAt || s.createdAt).startsWith(dateStr))
+            {heatmapDays.map((dateStr) => {
+              // Local-timezone date keys (master.md §16.2) — never UTC slices
+              const dayMins = scopedData.sessions
+                .filter((s) => {
+                  const raw = s.completedAt || s.createdAt;
+                  if (!raw) return false;
+                  const d = new Date(raw);
+                  return !Number.isNaN(d.getTime()) && getISODateString(d) === dateStr;
+                })
                 .reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
 
               return (
@@ -464,6 +569,30 @@ export const AnalyticsPage: React.FC = () => {
                 />
               );
             })}
+          </div>
+
+          {/* Heatmap Legend (plan §5.5, audit item #8) — hour thresholds mirror getHeatmapLevelClass */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}
+            aria-label="Heatmap intensity legend"
+          >
+            <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>Less</span>
+            {[
+              { className: 'solis-heatmap-cell--l0', label: '0m' },
+              { className: 'solis-heatmap-cell--l1', label: '<30m' },
+              { className: 'solis-heatmap-cell--l2', label: '30–59m' },
+              { className: 'solis-heatmap-cell--l3', label: '1–2h' },
+              { className: 'solis-heatmap-cell--l4', label: '2h+' }
+            ].map((level) => (
+              <span key={level.className} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span
+                  className={`solis-heatmap-cell ${level.className}`}
+                  style={{ display: 'inline-block', width: '14px', height: '14px', cursor: 'default' }}
+                />
+                <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>{level.label}</span>
+              </span>
+            ))}
+            <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>More</span>
           </div>
         </div>
 
@@ -572,12 +701,29 @@ export const AnalyticsPage: React.FC = () => {
               {report.attention.neglectAlerts.map((alert) => (
                 <div key={alert.subjectId} className="solis-neglect-alert-banner">
                   <AlertTriangle size={18} color="var(--status-warning)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <div style={{ fontSize: 'var(--text-caption)' }}>
+                  <div style={{ fontSize: 'var(--text-caption)', flex: 1 }}>
                     <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
                       {alert.subjectName} Under-Served
                     </div>
                     <div>{alert.reason}</div>
                   </div>
+                  {/* Plan §5.5 (audit item #11): 1-click gentle re-entry into the neglected subject */}
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    leftIcon={<Flame size={13} />}
+                    style={{ flexShrink: 0 }}
+                    onClick={() =>
+                      handleActionClick({
+                        type: 'start_focus',
+                        subjectId: alert.subjectId,
+                        subjectName: alert.subjectName,
+                        suggestedDurationMinutes: 25
+                      })
+                    }
+                  >
+                    Focus Subject (25m)
+                  </Button>
                 </div>
               ))}
             </div>
@@ -662,6 +808,20 @@ export const AnalyticsPage: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Plan §5.5 (audit item #25): Thermal Difficulty Matrix — mastery × self-reported difficulty */}
+        <ThermalDifficultyMatrix
+          points={thermalPoints}
+          onFocusTopic={(point) =>
+            handleActionClick({
+              type: 'start_focus',
+              subjectId: point.subjectId,
+              subjectName: point.subjectName,
+              topicTitle: point.topicTitle,
+              suggestedDurationMinutes: 25
+            })
+          }
+        />
       </section>
 
       {/* 07 // EXAM READINESS COMMAND SANCTUARY */}

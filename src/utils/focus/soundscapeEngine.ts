@@ -53,6 +53,11 @@ class SyntheticSoundscapeEngine {
   private currentType: SoundscapeType = 'none';
   private currentVolume = 0.5; // 0.0 to 1.0
 
+  // Plan §5.7 (audit item #42): silent looping HTML5 <audio> keepalive +
+  // MediaSession metadata, so iOS Safari / Android Chrome keep the Web Audio
+  // context alive when the screen locks during a focus session.
+  private keepaliveAudio: HTMLAudioElement | null = null;
+
   private getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -73,6 +78,90 @@ class SyntheticSoundscapeEngine {
     return this.ctx;
   }
 
+  /**
+   * Builds a 1-second, inaudible-but-not-digital-zero mono WAV data URI.
+   * iOS suspends truly zeroed streams; a ±1/32768 amplitude stays silent to
+   * the ear while keeping the media session legitimately "playing".
+   */
+  private createSilentWavDataUri(durationSeconds = 1): string {
+    const sampleRate = 8000;
+    const numSamples = Math.floor(sampleRate * durationSeconds);
+    const dataSize = numSamples * 2; // 16-bit mono
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // mono
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    for (let i = 0; i < numSamples; i++) {
+      view.setInt16(44 + i * 2, 1, true); // inaudible ±1 LSB carrier
+    }
+
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    return `data:audio/wav;base64,${btoa(binary)}`;
+  }
+
+  private startMediaSessionKeepalive(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    try {
+      if (!this.keepaliveAudio) {
+        this.keepaliveAudio = new Audio(this.createSilentWavDataUri(1));
+        this.keepaliveAudio.loop = true;
+        this.keepaliveAudio.setAttribute('preload', 'auto');
+      }
+      this.keepaliveAudio.currentTime = 0;
+      // Must be invoked within the user-gesture call chain (Start Focus tap).
+      this.keepaliveAudio.play().catch(() => {});
+
+      if ('mediaSession' in navigator) {
+        if (typeof MediaMetadata !== 'undefined') {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'Solis Focus Soundscape',
+            artist: 'Deep Work Flow'
+          });
+        }
+        navigator.mediaSession.playbackState = 'playing';
+      }
+    } catch {
+      // Keepalive is a progressive enhancement — never block soundscape playback.
+    }
+  }
+
+  private stopMediaSessionKeepalive(): void {
+    try {
+      if (this.keepaliveAudio) {
+        this.keepaliveAudio.pause();
+      }
+      if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
   public setSoundscape(type: SoundscapeType, volume = this.currentVolume): void {
     this.stop();
     this.currentType = type;
@@ -86,6 +175,9 @@ class SyntheticSoundscapeEngine {
     this.masterGain = ctx.createGain();
     this.masterGain.gain.setValueAtTime(this.currentVolume * 0.35, ctx.currentTime);
     this.masterGain.connect(ctx.destination);
+
+    // Plan §5.7: anchor the OS media session while any soundscape plays.
+    this.startMediaSessionKeepalive();
 
     switch (type) {
       case 'pink_noise':
@@ -140,6 +232,7 @@ class SyntheticSoundscapeEngine {
       this.masterGain = null;
     }
     this.currentType = 'none';
+    this.stopMediaSessionKeepalive();
   }
 
   public getCurrentSoundscape(): SoundscapeType {

@@ -23,7 +23,9 @@ import {
   IRoutineService,
   IResourceService,
   IReflectionService,
-  IRoomService
+  IRoomService,
+  DataEntityChannel,
+  matchesChannelFilter
 } from '../api.interface';
 import { supabase } from './supabaseClient';
 import { queryCache } from '../cache';
@@ -44,7 +46,10 @@ import { SupabaseReflectionService } from './modules/reflections.service';
 import { SupabaseRoomsService } from './modules/rooms.service';
 
 export class SupabaseDataService implements IDataService {
-  private listeners: Set<() => void> = new Set();
+  private listeners: Set<{
+    fn: (channel?: DataEntityChannel) => void;
+    channels?: DataEntityChannel[];
+  }> = new Set();
 
   public auth: IAuthService;
   public tasks: ITaskService;
@@ -62,42 +67,57 @@ export class SupabaseDataService implements IDataService {
   public rooms: IRoomService;
 
   constructor() {
-    const ctx: SupabaseServiceContext = {
+    // Plan §6.1 scoped entity pub/sub: every domain module emits its own
+    // entity channel, so a mutation only wakes subscribers of that channel.
+    // Domains outside the canonical channel enum broadcast on 'all'.
+    const ctxFor = (channel: DataEntityChannel): SupabaseServiceContext => ({
       client: supabase,
       getUserId: () => this.getRequiredUserId(),
-      notify: () => this.notify(),
+      notify: () => this.notify(channel),
       getServices: () => this
-    };
+    });
 
-    this.auth = new SupabaseAuthService(ctx);
-    this.tasks = new SupabaseTaskService(ctx);
-    this.study = new SupabaseStudyService(ctx);
-    this.notes = new SupabaseNoteService(ctx);
-    this.focus = new SupabaseFocusService(ctx);
-    this.habits = new SupabaseHabitService(ctx);
-    this.goals = new SupabaseGoalService(ctx);
-    this.analytics = new SupabaseAnalyticsService(ctx);
-    this.flashcards = new SupabaseFlashcardService(ctx);
-    this.reviews = new SupabaseReviewService(ctx);
-    this.routines = new SupabaseRoutineService(ctx);
-    this.resources = new SupabaseResourceService(ctx);
-    this.reflections = new SupabaseReflectionService(ctx);
-    this.rooms = new SupabaseRoomsService(ctx);
+    this.tasks = new SupabaseTaskService(ctxFor('tasks'));
+    this.study = new SupabaseStudyService(ctxFor('study'));
+    this.notes = new SupabaseNoteService(ctxFor('notes'));
+    this.focus = new SupabaseFocusService(ctxFor('focus'));
+    this.habits = new SupabaseHabitService(ctxFor('habits'));
+    this.goals = new SupabaseGoalService(ctxFor('goals'));
+
+    const globalCtx = ctxFor('all');
+    this.auth = new SupabaseAuthService(globalCtx);
+    this.analytics = new SupabaseAnalyticsService(globalCtx);
+    this.flashcards = new SupabaseFlashcardService(globalCtx);
+    this.reviews = new SupabaseReviewService(globalCtx);
+    this.routines = new SupabaseRoutineService(globalCtx);
+    this.resources = new SupabaseResourceService(globalCtx);
+    this.reflections = new SupabaseReflectionService(globalCtx);
+    this.rooms = new SupabaseRoomsService(globalCtx);
   }
 
-  public subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
+  public subscribe(
+    listener: (channel?: DataEntityChannel) => void,
+    channels?: DataEntityChannel[]
+  ): () => void {
+    const entry = { fn: listener, channels };
+    this.listeners.add(entry);
     return () => {
-      this.listeners.delete(listener);
+      this.listeners.delete(entry);
     };
   }
 
-  private notify(): void {
-    // Invalidate client-side query cache on any mutation
+  public notifySubscribers(channel: DataEntityChannel): void {
+    this.notify(channel);
+  }
+
+  private notify(channel?: DataEntityChannel): void {
+    // Cache invalidation law: invalidate the client-side query cache BEFORE
+    // any listener performs a follow-up read.
     queryCache.invalidate();
-    for (const listener of this.listeners) {
+    for (const entry of this.listeners) {
+      if (!matchesChannelFilter(entry.channels, channel)) continue;
       try {
-        listener();
+        entry.fn(channel);
       } catch (err) {
         console.error('Error in Solis repository listener:', err);
       }

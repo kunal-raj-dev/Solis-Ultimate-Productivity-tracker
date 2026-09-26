@@ -84,6 +84,7 @@ export class SupabaseGoalService implements IGoalService {
       }
     }
 
+    queryCache.invalidate('goals_all');
     this.ctx.notify();
     const all = await this.getGoals();
     return all.find((g) => g.id === data.id)!;

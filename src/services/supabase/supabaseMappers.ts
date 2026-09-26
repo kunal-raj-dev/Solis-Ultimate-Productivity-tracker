@@ -63,6 +63,7 @@ export function mapTask(row: any, subtasks: any[] = []): Task {
     recurrence: row.recurrence || undefined,
     isRecurring: row.is_recurring ?? Boolean(row.recurrence),
     naturalLanguageInput: row.natural_language_input || undefined,
+    deferralCount: row.deferral_count ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -178,6 +179,7 @@ export function mapFocusSession(row: any, subjectName?: string): FocusSession {
     targetOutcome: row.target_outcome ?? undefined,
     notes: row.notes || undefined,
     parkedThoughts: row.parked_thoughts || undefined,
+    preSessionEnergy: row.pre_session_energy || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -185,7 +187,14 @@ export function mapFocusSession(row: any, subjectName?: string): FocusSession {
 
 export function mapHabit(row: any, history: Record<string, boolean> = {}, goalTitle?: string): Habit {
   const todayStr = getISODateString(new Date());
-  const { currentStreak, longestStreak } = calculateStreaks(history, todayStr);
+  const { currentStreak, longestStreak } = calculateStreaks(history, {
+    frequency: row.frequency || 'daily',
+    // "Never miss twice" (master.md §4.7): one isolated miss never zeroes a streak.
+    allowGraceDays: true,
+    // Plan §3.4 "Streak Amnesty": excused absence days stay transparent.
+    amnestyDates: row.amnesty_dates || undefined,
+    referenceDate: new Date(`${todayStr}T12:00:00`)
+  });
 
   return {
     id: row.id,
@@ -198,6 +207,7 @@ export function mapHabit(row: any, history: Record<string, boolean> = {}, goalTi
     longestStreak,
     completedToday: history[todayStr] === true,
     history,
+    amnestyDates: row.amnesty_dates || undefined,
     goalId: row.goal_id || undefined,
     goalTitle: goalTitle || row.goals?.title || undefined,
     createdAt: row.created_at,

@@ -118,9 +118,12 @@ export const GoalsPage: React.FC = () => {
 
   useEffect(() => {
     loadGoals(true);
+    // Plan §6.1 scoped entity pub/sub: this page renders goals plus
+    // subjects/tasks/habits context; flashcards and resources broadcast on
+    // 'all' and still reach it.
     const unsubscribe = dataService.subscribe(() => {
       loadGoals(false);
-    });
+    }, ['goals', 'study', 'tasks', 'habits']);
     return () => unsubscribe();
   }, [loadGoals]);
 

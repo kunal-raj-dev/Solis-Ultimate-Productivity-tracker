@@ -77,7 +77,7 @@ export const LoginPage: React.FC = () => {
     clearError();
     try {
       ServiceContainer.switchToMock();
-      await login({ email: 'scholar@solis.space', password: 'guest-session' });
+      await login({ email: 'scholar@solis.space', password: 'guest-session' }, { guest: true });
       addToast({
         title: 'Guest Sanctuary Loaded',
         description: 'Exploring Solis with full interactive mock workspace.',

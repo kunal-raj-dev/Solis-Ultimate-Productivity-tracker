@@ -34,7 +34,7 @@ import {
 import { StudySubject } from '../../types/study';
 import { Goal } from '../../types/goal';
 import { PriorityLevel } from '../../types/common';
-import { formatFriendlyDate, getISODateString } from '../../utils/date';
+import { formatFriendlyDate, getISODateString, addDays } from '../../utils/date';
 import { ValidationError } from '../../utils/validation';
 import { useTimeBlockScheduler } from '../../hooks/useTimeBlockScheduler';
 import { HourlyPlannerView } from './HourlyPlannerView';
@@ -44,8 +44,8 @@ import { CreateTimeBlockModal } from './CreateTimeBlockModal';
 import { HourReviewModal } from './HourReviewModal';
 import { SmartTaskInput } from './components/SmartTaskInput';
 import { TaskRow } from './components/TaskRow';
-import { calculateWorkload } from '../../utils/tasks/workloadCalculator';
-import { getReplanSuggestions } from '../../utils/tasks/replanEngine';
+import { calculateWorkload, getGentleStartDailyCapacityMinutes } from '../../utils/tasks/workloadCalculator';
+import { getReplanSuggestions, findNextAvailableSlot } from '../../utils/tasks/replanEngine';
 import { hapticsEngine } from '../../utils/focus/hapticsEngine';
 import './TasksPage.css';
 
@@ -111,7 +111,15 @@ export const TasksPage: React.FC = () => {
   );
   const scheduledHours = useMemo(() => (scheduledMinutes / 60).toFixed(1), [scheduledMinutes]);
   const workload = useMemo(
-    () => calculateWorkload({ date: selectedDate, tasks, timeBlocks }),
+    () =>
+      calculateWorkload({
+        date: selectedDate,
+        tasks,
+        timeBlocks,
+        // Plan §3.4 "Gentle Start": same day-scoped 50% capacity override the
+        // Today page uses, so both capacity bars agree for the same day (P3F5).
+        dailyCapacityMinutes: getGentleStartDailyCapacityMinutes(selectedDate)
+      }),
     [selectedDate, tasks, timeBlocks]
   );
 
@@ -280,10 +288,12 @@ export const TasksPage: React.FC = () => {
 
   useEffect(() => {
     loadTasks(true);
+    // Plan §6.1 scoped entity pub/sub: this page renders tasks and time
+    // blocks only, so it subscribes to the 'tasks' channel.
     const unsubscribe = dataService.subscribe(() => {
       loadTasks(false);
       loadTimeBlocks(selectedDate);
-    });
+    }, ['tasks']);
     return () => unsubscribe();
   }, [loadTasks, loadTimeBlocks, selectedDate]);
 
@@ -608,6 +618,98 @@ export const TasksPage: React.FC = () => {
       addToast({ title: 'Could not slot task', description: err?.message, type: 'error' });
     }
   };
+
+  // Plan §3.3: one-tap Zeigarnik deferral — "→ Tomorrow" moves an overdue task
+  // to tomorrow, increments its deferral count, and offers an undo toast.
+  const handleDeferTaskToTomorrow = useCallback(async (task: Task) => {
+    const tomorrowKey = getISODateString(addDays(new Date(), 1));
+    const prevDueDate = task.dueDate;
+    const nextDeferralCount = (task.deferralCount || 0) + 1;
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, dueDate: tomorrowKey, deferralCount: nextDeferralCount } : t))
+    );
+    try {
+      const updated = await dataService.tasks.updateTask(task.id, {
+        dueDate: tomorrowKey,
+        deferralCount: nextDeferralCount
+      });
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? { ...updated, deferralCount: nextDeferralCount } : t)));
+      const undoDeferral = async () => {
+        try {
+          const restored = await dataService.tasks.updateTask(task.id, {
+            ...(prevDueDate ? { dueDate: prevDueDate } : {}),
+            deferralCount: task.deferralCount || 0
+          });
+          setTasks((prev) => prev.map((t) => (t.id === restored.id ? restored : t)));
+          addToast({ title: 'Deferral Undone', description: restored.title, type: 'info' });
+        } catch {
+          addToast({ title: 'Undo failed', type: 'error' });
+        }
+      };
+      addToast({
+        title: 'Moved to Tomorrow',
+        description: `"${updated.title}" — no rush, it will be waiting for you.`,
+        type: 'info',
+        durationMs: 5000,
+        action: { label: 'Undo', onClick: undoDeferral }
+      });
+    } catch {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, dueDate: prevDueDate, deferralCount: task.deferralCount || 0 } : t))
+      );
+      addToast({ title: 'Could not defer task', type: 'error' });
+    }
+  }, [addToast]);
+
+  // Plan §3.3: calm roll — move past incomplete blocks into today's schedule
+  // (next free slot per block) with one click, replacing the guilt banner.
+  const handleRollPastBlocksToToday = useCallback(async (blocks: TaskTimeBlock[]) => {
+    if (blocks.length === 0) return;
+    const todayKey = getISODateString(new Date());
+    const nowH = new Date().getHours();
+    let rolledCount = 0;
+    // P3F1: the occupancy mirror must be TODAY'S full grid. The timeBlocks
+    // state only holds the SELECTED date's blocks, so when the roll is used
+    // from a past-day view, today's occupied hours are invisible and rolled
+    // blocks would double-book them. Fetch today's blocks fresh instead.
+    let placed: TaskTimeBlock[];
+    try {
+      placed = await dataService.tasks.getTimeBlocks(todayKey);
+    } catch {
+      placed = [...timeBlocks]; // offline fallback: best-effort from the viewed date
+    }
+    for (const block of blocks) {
+      const slot = findNextAvailableSlot(todayKey, placed, nowH, block.durationMinutes, block.id);
+      if (!slot) continue; // no free hour left today — the block stays where it is
+      try {
+        const updated = await dataService.tasks.updateTimeBlock(block.id, {
+          date: todayKey,
+          startHour: slot.hour,
+          startMinute: slot.minute,
+          status: 'planned'
+        });
+        placed = placed.map((b) => (b.id === updated.id ? updated : b));
+        setTimeBlocks((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+        rolledCount++;
+      } catch {
+        // leave the block untouched on failure; the prompt stays available
+      }
+    }
+    if (rolledCount > 0) {
+      hapticsEngine.playMechanicalTick();
+      addToast({
+        title: 'Blocks Rolled to Today',
+        description: `${rolledCount} unfinished block${rolledCount === 1 ? '' : 's'} placed back on your schedule.`,
+        type: 'success'
+      });
+    } else {
+      addToast({
+        title: 'Schedule Already Full',
+        description: 'No open hour left today — these blocks will wait calmly for tomorrow.',
+        type: 'info'
+      });
+    }
+  }, [timeBlocks, addToast]);
 
   const handleQuickReplanBlock = async (block: TaskTimeBlock, targetDate: string, targetHour: number) => {
     try {
@@ -1104,6 +1206,7 @@ export const TasksPage: React.FC = () => {
                 onEditTask={openEditModal}
                 onDeleteTask={handleDeleteTask}
                 onScheduleToHour={handleScheduleTaskToHour}
+                onDeferTaskToTomorrow={handleDeferTaskToTomorrow}
                 onAddSubtask={handleAddSubtask}
                 onToggleSubtask={handleToggleSubtask}
                 onDeleteSubtask={handleDeleteSubtask}
@@ -1181,6 +1284,7 @@ export const TasksPage: React.FC = () => {
                             })
                           }
                           onSlotToHour={handleScheduleTaskToHour}
+                          onDeferToTomorrow={handleDeferTaskToTomorrow}
                           showScheduleAction={true}
                         />
                       );
@@ -1204,6 +1308,7 @@ export const TasksPage: React.FC = () => {
                   onScheduleTaskToHour={handleScheduleTaskToHour}
                   onAutoReplanCandidates={handleAutoReplanCandidates}
                   onQuickReplanBlock={handleQuickReplanBlock}
+                  onRollPastBlocksToToday={handleRollPastBlocksToToday}
                 />
               </div>
             </div>

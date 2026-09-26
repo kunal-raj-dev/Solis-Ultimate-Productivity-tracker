@@ -74,6 +74,7 @@ flowchart TD
   - `[NEW]` `src/utils/tasks/__tests__/workloadCalculator.edgeCases.test.ts`: Tests missing durations, zero-hour capacities, and date boundaries.
   - `[NEW]` `src/utils/intelligence/__tests__/examReadiness.calibration.test.ts`: Reproduction tests ensuring 0 mastered topics cannot evaluate to "Prepared" or "Borderline".
   - `[NEW]` `src/utils/learning/__tests__/spacedRepetition.intraDay.test.ts`: Tests showing failed cards (`again`) must re-queue within the same session.
+  > **Phase 0 execution note**: `src/utils/__tests__/notes.autoSave.test.ts` is **deferred to Phase 1.2** — its subject, the `useDebouncedAutoSave` hook (§1.2), does not exist yet and could not compile at baseline. Phase 0 closes with 4 of the 5 harness files; the fifth lands with Phase 1.2 and its verification gate is satisfied there. §0.1 is therefore **not fully satisfied at Phase 0 close**.
 - **Verification Gate**:
   ```bash
   npm run typecheck

@@ -107,14 +107,16 @@ export class SupabaseRoomsService implements IRoomService {
 
     if (error || !data) throw error || new Error('Failed to create study room');
 
-    // Automatically join creator as focusing participant
+    // Automatically join creator as focusing participant.
+    // joined_at is intentionally omitted: the column default stamps the first
+    // join and a conflict-update leaves it untouched — it is the Phase 6.2
+    // "oldest remaining participant" host-election key and must never move.
     await this.ctx.client
       .from('room_participants')
       .upsert({
         room_id: data.id,
         user_id: userId,
-        status: 'focusing',
-        joined_at: new Date().toISOString()
+        status: 'focusing'
       });
 
     // Record creation event in room timeline
@@ -132,6 +134,7 @@ export class SupabaseRoomsService implements IRoomService {
       // Non-critical event insert error
     }
 
+    queryCache.invalidate('study_rooms_list');
     this.ctx.notify();
     return mapStudyRoom(data, data.profiles?.name, 1);
   };
@@ -195,6 +198,7 @@ export class SupabaseRoomsService implements IRoomService {
 
     if (error || !data) throw error || new Error('Failed to update room timer state');
 
+    queryCache.invalidate('study_rooms_list');
     this.ctx.notify();
     return mapStudyRoom(data, data.profiles?.name, data.room_participants ? data.room_participants.length : 0);
   };
@@ -202,14 +206,15 @@ export class SupabaseRoomsService implements IRoomService {
   joinRoom = async (roomId: string, status: ParticipantStatus = 'focusing'): Promise<RoomParticipant> => {
     const userId = await this.ctx.getUserId();
 
+    // joined_at is intentionally omitted from the upsert (see createRoom):
+    // rejoining must not reset the Phase 6.2 host-election key.
     const { data, error } = await this.ctx.client
       .from('room_participants')
       .upsert(
         {
           room_id: roomId,
           user_id: userId,
-          status,
-          joined_at: new Date().toISOString()
+          status
         },
         { onConflict: 'room_id,user_id' }
       )
@@ -497,8 +502,44 @@ export class SupabaseRoomsService implements IRoomService {
 
     if (error) throw error;
 
+    queryCache.invalidate('study_rooms_list');
     this.ctx.notify();
     return true;
+  };
+
+  /**
+   * Host failover (plan §6.2): the `study_rooms_update_host` RLS policy only
+   * lets the current host update the row, so a remaining participant cannot
+   * promote itself with a plain UPDATE. The SECURITY DEFINER RPC
+   * `promote_next_study_room_host` performs the deterministic promotion
+   * (oldest remaining participant by joined_at) after verifying the caller is
+   * a participant and the host is genuinely gone.
+   */
+  promoteNextHost = async (roomId: string): Promise<StudyRoom | null> => {
+    const { data: promoted, error: rpcError } = await this.ctx.client
+      .rpc('promote_next_study_room_host', { p_room_id: roomId });
+
+    if (rpcError) throw rpcError;
+    if (!promoted || promoted.length === 0) return null;
+
+    // Cache invalidation law: the RPC mutated the room, so invalidate BEFORE
+    // the follow-up read below.
+    queryCache.invalidate('study_rooms_list');
+
+    const { data, error } = await this.ctx.client
+      .from('study_rooms')
+      .select(`
+        *,
+        profiles:host_id (id, name),
+        room_participants (user_id)
+      `)
+      .eq('id', roomId)
+      .single();
+
+    if (error || !data) throw error || new Error('Failed to load promoted study room');
+
+    this.ctx.notify();
+    return mapStudyRoom(data, data.profiles?.name, data.room_participants ? data.room_participants.length : 0);
   };
 }
 

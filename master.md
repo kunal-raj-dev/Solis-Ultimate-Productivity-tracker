@@ -206,8 +206,9 @@ To prevent scope creep and multi-agent bloat, the following are **strictly exclu
   5. `Theme Toggle` (`Sun`/`Moon` icon $\rightarrow$ switches Warm Ivory Day / Deep Charcoal Night).
   6. `Account Menu` avatar ($\rightarrow$ Profile info, Demo Mode badge if unauthenticated, Settings link, Sign Out).
 
-### 9.4 Mobile Navigation (`MobileNav.tsx` + `MobileMoreSheet.tsx`)
-- **Bottom Bar (5 slots)**: `Today`, `Tasks`, `Focus`, `Subjects`, and `More` (opens `MobileMoreSheet` with `Notes`, `Goals`, `Habits`, `Study Rooms`, `Progress`, `Weekly Review`, `Guides`, `Settings`).
+### 9.4 Mobile Navigation (`MobileNav.tsx`) — amended per plan §7.2 (Phase 7)
+- **Bottom Bar (5 slots, visible below 1024px)**: `Today` (`/app/dashboard`), `Focus` (`/app/focus`), `Subjects` (`/app/study`), `Tasks` (`/app/tasks`), and `Progress` (`/app/analytics`), each with a 48px minimum touch target.
+- The former `MobileMoreSheet` "More" slot is removed. Remaining destinations (`Notes`, `Goals`, `Habits`, `Study Rooms`, `Weekly Review`, `Guides`, `Settings`) are reached on mobile via the AppHeader (`Search` → `CommandPalette`, `Guides` icon, `Account Menu` → `Settings`).
 
 ---
 
@@ -496,12 +497,17 @@ To prevent scope creep and multi-agent bloat, the following are **strictly exclu
 
 ### 14.3 Allowed `localStorage` Keys
 Outside of `MockService`, only the following browser-local keys are permitted:
-- `solis_theme` (`light` | `dark` | `system`) and `solis_density` (`comfortable` | `compact`)
-- `solis_user_preferences` (JSON containing `focusDuration`, `breakDuration`, `dailyGoalMinutes`, `soundEnabled`, `weekStart`)
+- `solis_theme` (`light` | `dark` | `sepia` | `system` — `sepia` is the plan §7.3 low-stimulation warm-monochrome theme) and `solis_density` (`comfortable` | `compact`)
+- `solis_user_preferences` (JSON containing `focusDuration`, `breakDuration`, `dailyGoalMinutes`, `soundEnabled`, `weekStart`, `readableFont` — `default` | `opendyslexic` | `atkinson`, plan §7.3)
 - `solis_smart_notification_prefs` and `solis_notifications_inbox_v1` (managed exclusively by `notificationService`)
-- `solis_gemini_api_key` (optional user-supplied Gemini API key)
+- `solis_gemini_api_key` (optional user-supplied Gemini API key; stored in `sessionStorage` per plan §1.6)
 - `solis_active_focus_session` (crash-recovery state for `FocusContext`)
 - `solis_activation_dismissed_*` and `solis_guide_progress_v2`
+- `solis_note_draft_${noteId}` (notes auto-save Tier-1 local drafts — plan §1.2)
+- `solis_mock_backup_${timestamp}` (guest-to-cloud migration archive of the pre-migration guest workspace — plan §1.3)
+- `solis_last_active_timestamp` (ms epoch of the user's last workspace activity; absence trigger for the plan §3.4 Welcome Back gentle re-entry flow)
+- `solis_welcome_back_choice_${dateKey}` (day-scoped gentle re-entry choice — `gentle_start` | `priority_triage` — set by the plan §3.4 Welcome Back modal)
+- `solis_study_pacts_v1` (weekly Study Pact accountability state — mutual commitments and end-of-week summaries, plan §8.3; pacts are a client-side layer with no domain table, and their progress is always computed from logged study sessions)
 
 ---
 
@@ -515,7 +521,7 @@ Outside of `MockService`, only the following browser-local keys are permitted:
   - `public.study_room_events` must be included in the `supabase_realtime` publication.
 
 ### 15.2 AI Service Contract (`src/services/ai/ai.service.ts`)
-- **Model Version**: Use current supported Gemini models (`gemini-2.5-flash`) instead of retired `gemini-1.5-flash` / `gemini-1.5-pro` endpoints.
+- **Model Version**: Use current supported Gemini models (`gemini-3.8-flash`) instead of deprecated/retired earlier models.
 - **Header Auth**: Pass `x-goog-api-key` in request headers rather than exposing keys in URL query strings.
 - **Honest Retrieval (`ragPipeline.ts`)**: Do not label trigram hashing as "Dense Semantic Vector Embeddings". Use clean, deterministic BM25 / keyword + metadata scoring over local workspace items (`tasks`, `notes`, `subjects`, `flashcards`), then pass the top-ranked context chunks to Gemini (when configured) or the deterministic synthesizer (when offline).
 
@@ -668,7 +674,7 @@ Every code change must pass these verification gates before completion:
 
 ### Phase 5 — Notifications, AI & Data Portability Hardening
 1. Merge `src/utils/notifications.ts` and `src/services/notifications/notification.service.ts`, and fix the broken `/app/study-rooms` link to `/app/rooms`.
-2. Upgrade `ai.service.ts` to `gemini-2.5-flash` with header-based API key authentication.
+2. Upgrade `ai.service.ts` to `gemini-3.8-flash` with header-based API key authentication.
 3. Upgrade `export.ts` and `import.ts` to back up and restore all user collections without losing habit streaks or milestone completion states.
 
 ### Phase 6 — End-to-End Verification & Regression Gate

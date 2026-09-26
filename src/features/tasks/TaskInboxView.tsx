@@ -14,6 +14,8 @@ interface TaskInboxViewProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onScheduleToHour: (task: Task, hour: number) => Promise<void>;
+  /** Plan §3.3: one-tap "→ Tomorrow" deferral for overdue tasks. */
+  onDeferTaskToTomorrow?: (task: Task) => void;
   onAddSubtask?: (taskId: string, title: string) => Promise<void>;
   onToggleSubtask?: (taskId: string, subId: string) => Promise<void>;
   onDeleteSubtask?: (taskId: string, subId: string) => Promise<void>;
@@ -30,6 +32,7 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
   onEditTask,
   onDeleteTask,
   onScheduleToHour,
+  onDeferTaskToTomorrow,
   title,
   subtitle,
   emptyMessage
@@ -132,6 +135,7 @@ export const TaskInboxView: React.FC<TaskInboxViewProps> = ({
                   })
                 }
                 onSlotToHour={onScheduleToHour}
+                onDeferToTomorrow={onDeferTaskToTomorrow}
                 showScheduleAction={true}
               />
             );

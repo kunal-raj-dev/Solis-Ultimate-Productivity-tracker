@@ -158,6 +158,8 @@ export class SupabaseTaskService implements ITaskService {
     if (updates.planItemId !== undefined) payload.plan_item_id = updates.planItemId || null;
     if (updates.recurrence !== undefined) payload.recurrence = updates.recurrence;
     if (updates.isRecurring !== undefined) payload.is_recurring = updates.isRecurring;
+    // Plan §3.3: Zeigarnik "→ Tomorrow" deferral counter.
+    if (updates.deferralCount !== undefined) payload.deferral_count = updates.deferralCount;
 
     let { data, error } = await this.ctx.client
       .from('tasks')
@@ -171,6 +173,7 @@ export class SupabaseTaskService implements ITaskService {
       delete payload.recurrence;
       delete payload.is_recurring;
       delete payload.natural_language_input;
+      delete payload.deferral_count;
       const retryResult = await this.ctx.client
         .from('tasks')
         .update(payload)

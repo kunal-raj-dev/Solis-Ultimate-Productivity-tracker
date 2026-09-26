@@ -31,6 +31,27 @@ export function getDefaultDailyCapacityMinutes(): number {
 }
 
 /**
+ * Plan §3.4 "Gentle Start": when the user re-enters after an absence and
+ * chooses the gentle option, that DAY's capacity is 50% of the daily goal
+ * (still derived from the single capacity constant). Resolved from the
+ * day-scoped welcome-back choice key so every page's capacity bar
+ * (Today, Tasks > Schedule) shows the same number.
+ *
+ * Returns undefined when the gentle override is not active for the date.
+ */
+export function getGentleStartDailyCapacityMinutes(date: string): number | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    if (localStorage.getItem(`solis_welcome_back_choice_${date}`) === 'gentle_start') {
+      return Math.round(getDefaultDailyCapacityMinutes() * 0.5);
+    }
+  } catch {
+    // storage unavailable — full capacity applies
+  }
+  return undefined;
+}
+
+/**
  * Evaluates daily workload vs available focused capacity.
  * Detects overcommitment calmly with actionable adjustment suggestions.
  */
@@ -76,7 +97,10 @@ export function calculateWorkload({
     state = 'light';
   } else if (totalPlannedMinutes <= dailyCapacityMinutes) {
     state = 'optimal';
-  } else if (totalPlannedMinutes <= dailyCapacityMinutes * 1.15) {
+  } else if (totalPlannedMinutes * 100 <= dailyCapacityMinutes * 115) {
+    // Integer-scaled comparison: 1.15 is not exact in binary floating point
+    // (360 * 1.15 === 413.99999999999994), which mislabelled a day planned at
+    // exactly the 115% buffer boundary as 'overcommitted' instead of 'heavy'.
     state = 'heavy';
   } else {
     state = 'overcommitted';

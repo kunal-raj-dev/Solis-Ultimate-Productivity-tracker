@@ -1,0 +1,87 @@
+/* Plan §6.3: partial fetch failure resilience banner. Calm amber styling to
+   match OfflineBanner — an informational status, never a red alert. */
+.solis-partial-data-banner {
+  background: var(--surface-secondary, #f3efea);
+  border-bottom: 1px solid var(--color-amber-500, #d97706);
+  padding: 8px 16px;
+  position: relative;
+  z-index: 100;
+  animation: solisPartialBannerSlideDown 0.2s ease-out;
+}
+
+@keyframes solisPartialBannerSlideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.solis-partial-data-banner__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.solis-partial-data-banner__icon {
+  color: var(--color-amber-500, #d97706);
+  flex-shrink: 0;
+}
+
+.solis-partial-data-banner__text {
+  font-size: var(--text-caption, 0.8125rem);
+  color: var(--text-primary, #1c1917);
+  line-height: 1.4;
+}
+
+.solis-partial-data-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.solis-partial-data-banner__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border-subtle, #e7e2da);
+  background: var(--surface-primary, #faf8f5);
+  color: var(--text-primary, #1c1917);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-partial-data-banner__btn:hover:not(:disabled) {
+  background: var(--surface-hover, #f3efea);
+  border-color: var(--border-medium, #d6d0c6);
+}
+
+.solis-partial-data-banner__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.solis-partial-data-banner__spin {
+  animation: solisPartialBannerSpin 1s linear infinite;
+}
+
+@keyframes solisPartialBannerSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

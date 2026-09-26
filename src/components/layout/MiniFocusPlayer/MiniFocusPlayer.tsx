@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Play, Pause, Maximize2, Flame, Headphones, Coffee, X } from 'lucide-react';
+import { Play, Pause, Maximize2, Flame, Headphones, Coffee, Timer, X } from 'lucide-react';
 import { useFocus } from '../../../context/FocusContext';
 import { formatTime } from '../../../utils/timer';
 import { cn } from '../../../utils/classNames';
@@ -10,6 +10,8 @@ export const MiniFocusPlayer: React.FC = () => {
   const {
     status,
     preset,
+    timerMode,
+    stopwatchElapsedSeconds,
     secondsRemaining,
     focusTitle,
     selectedSubject,
@@ -31,8 +33,11 @@ export const MiniFocusPlayer: React.FC = () => {
   }
 
   const isRunning = status === 'running';
-  const isBreak = preset === 'short_break';
-  const displayTitle = isBreak
+  const isBreak = timerMode === 'countdown' && preset === 'short_break';
+  const isStopwatch = timerMode === 'stopwatch';
+  const displayTitle = isStopwatch
+    ? selectedSubject?.name || focusTitle || 'Quick Stopwatch'
+    : isBreak
     ? 'Recharge & Eye Rest'
     : selectedSubject?.name || focusTitle || 'Deep Focus Session';
 
@@ -73,7 +78,9 @@ export const MiniFocusPlayer: React.FC = () => {
         />
 
         <span className="solis-mini-player__icon">
-          {soundscape !== 'none' ? (
+          {isStopwatch ? (
+            <Timer size={15} />
+          ) : soundscape !== 'none' ? (
             <Headphones size={15} />
           ) : isBreak ? (
             <Coffee size={15} />
@@ -85,9 +92,13 @@ export const MiniFocusPlayer: React.FC = () => {
         <div className="solis-mini-player__meta">
           <span className="solis-mini-player__status-label">
             {!isRunning
-              ? isBreak
+              ? isStopwatch
+                ? 'Stopwatch (Paused)'
+                : isBreak
                 ? 'Paused (Break)'
                 : 'Paused'
+              : isStopwatch
+              ? 'Stopwatch'
               : isBreak
               ? 'Rest Break'
               : 'Focusing'}
@@ -101,9 +112,13 @@ export const MiniFocusPlayer: React.FC = () => {
       <div className="solis-mini-player__right">
         <div
           className="solis-mini-player__time"
-          aria-label={`Time remaining: ${formatTime(secondsRemaining)}`}
+          aria-label={
+            isStopwatch
+              ? `Elapsed time: ${formatTime(stopwatchElapsedSeconds)}`
+              : `Time remaining: ${formatTime(secondsRemaining)}`
+          }
         >
-          {formatTime(secondsRemaining)}
+          {isStopwatch ? formatTime(stopwatchElapsedSeconds) : formatTime(secondsRemaining)}
         </div>
 
         <button

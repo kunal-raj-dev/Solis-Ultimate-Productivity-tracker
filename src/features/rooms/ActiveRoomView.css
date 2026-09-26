@@ -1,5 +1,7 @@
 /**
- * Solis - Active Study Room & Real-Time Focus Pod Styling
+ * Solis - Real-Time Collaborative Study Sanctuary (ActiveRoomView)
+ * Production-grade styling: atmospheric glassmorphism, responsive grid,
+ * procedural soundscapes bar, authoritative timer canvas, and tactile controls.
  */
 
 .solis-active-room {
@@ -10,25 +12,117 @@
   max-width: 1400px;
   margin: 0 auto;
   min-height: calc(100vh - 120px);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Top Navigation Bar */
+/* Zen Mode Fullscreen Immersion */
+.solis-active-room--zen {
+  max-width: 1000px;
+  padding: var(--space-4, 16px) 0;
+}
+
+.solis-active-room--zen .solis-active-room__layout {
+  grid-template-columns: 1fr;
+}
+
+.solis-active-room--zen .solis-room-timer-card {
+  min-height: 520px;
+}
+
+/* Loading & Error Screens */
+.solis-room-loading-screen,
+.solis-room-error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.solis-room-loading-text {
+  font-size: var(--text-body, 0.9375rem);
+  color: var(--text-secondary);
+  margin-top: 14px;
+}
+
+.solis-room-error-title {
+  font-size: var(--text-heading-3, 1.375rem);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.solis-room-error-desc {
+  font-size: var(--text-body, 0.9375rem);
+  color: var(--text-secondary);
+  max-width: 440px;
+  margin: 0 auto 24px;
+}
+
+/* Floating Reaction Emojis Physics */
+.solis-room-floating-reactions-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 99;
+}
+
+.solis-room-floating-emoji {
+  position: absolute;
+  bottom: 120px;
+  font-size: 2.2rem;
+  animation: solisFloatEmoji 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes solisFloatEmoji {
+  0% {
+    transform: translateY(0) scale(0.6) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-30px) scale(1.2) rotate(-8deg);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-320px) scale(0.85) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+/* Atmospheric Top Navigation Bar */
 .solis-active-room__topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3, 12px);
-  padding: var(--space-3, 12px) var(--space-4, 16px);
-  background: var(--bg-surface, rgba(255, 255, 255, 0.03));
+  padding: 12px 18px;
+  background: var(--bg-surface, rgba(18, 20, 29, 0.7));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--radius-lg, 14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   flex-wrap: wrap;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 100;
 }
 
 .solis-active-room__topbar-left {
   display: flex;
   align-items: center;
-  gap: var(--space-3, 12px);
+  gap: var(--space-3, 14px);
+  flex-wrap: wrap;
 }
 
 .solis-active-room__back-btn {
@@ -38,21 +132,24 @@
   padding: 6px 12px;
   border-radius: var(--radius-md, 8px);
   background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.06));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
   color: var(--text-primary);
   font-size: var(--text-caption, 0.8125rem);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .solis-active-room__back-btn:hover {
   background: var(--bg-surface-hover, rgba(255, 255, 255, 0.12));
+  border-color: var(--color-coral-500, #ff6b4a);
+  transform: translateX(-1px);
 }
 
 .solis-active-room__title-area {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .solis-active-room__title {
@@ -63,48 +160,545 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.solis-active-room__live-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-coral-500, #ff6b4a);
+  animation: solisPulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes solisPulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+.solis-room-header__code-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(255, 107, 74, 0.1);
+  border: 1px solid rgba(255, 107, 74, 0.3);
+  color: var(--color-coral-500, #ff6b4a);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-room-header__code-chip:hover {
+  background: rgba(255, 107, 74, 0.2);
+  border-color: var(--color-coral-500, #ff6b4a);
+}
+
+.solis-active-room__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .solis-active-room__host-tag {
   font-size: var(--text-micro, 0.6875rem);
-  font-weight: 600;
   color: var(--text-secondary);
 }
 
+.solis-host-badge {
+  color: var(--color-coral-500, #ff6b4a);
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.solis-active-room__meta-pill {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 2px 7px;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Topbar Right Controls */
 .solis-active-room__topbar-right {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+}
+
+.solis-active-room__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-active-room__icon-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.12));
 }
 
 .solis-active-room__sync-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: var(--radius-full, 9999px);
   font-size: var(--text-micro, 0.6875rem);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .solis-active-room__sync-pill--live {
-  background-color: rgba(16, 185, 129, 0.12);
+  background-color: rgba(16, 185, 129, 0.14);
   color: var(--color-sage-500, #10b981);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.28);
 }
 
 .solis-active-room__sync-pill--reconnecting {
-  background-color: rgba(245, 158, 11, 0.12);
+  background-color: rgba(245, 158, 11, 0.14);
   color: var(--color-amber-500, #f59e0b);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.28);
 }
 
-/* Layout Split: Main Sanctuary Stage + Sidebar Panels */
+/* Plan §6.2: calm host-failover handover notice (sage = success/mastery accent,
+   never a red alert — the room simply keeps flowing under a new host). */
+.solis-room-host-failover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1280px;
+  margin: 0 auto 12px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(46, 125, 91, 0.12);
+  border: 1px solid rgba(46, 125, 91, 0.32);
+  color: var(--text-secondary);
+  font-size: var(--text-caption, 0.8125rem);
+}
+
+.solis-room-host-failover svg {
+  color: var(--color-sage-500, #2e7d5b);
+  flex-shrink: 0;
+}
+
+.solis-room-host-failover__dismiss {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-room-host-failover__dismiss:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+/* Soundscape Generator Quick Player */
+.solis-soundscape-dropdown-wrapper {
+  position: relative;
+}
+
+.solis-soundscape-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  color: var(--text-secondary);
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-soundscape-btn:hover {
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary);
+}
+
+.solis-soundscape-btn--active {
+  background: rgba(255, 107, 74, 0.14);
+  border-color: rgba(255, 107, 74, 0.35);
+  color: var(--color-coral-500, #ff6b4a);
+}
+
+.solis-soundscape-equalizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.solis-soundscape-equalizer span {
+  width: 2.5px;
+  background-color: var(--color-coral-500, #ff6b4a);
+  border-radius: 1px;
+  animation: solisEqualizerWave 1.2s infinite ease-in-out;
+}
+
+.solis-soundscape-equalizer span:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+.solis-soundscape-equalizer span:nth-child(2) { height: 12px; animation-delay: 0.3s; }
+.solis-soundscape-equalizer span:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+
+@keyframes solisEqualizerWave {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+.solis-soundscape-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: var(--bg-surface, #151824);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-lg, 12px);
+  padding: 14px;
+  z-index: 100;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(20px);
+}
+
+.solis-soundscape-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.solis-soundscape-stop-btn {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-rose-500, #e11d48);
+  background: rgba(225, 29, 72, 0.12);
+  border: 1px solid rgba(225, 29, 72, 0.25);
+  border-radius: var(--radius-sm, 6px);
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.solis-soundscape-presets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.solis-soundscape-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-soundscape-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.solis-soundscape-item--active {
+  background: rgba(255, 107, 74, 0.12);
+  border-color: rgba(255, 107, 74, 0.3);
+}
+
+.solis-soundscape-item-title {
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 600;
+}
+
+.solis-soundscape-item-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.solis-soundscape-volume-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+}
+
+.solis-soundscape-slider {
+  flex: 1;
+  accent-color: var(--color-coral-500, #ff6b4a);
+  cursor: pointer;
+}
+
+/* Shared Objective & Workspace Task Dock */
+.solis-room-workspace-dock {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-3, 12px);
+  position: relative;
+  z-index: 40;
+}
+
+.solis-room-shared-objective-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-surface, rgba(18, 20, 29, 0.6));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-left: 3px solid var(--color-coral-500, #ff6b4a);
+  border-radius: var(--radius-lg, 12px);
+}
+
+.solis-room-objective-label {
+  display: block;
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.solis-room-objective-text {
+  font-size: var(--text-body-sm, 0.875rem);
+  color: var(--text-primary);
+  margin: 3px 0 0;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.solis-room-task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--bg-surface, rgba(18, 20, 29, 0.6));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 12px);
+}
+
+.solis-room-task-card__left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.solis-room-task-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.solis-room-task-label {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.solis-room-active-task-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-room-task-checkbox {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s ease;
+}
+
+.solis-room-task-checkbox:hover {
+  transform: scale(1.15);
+}
+
+.solis-room-task-name {
+  font-size: var(--text-body-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-room-task-name--done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.solis-room-intention-text {
+  font-size: var(--text-body-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solis-room-task-input {
+  height: 32px;
+  font-size: var(--text-caption, 0.8125rem);
+}
+
+.solis-room-task-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-room-task-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 300px;
+  background: var(--bg-surface, #151824);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-lg, 12px);
+  padding: 8px;
+  z-index: 100;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.solis-room-task-dropdown__header {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 6px 8px;
+}
+
+.solis-room-task-dropdown__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.solis-room-task-dropdown__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-room-task-dropdown__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.solis-room-task-dropdown__title {
+  font-size: var(--text-caption, 0.8125rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.solis-task-priority-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.solis-task-priority-tag--high {
+  background: rgba(225, 29, 72, 0.15);
+  color: var(--color-rose-500, #e11d48);
+}
+
+.solis-task-priority-tag--medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-amber-500, #f59e0b);
+}
+
+.solis-task-priority-tag--low {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-sage-500, #10b981);
+}
+
+.solis-room-task-dropdown__empty {
+  padding: 16px;
+  text-align: center;
+  font-size: var(--text-caption, 0.8125rem);
+  color: var(--text-muted);
+}
+
+/* Intermission Break Alert Banner */
+.solis-room-break-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--radius-lg, 12px);
+  color: var(--color-lavender-500, #a78bfa);
+  font-size: var(--text-body-sm, 0.875rem);
+}
+
+/* Layout Split: Focus Canvas vs Social Dock */
 .solis-active-room__layout {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr 380px;
   gap: var(--space-4, 16px);
   flex: 1;
 }
@@ -115,176 +709,359 @@
   }
 }
 
-/* Stage: Massive High-Contrast Timer */
-.solis-active-room__stage {
+/* Main Focus Center Column */
+.solis-active-room__center {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+/* Authoritative Timer Card */
+.solis-room-timer-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg-surface, rgba(255, 255, 255, 0.02));
+  background: var(--bg-surface, rgba(18, 20, 29, 0.7));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-xl, 16px);
-  padding: var(--space-8, 32px) var(--space-6, 24px);
+  border-radius: var(--radius-xl, 20px);
+  padding: var(--space-8, 36px) var(--space-6, 24px);
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.15);
-}
-
-.solis-active-room__stage-glow {
-  position: absolute;
-  width: 450px;
-  height: 450px;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.15;
-  pointer-events: none;
-  transition: background-color 0.5s ease;
-}
-
-.solis-active-room__stage-glow--running {
-  background-color: var(--color-coral-500, #ff6b4a);
-}
-
-.solis-active-room__stage-glow--paused {
-  background-color: var(--color-amber-500, #f59e0b);
-}
-
-.solis-active-room__stage-glow--idle {
-  background-color: var(--color-lavender-500, #8b5cf6);
-}
-
-/* Timer Ring & Digits */
-.solis-room-timer-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 1;
-  margin-bottom: var(--space-6, 24px);
-}
-
-.solis-room-timer-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   text-align: center;
+  min-height: 480px;
 }
 
-.solis-room-timer-state-badge {
-  font-size: var(--text-caption, 0.8125rem);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 4px 14px;
-  border-radius: var(--radius-full, 9999px);
-  margin-bottom: var(--space-3, 12px);
+.solis-room-timer-card--active {
+  border-color: rgba(255, 107, 74, 0.3);
+}
+
+.solis-room-timer-card--paused {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.solis-room-timer-card--break {
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Atmospheric Ambient Glowing Aura */
+.solis-room-stage-glow {
+  position: absolute;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.12;
+  pointer-events: none;
+  transition: all 0.6s ease;
+  z-index: 0;
+}
+
+.solis-room-stage-glow--running {
+  background-color: var(--color-coral-500, #ff6b4a);
+  opacity: 0.18;
+}
+
+.solis-room-stage-glow--paused {
+  background-color: var(--color-amber-500, #f59e0b);
+  opacity: 0.15;
+}
+
+.solis-room-stage-glow--break {
+  background-color: var(--color-lavender-500, #8b5cf6);
+  opacity: 0.2;
+}
+
+.solis-room-stage-glow--idle {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Status Pill */
+.solis-room-timer-card__status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  margin-bottom: var(--space-4, 16px);
+  z-index: 1;
 }
 
-.solis-room-timer-state-badge--running {
-  background: rgba(255, 107, 74, 0.15);
-  color: var(--color-coral-500, #ff6b4a);
-  border: 1px solid rgba(255, 107, 74, 0.3);
+.solis-room-timer-card__state-label {
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-primary);
 }
 
-.solis-room-timer-state-badge--paused {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--color-amber-500, #f59e0b);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.solis-room-timer-state-badge--idle {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
-}
-
-.solis-room-timer-state-badge--completed {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--color-sage-500, #10b981);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.solis-room-timer-digits {
+/* Massive High-Precision Digits */
+.solis-room-timer-card__digits {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
-  font-size: clamp(3.5rem, 9vw, 6.5rem);
+  font-size: clamp(3.8rem, 11vw, 7rem);
   font-weight: 800;
   color: var(--text-primary);
   line-height: 1;
   letter-spacing: -0.04em;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  margin-bottom: var(--space-4, 16px);
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.3);
+  margin-bottom: var(--space-4, 16px);
+  z-index: 1;
 }
 
-/* Progress bar */
-.solis-room-progress-track {
-  width: min(380px, 80vw);
-  height: 6px;
-  background-color: var(--bg-surface-elevated, rgba(255, 255, 255, 0.08));
+/* Synchronized Progress Track */
+.solis-room-timer-card__track {
+  width: min(440px, 86%);
+  height: 8px;
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-full, 9999px);
   overflow: hidden;
   position: relative;
+  margin-bottom: var(--space-4, 16px);
+  z-index: 1;
 }
 
-.solis-room-progress-fill {
+.solis-room-timer-card__fill {
   height: 100%;
   background: linear-gradient(90deg, var(--color-coral-500, #ff6b4a), var(--color-amber-500, #f59e0b));
   border-radius: var(--radius-full, 9999px);
-  transition: width 0.4s ease;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px rgba(255, 107, 74, 0.5);
 }
 
-/* Host Controls Pod */
-.solis-room-controls-pod {
+.solis-room-timer-card--break .solis-room-timer-card__fill {
+  background: linear-gradient(90deg, var(--color-lavender-500, #8b5cf6), #c084fc);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+}
+
+/* Stats Row */
+.solis-room-timer-card__stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: var(--space-6, 24px);
+  z-index: 1;
+  flex-wrap: wrap;
+}
+
+.solis-room-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Completion Banner */
+.solis-room-timer-card__complete-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-lg, 12px);
+  margin-bottom: var(--space-6, 24px);
+  max-width: 520px;
+  z-index: 1;
+}
+
+/* Host Master Controls Deck */
+.solis-room-host-deck {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4, 16px);
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg, 14px);
+  padding: 16px 20px;
+  width: min(520px, 94%);
   z-index: 1;
-  margin-top: var(--space-4, 16px);
 }
 
-.solis-room-controls-actions {
+.solis-room-host-deck__header {
   display: flex;
   align-items: center;
-  gap: var(--space-3, 12px);
+  justify-content: space-between;
+  width: 100%;
 }
 
-.solis-room-host-indicator {
+.solis-room-host-deck__title {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-coral-500, #ff6b4a);
+  letter-spacing: 0.06em;
+}
+
+.solis-room-host-deck__quick-adjust {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--radius-md, 8px);
+  gap: 6px;
+}
+
+.solis-adjust-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solis-adjust-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.solis-adjust-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.solis-room-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.solis-btn-hero {
+  min-width: 170px;
+}
+
+.solis-room-presets-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.solis-room-presets-label {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.solis-room-preset-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 9999px);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  font-size: var(--text-caption, 0.8125rem);
   color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-/* Personal Presence Selector */
-.solis-room-status-bar {
+.solis-room-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.solis-room-preset-btn--active {
+  background: rgba(255, 107, 74, 0.16);
+  border-color: var(--color-coral-500, #ff6b4a);
+  color: var(--color-coral-500, #ff6b4a);
+}
+
+/* Participant Indicator */
+.solis-room-participant-deck {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
-  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.04));
+  padding: 12px 20px;
+  border-radius: var(--radius-lg, 12px);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-full, 9999px);
+  font-size: var(--text-caption, 0.8125rem);
+  color: var(--text-secondary);
+  max-width: 480px;
+  z-index: 1;
+}
+
+/* Peer Cheer Reactions Bar */
+.solis-room-reactions-dock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-top: var(--space-6, 24px);
   z-index: 1;
 }
 
-.solis-room-status-label {
+.solis-room-reactions-label {
   font-size: var(--text-micro, 0.6875rem);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   color: var(--text-muted);
   letter-spacing: 0.05em;
+}
+
+.solis-room-reactions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solis-room-reaction-btn {
+  font-size: 18px;
+  padding: 6px 12px;
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-full, 9999px);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.solis-room-reaction-btn:hover {
+  transform: scale(1.22);
+  border-color: var(--color-coral-500, #ff6b4a);
+  background: rgba(255, 107, 74, 0.15);
+}
+
+.solis-room-reaction-btn:active {
+  transform: scale(0.95);
+}
+
+/* Self-Presence Status Bar */
+.solis-room-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--bg-surface, rgba(18, 20, 29, 0.6));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-full, 9999px);
+  align-self: center;
+}
+
+.solis-room-status-label {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .solis-room-status-pill {
@@ -296,7 +1073,7 @@
   border: 1px solid transparent;
   background: transparent;
   font-size: var(--text-caption, 0.8125rem);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -308,37 +1085,34 @@
 }
 
 .solis-room-status-pill--active-focusing {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.14);
   color: var(--color-sage-500, #10b981);
   border-color: rgba(16, 185, 129, 0.3);
-  font-weight: 600;
 }
 
 .solis-room-status-pill--active-break {
-  background: rgba(139, 92, 246, 0.15);
+  background: rgba(139, 92, 246, 0.14);
   color: var(--color-lavender-500, #8b5cf6);
   border-color: rgba(139, 92, 246, 0.3);
-  font-weight: 600;
 }
 
 .solis-room-status-pill--active-idle {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245, 158, 11, 0.14);
   color: var(--color-amber-500, #f59e0b);
   border-color: rgba(245, 158, 11, 0.3);
-  font-weight: 600;
 }
 
-/* Sidebar Panels (Presence & Chat) */
+/* Sidebar Social Pod (Presence, Chat, Events) */
 .solis-active-room__sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4, 16px);
+  gap: var(--space-3, 12px);
   height: 100%;
 }
 
 .solis-active-room__tabs {
   display: flex;
-  background: var(--bg-surface, rgba(255, 255, 255, 0.03));
+  background: var(--bg-surface, rgba(18, 20, 29, 0.6));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-lg, 12px);
   padding: 4px;
@@ -346,12 +1120,12 @@
 
 .solis-active-room__tab {
   flex: 1;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-md, 8px);
   background: transparent;
   border: none;
   font-size: var(--text-caption, 0.8125rem);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
@@ -361,25 +1135,47 @@
   transition: all 0.15s ease;
 }
 
+.solis-active-room__tab:hover {
+  color: var(--text-primary);
+}
+
 .solis-active-room__tab--active {
   background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.1));
   color: var(--text-primary);
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .solis-active-room__panel {
   display: flex;
   flex-direction: column;
   flex: 1;
-  background: var(--bg-surface, rgba(255, 255, 255, 0.03));
+  background: var(--bg-surface, rgba(18, 20, 29, 0.6));
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-lg, 12px);
-  padding: var(--space-4, 16px);
+  border-radius: var(--radius-lg, 14px);
+  padding: 16px;
   min-height: 480px;
 }
 
 /* Presence Panel */
+.solis-presence-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.solis-panel-header-title {
+  font-size: var(--text-micro, 0.6875rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+.solis-panel-header-count {
+  font-size: var(--text-caption, 0.8125rem);
+  color: var(--text-secondary);
+}
+
 .solis-presence-list {
   display: flex;
   flex-direction: column;
@@ -392,10 +1188,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: var(--radius-md, 8px);
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .solis-presence-user-info {
@@ -408,25 +1204,45 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.solis-presence-dot--focusing {
-  background-color: var(--color-sage-500, #10b981);
+.solis-presence-dot--focusing { background-color: var(--color-sage-500, #10b981); }
+.solis-presence-dot--break { background-color: var(--color-lavender-500, #8b5cf6); }
+.solis-presence-dot--idle { background-color: var(--color-amber-500, #f59e0b); }
+
+.solis-presence-user-text {
+  display: flex;
+  flex-direction: column;
 }
 
-.solis-presence-dot--break {
-  background-color: var(--color-lavender-500, #8b5cf6);
+.solis-presence-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.solis-presence-dot--idle {
-  background-color: var(--color-amber-500, #f59e0b);
+.solis-presence-user-name {
+  font-size: var(--text-caption, 0.8125rem);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-me-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-coral-500, #ff6b4a);
+}
+
+.solis-crown-badge {
+  font-size: 12px;
 }
 
 .solis-presence-chip {
-  font-size: var(--text-micro, 0.6875rem);
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: capitalize;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: var(--radius-full, 9999px);
 }
 
@@ -446,27 +1262,68 @@
 }
 
 /* Chat Panel */
+.solis-quick-prompts-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.solis-quick-prompt-btn {
+  padding: 3px 8px;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.solis-quick-prompt-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
 .solis-chat-thread {
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 380px;
   padding-right: 4px;
+}
+
+.solis-chat-empty,
+.solis-events-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: auto 0;
+  padding: 30px 16px;
+  color: var(--text-muted);
+  font-size: var(--text-caption, 0.8125rem);
+  gap: 8px;
 }
 
 .solis-chat-message {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .solis-chat-message__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: var(--text-micro, 0.6875rem);
+  font-size: 11px;
   color: var(--text-muted);
 }
 
@@ -476,10 +1333,10 @@
 }
 
 .solis-chat-message__bubble {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: var(--text-caption, 0.8125rem);
   color: var(--text-primary);
   line-height: 1.4;
@@ -487,110 +1344,21 @@
 }
 
 .solis-chat-message--mine .solis-chat-message__bubble {
-  background: rgba(255, 107, 74, 0.12);
-  border-color: rgba(255, 107, 74, 0.25);
+  background: rgba(255, 107, 74, 0.14);
+  border-color: rgba(255, 107, 74, 0.3);
 }
 
 .solis-chat-composer {
   display: flex;
   gap: 8px;
-  margin-top: var(--space-3, 12px);
-  padding-top: var(--space-3, 12px);
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
 }
 
-/* Room Code Chip in Header */
-.solis-room-header__code-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 107, 74, 0.1);
-  border: 1px solid rgba(255, 107, 74, 0.25);
-  color: var(--color-coral-500);
-  font-family: var(--font-mono, monospace);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.solis-room-header__code-chip:hover {
-  background: rgba(255, 107, 74, 0.18);
-  border-color: var(--color-coral-500);
-}
-
-/* Shared Objective Banner */
-.solis-room-shared-objective-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border-subtle);
-  border-left: 3px solid var(--color-coral-500);
-  border-radius: var(--radius-md);
-}
-
-.solis-room-objective-label {
-  display: block;
-  font-size: var(--text-micro);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
-.solis-room-objective-text {
-  font-size: var(--text-body-sm);
-  color: var(--text-primary);
-  margin: 2px 0 0;
-  font-weight: 500;
-  font-style: italic;
-}
-
-/* Peer Reactions Bar */
-.solis-room-reactions-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  padding: 10px 0;
-}
-
-.solis-room-reaction-btn {
-  font-size: 18px;
-  padding: 6px 12px;
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.solis-room-reaction-btn:hover {
-  transform: scale(1.2);
-  border-color: var(--color-coral-500);
-  background: rgba(255, 107, 74, 0.1);
-}
-
-/* Intermission Break Alert */
-.solis-room-break-banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: var(--radius-md);
-  color: var(--color-amber-500, #f59e0b);
-  font-size: var(--text-caption);
-  font-weight: 600;
+.solis-chat-input {
+  height: 38px;
+  font-size: var(--text-caption, 0.8125rem);
 }
 
 /* Timeline Events Panel */
@@ -599,24 +1367,39 @@
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 420px;
 }
 
 .solis-room-event-row {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px 10px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
   background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-caption);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: var(--text-caption, 0.8125rem);
   color: var(--text-secondary);
 }
 
+.solis-room-event-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.solis-room-event-content {
+  flex: 1;
+  line-height: 1.3;
+}
+
+.solis-room-event-content strong {
+  color: var(--text-primary);
+}
+
 .solis-room-event-time {
-  font-size: var(--text-micro);
+  font-size: 11px;
   color: var(--text-muted);
   font-family: var(--font-mono, monospace);
   margin-left: auto;
+  flex-shrink: 0;
 }
-

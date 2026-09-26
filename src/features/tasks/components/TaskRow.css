@@ -237,6 +237,19 @@
   color: #fff;
 }
 
+/* Plan §3.3: calm "→ Tomorrow" deferral — sage, never shame-red */
+.solis-task-action-btn--defer {
+  background-color: rgba(62, 114, 80, 0.08);
+  border-color: rgba(62, 114, 80, 0.25);
+  color: var(--color-sage-600);
+}
+
+.solis-task-action-btn--defer:hover {
+  background-color: var(--color-sage-500);
+  border-color: var(--color-sage-500);
+  color: #fff;
+}
+
 .solis-task-action-icon-btn {
   display: flex;
   align-items: center;

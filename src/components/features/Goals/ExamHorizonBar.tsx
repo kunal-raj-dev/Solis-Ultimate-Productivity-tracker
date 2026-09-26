@@ -15,6 +15,8 @@ import { calculateExamReadiness } from '../../../utils/intelligence/masteryIntel
 import { ExamWorkspaceModal } from './ExamWorkspaceModal';
 import { Button } from '../../ui/Button/Button';
 import { Badge } from '../../ui/Badge/Badge';
+import { useToast } from '../../../context/ToastContext';
+import { formatErrorMessage } from '../../../utils/errors';
 import './ExamHorizonBar.css';
 
 export interface ExamHorizonBarProps {
@@ -22,6 +24,11 @@ export interface ExamHorizonBarProps {
   topics?: StudyTopic[];
   flashcards?: Flashcard[];
   habits?: Habit[];
+  /**
+   * Daily deep-work capacity in minutes (user.dailyGoalMinutes || 360),
+   * passed from Today so the horizon bar runs zero parallel queries of its own.
+   */
+  dailyCapacity?: number;
   onRefresh?: () => void;
 }
 
@@ -30,9 +37,11 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
   topics: propTopics,
   flashcards: propFlashcards,
   habits: propHabits,
+  dailyCapacity,
   onRefresh
 }) => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [internalGoals, setInternalGoals] = useState<Goal[]>([]);
   const [internalTopics, setInternalTopics] = useState<StudyTopic[]>([]);
   const [internalCards, setInternalCards] = useState<Flashcard[]>([]);
@@ -115,7 +124,13 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
     try {
       await dataService.goals.updateGoal(goalId, { milestones: updatedMilestones });
       if (onRefresh) onRefresh();
-    } catch (e) {}
+    } catch (err) {
+      addToast({
+        title: 'Milestone update failed',
+        description: formatErrorMessage(err),
+        type: 'error'
+      });
+    }
   };
 
   const handleStartRecallDrill = () => {
@@ -254,6 +269,7 @@ export const ExamHorizonBar: React.FC<ExamHorizonBarProps> = ({
           topics={subjectTopics}
           flashcards={subjectCards}
           habits={allHabits}
+          dailyCapacityMinutes={dailyCapacity}
           onToggleMilestone={handleToggleMilestone}
           onStartRecallDrill={handleStartRecallDrill}
           onLaunchFocus={handleLaunchFocus}

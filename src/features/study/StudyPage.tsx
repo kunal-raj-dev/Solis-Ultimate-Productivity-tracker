@@ -1,11 +1,12 @@
-import React from 'react';
-import { Flame, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Flame, Sparkles, FileText } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { useToast } from '../../context/ToastContext';
 import { dataService } from '../../services/dataService';
 import { FlashcardReviewModal } from '../../components/features/Flashcards/FlashcardReviewModal';
 import { FlashcardCreateModal } from '../../components/features/Flashcards/FlashcardCreateModal';
 import { ResourceLibraryModal } from '../../components/features/Resources/ResourceLibraryModal';
+import { ImportModal } from '../../components/features/ImportModal/ImportModal';
 import { TopicIntelligenceDrawer } from './TopicIntelligenceDrawer';
 import { useStudyPage } from './hooks/useStudyPage';
 
@@ -23,6 +24,7 @@ import './StudyPage.css';
 
 export const StudyPage: React.FC = () => {
   const { addToast } = useToast();
+  const [isDeckImportOpen, setIsDeckImportOpen] = useState(false);
   const {
     navigate,
     openGuide,
@@ -266,6 +268,16 @@ export const StudyPage: React.FC = () => {
               >
                 Drill Cards ({flashcards.filter((f) => f.subjectId === selectedSubjectForTopics.id).length})
               </Button>
+              {/* Plan §3.6: Notes tab in the Subject Workspace — opens the
+                  Notes index pre-filtered to this subject */}
+              <Button
+                variant="subtle"
+                size="sm"
+                leftIcon={<FileText size={14} />}
+                onClick={() => navigate(`/app/notes?subjectId=${selectedSubjectForTopics.id}`)}
+              >
+                Notes
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -300,6 +312,7 @@ export const StudyPage: React.FC = () => {
         onOpenGuide={openGuide}
         onOpenCardCreator={handleOpenCardCreator}
         onStartActiveRecall={handleStartActiveRecall}
+        onImportDeck={() => setIsDeckImportOpen(true)}
       />
 
       {/* Grid: Study Plan Queue (Left) + Recent Sessions (Right) */}
@@ -448,6 +461,16 @@ export const StudyPage: React.FC = () => {
         onDeleteResource={handleDeleteResource}
         onStudyResource={handleStudyResource}
         onSynthesizeNote={handleSynthesizeNote}
+      />
+
+      {/* Plan §4.4: client-side Anki (.apkg) / Quizlet deck importer */}
+      <ImportModal
+        isOpen={isDeckImportOpen}
+        onClose={() => setIsDeckImportOpen(false)}
+        initialMode="deck"
+        onSuccess={() => {
+          void loadData();
+        }}
       />
 
       <TopicIntelligenceDrawer

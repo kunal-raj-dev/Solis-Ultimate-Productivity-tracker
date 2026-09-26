@@ -1,10 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { Upload, CheckCircle2, FileJson, ArrowRight, ShieldAlert, RefreshCw } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Upload, CheckCircle2, FileJson, Layers, ArrowRight, ShieldAlert, RefreshCw } from 'lucide-react';
 import { Modal } from '../../feedback/Modal/Modal';
 import { Button } from '../../ui/Button/Button';
 import { Badge } from '../../ui/Badge/Badge';
+import { CustomSelect } from '../../ui/Select/CustomSelect';
+import { SegmentedControl } from '../../ui/SegmentedControl/SegmentedControl';
 import { validateSolisBackup, executeWorkspaceImport, ImportConflictStrategy, BackupValidationResult } from '../../../utils/import';
+import { DeckImportResult, parseDeckFile } from '../../../utils/import/deckImporter';
 import { dataService } from '../../../services/dataService';
+import { formatErrorMessage } from '../../../utils/errors';
+import { StudySubject } from '../../../types/study';
 import { useToast } from '../../../context/ToastContext';
 import './ImportModal.css';
 
@@ -12,20 +17,61 @@ export interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Which flow the modal opens in (plan §4.4: "Import Deck" opens deck mode). */
+  initialMode?: ImportMode;
 }
+
+export type ImportMode = 'workspace' | 'deck';
 
 export const ImportModal: React.FC<ImportModalProps> = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  initialMode = 'workspace'
 }) => {
   const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const deckInputRef = useRef<HTMLInputElement>(null);
 
+  const [mode, setMode] = useState<ImportMode>(initialMode);
   const [validation, setValidation] = useState<BackupValidationResult | null>(null);
   const [strategy, setStrategy] = useState<ImportConflictStrategy>('merge_skip');
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  // Deck import state (plan §4.4 — Anki .apkg / Quizlet text decks).
+  const [deckResult, setDeckResult] = useState<DeckImportResult | null>(null);
+  const [deckFileName, setDeckFileName] = useState('');
+  const [isParsingDeck, setIsParsingDeck] = useState(false);
+  const [deckSubjectId, setDeckSubjectId] = useState('');
+  const [subjects, setSubjects] = useState<StudySubject[]>([]);
+  const [isImportingDeck, setIsImportingDeck] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== 'deck') return;
+    // Refresh on every deck-mode open so newly created subjects appear.
+    let cancelled = false;
+    dataService.study
+      .getSubjects()
+      .then((all) => {
+        if (cancelled) return;
+        const active = all.filter((s) => s.status !== 'archived');
+        setSubjects(active);
+        setDeckSubjectId((prev) => (active.some((s) => s.id === prev) ? prev : active[0]?.id || ''));
+      })
+      .catch(() => {
+        if (!cancelled) setSubjects([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, mode]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,13 +127,123 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
   };
 
+  // ── Deck import (plan §4.4) ─────────────────────────────────────────────────
+
+  const handleDeckFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsParsingDeck(true);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const buffer = event.target?.result as ArrayBuffer;
+        const result = await parseDeckFile(file.name, buffer);
+        setDeckResult(result);
+        setDeckFileName(file.name);
+        if (result.cards.length === 0) {
+          addToast({
+            title: 'No cards found',
+            description: result.warnings[0] || 'This deck file does not contain any importable cards.',
+            type: 'warning'
+          });
+        }
+      } catch (err) {
+        setDeckResult(null);
+        setDeckFileName('');
+        addToast({
+          title: 'Could not read deck',
+          description: err instanceof Error ? err.message : 'The deck file could not be parsed.',
+          type: 'error'
+        });
+      } finally {
+        setIsParsingDeck(false);
+      }
+    };
+    reader.onerror = () => {
+      setIsParsingDeck(false);
+      addToast({
+        title: 'Could not read deck',
+        description: 'The file could not be read from disk.',
+        type: 'error'
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleExecuteDeckImport = async () => {
+    if (!deckResult || deckResult.cards.length === 0) return;
+    const subjectId = deckSubjectId || subjects[0]?.id || '';
+    if (!subjectId) {
+      addToast({
+        title: 'Subject required',
+        description: 'Choose which subject the imported deck belongs to.',
+        type: 'warning'
+      });
+      return;
+    }
+
+    setIsImportingDeck(true);
+    let importedCount = 0;
+    let skippedCount = 0;
+    try {
+      // Dedupe against the subject's existing deck so retrying after a
+      // mid-loop failure never duplicates the cards already imported.
+      const existingCards = await dataService.flashcards.getFlashcards({ subjectId });
+      const existingPrompts = new Set(
+        existingCards.map((card) => card.frontPrompt.trim().toLowerCase())
+      );
+      for (const card of deckResult.cards) {
+        const promptKey = card.frontPrompt.trim().toLowerCase();
+        if (existingPrompts.has(promptKey)) {
+          skippedCount += 1;
+          continue;
+        }
+        await dataService.flashcards.createFlashcard({
+          subjectId,
+          frontPrompt: card.frontPrompt,
+          backAnswer: card.backAnswer,
+          cardType: card.cardType
+        });
+        existingPrompts.add(promptKey);
+        importedCount += 1;
+      }
+      const subjectName = subjects.find((s) => s.id === subjectId)?.name || 'your deck';
+      addToast({
+        title: 'Deck Imported',
+        description: `${importedCount} flashcards added to ${subjectName}${
+          skippedCount > 0 ? ` (${skippedCount} already in the deck skipped)` : ''
+        }.`,
+        type: 'success'
+      });
+      handleClose();
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      addToast({
+        title: 'Deck import failed',
+        description: `Imported ${importedCount} of ${deckResult.cards.length} cards before stopping. ${formatErrorMessage(err)}`,
+        type: 'error'
+      });
+    } finally {
+      setIsImportingDeck(false);
+    }
+  };
+
   const handleClose = () => {
     setValidation(null);
     setStrategy('merge_skip');
     setConfirmReplace(false);
     setIsImporting(false);
+    setDeckResult(null);
+    setDeckFileName('');
+    setIsParsingDeck(false);
+    setDeckSubjectId('');
+    setIsImportingDeck(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (deckInputRef.current) {
+      deckInputRef.current.value = '';
     }
     onClose();
   };
@@ -96,11 +252,107 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Restore & Import Workspace Data"
+      title={mode === 'deck' ? 'Import Flashcard Deck' : 'Restore & Import Workspace Data'}
       className="solis-import-modal"
     >
       <div className="solis-import-content">
-        {!validation?.isValid ? (
+        <SegmentedControl
+          variant="pills"
+          size="sm"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'workspace', label: 'Workspace Backup' },
+            { value: 'deck', label: 'Flashcard Deck' }
+          ]}
+        />
+
+        {mode === 'deck' ? (
+          !deckResult || deckResult.cards.length === 0 ? (
+            <div className="solis-import-dropzone" onClick={() => deckInputRef.current?.click()}>
+              <input
+                ref={deckInputRef}
+                type="file"
+                accept=".apkg,.zip,.txt,.tsv,.csv"
+                onChange={handleDeckFileChange}
+                style={{ display: 'none' }}
+              />
+              <div className="solis-import-dropzone__icon">
+                <Upload size={32} />
+              </div>
+              <h4 className="solis-import-dropzone__title">
+                {isParsingDeck ? 'Parsing deck…' : 'Select an Anki (.apkg) or Quizlet (.txt/.tsv/.csv) deck'}
+              </h4>
+              <p className="solis-import-dropzone__subtitle">
+                Parsing happens entirely on this device. Cloze markers <code>&#123;&#123;c1::term&#125;&#125;</code> are
+                mapped to Solis cloze cards automatically.
+              </p>
+              <Button type="button" variant="outline" size="sm" leftIcon={<Layers size={14} />}>
+                Choose Deck File
+              </Button>
+            </div>
+          ) : (
+            <div className="solis-import-preview">
+              <div className="solis-import-preview__header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={18} color="var(--status-success)" />
+                  <span style={{ fontWeight: 600, fontSize: 'var(--text-body)' }}>
+                    {deckResult.deckName || deckFileName || 'Deck parsed'}
+                  </span>
+                </div>
+                <Badge variant="coral">
+                  {deckResult.sourceFormat === 'anki_apkg' ? 'Anki .apkg' : 'Quizlet text'}
+                </Badge>
+              </div>
+
+              <div className="solis-import-grid">
+                <div className="solis-import-stat">
+                  <span className="solis-import-stat__num">{deckResult.cards.length}</span>
+                  <span className="solis-import-stat__label">Cards Found</span>
+                </div>
+                <div className="solis-import-stat">
+                  <span className="solis-import-stat__num">
+                    {deckResult.cards.filter((card) => card.cardType === 'cloze').length}
+                  </span>
+                  <span className="solis-import-stat__label">Cloze Cards</span>
+                </div>
+              </div>
+
+              {deckResult.warnings.length > 0 && (
+                <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+                  {deckResult.warnings.slice(0, 5).map((warning, i) => (
+                    <p key={i} style={{ margin: '2px 0' }}>• {warning}</p>
+                  ))}
+                </div>
+              )}
+
+              <CustomSelect
+                label="Import into Subject"
+                value={deckSubjectId}
+                onChange={setDeckSubjectId}
+                options={subjects.map((s) => ({ value: s.id, label: s.name, badge: s.code }))}
+                placeholder="Choose a subject"
+              />
+
+              <div className="solis-import-actions">
+                <Button type="button" variant="outline" size="md" onClick={() => setDeckResult(null)}>
+                  Choose Different File
+                </Button>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="md"
+                  leftIcon={isImportingDeck ? <RefreshCw className="solis-spin" size={16} /> : <ArrowRight size={16} />}
+                  onClick={handleExecuteDeckImport}
+                  isLoading={isImportingDeck}
+                  disabled={deckResult.cards.length === 0}
+                >
+                  Import {deckResult.cards.length} Cards
+                </Button>
+              </div>
+            </div>
+          )
+        ) : !validation?.isValid ? (
           <div className="solis-import-dropzone" onClick={() => fileInputRef.current?.click()}>
             <input
               ref={fileInputRef}

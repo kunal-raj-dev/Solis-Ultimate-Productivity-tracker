@@ -13,14 +13,30 @@ export interface ExamReadinessResult {
   grade: 'Exceptional' | 'Prepared' | 'Borderline' | 'At Risk';
   gradeColor: 'sage' | 'coral' | 'amber' | 'lavender';
   componentScores: {
-    topicsScore: number; // 35%
-    retentionScore: number; // 30%
-    habitScore: number; // 20%
+    topicsScore: number; // 35% (50% when no habits are linked — Unlinked Habits Fallback)
+    retentionScore: number; // 30% (35% when no habits are linked)
+    habitScore: number; // 20% (0% when no habits are linked)
     milestoneScore: number; // 15%
+  };
+  /** Weights actually applied to the composite score, for honest UI labels. */
+  appliedWeights: {
+    topics: number;
+    retention: number;
+    habit: number;
+    milestone: number;
   };
   riskDiagnostics: string[];
   daysRemaining: number;
 }
+
+// Plan §2.2 hard gate: 0% Topics Mastery (no topic at full mastery) caps the
+// composite readiness score at 15/100 ("At Risk") so habit streaks, retention
+// hygiene, and milestone checkboxes can never manufacture a passing grade.
+const HARD_GATE_MAX_SCORE = 15;
+
+// Plan §2.2 proximity decay: urgent exams (≤ 5 days) with unmastered topics
+// take an exponential readiness penalty that grows as the horizon shrinks.
+const PROXIMITY_DECAY_WINDOW_DAYS = 5;
 
 export interface CognitiveLoadAlertItem {
   id: string;
@@ -46,8 +62,18 @@ export interface RetentionForecast {
 }
 
 /**
- * Deterministic Exam Readiness Formula
- * Readiness = 0.35 * TopicsMastery + 0.30 * SM2Retention + 0.20 * HabitConsistency + 0.15 * MilestoneCompletion
+ * Deterministic Exam Readiness Formula (plan §2.2 recalibration)
+ * Readiness = W_topics * TopicsMastery + W_retention * SM2Retention +
+ *             W_habit * HabitConsistency + 0.15 * MilestoneCompletion
+ *
+ * Canonical weights: 0.35 / 0.30 / 0.20 / 0.15. When no habit is linked to
+ * the goal, the 20% habit weight redistributes to Topics Mastery (0.50) and
+ * SM-2 Retention (0.35) instead of zeroing out (Unlinked Habits Fallback).
+ *
+ * Hard gates applied after the weighted sum:
+ * - Topics Mastery Gate: zero mastered topics caps the score at 15/100.
+ * - Proximity Decay: exams within 5 days carrying unmastered topics take an
+ *   exponential penalty proportional to urgency and the unmastered fraction.
  */
 export function calculateExamReadiness(params: {
   goal: Goal;
@@ -108,7 +134,7 @@ export function calculateExamReadiness(params: {
     retentionScore = Math.round(scoredCards.reduce((a, b) => a + b, 0) / scoredCards.length);
   }
 
-  // 3. Linked Habit Consistency Score (20%)
+  // 3. Linked Habit Consistency Score (20%; redistributes to 0% when no habit is linked)
   const linkedHabits = habits.filter((h) => h.goalId === goal.id);
   let habitScore = 0;
   if (linkedHabits.length > 0) {
@@ -123,13 +149,50 @@ export function calculateExamReadiness(params: {
     milestoneScore = Math.round((completed / goal.milestones.length) * 100);
   }
 
-  // Weighted Holistic Calculation
-  const readinessScore = Math.round(
-    0.35 * topicsScore +
-    0.30 * retentionScore +
-    0.20 * habitScore +
-    0.15 * milestoneScore
+  // Days Remaining (needed by proximity decay and milestone diagnostics)
+  const targetDateMs = new Date(goal.targetDate).getTime();
+  const todayMs = new Date().getTime();
+  const daysRemaining = isNaN(targetDateMs)
+    ? 0
+    : Math.max(0, Math.ceil((targetDateMs - todayMs) / (1000 * 60 * 60 * 24)));
+
+  // Weighted Holistic Calculation. Unlinked Habits Fallback: with no habit
+  // linked to the goal the 20% habit weight redistributes to Topics Mastery
+  // (50%) and SM-2 Retention (35%) instead of penalizing with 0/20.
+  const hasLinkedHabits = linkedHabits.length > 0;
+  const topicsWeight = hasLinkedHabits ? 0.35 : 0.5;
+  const retentionWeight = hasLinkedHabits ? 0.3 : 0.35;
+  const habitWeight = hasLinkedHabits ? 0.2 : 0;
+  const milestoneWeight = 0.15;
+
+  let readinessScore = Math.round(
+    topicsWeight * topicsScore +
+    retentionWeight * retentionScore +
+    habitWeight * habitScore +
+    milestoneWeight * milestoneScore
   );
+
+  // Gate inputs: mastery is honest only when at least one topic is mastered.
+  const masteredCount = subjectTopics.filter((t) => t.masteryLevel === 'mastered').length;
+  const unmasteredCount = subjectTopics.length - masteredCount;
+  const hardGateActive = masteredCount === 0;
+
+  // Proximity Decay: urgent exams (≤ 5 days) with unmastered topics take an
+  // exponential readiness penalty — urgency rate 1 (5 days out) to 6 (exam
+  // day) scaled by the unmastered fraction of the syllabus.
+  let proximityDecayApplied = false;
+  if (daysRemaining <= PROXIMITY_DECAY_WINDOW_DAYS && unmasteredCount > 0 && subjectTopics.length > 0) {
+    const urgencyRate = PROXIMITY_DECAY_WINDOW_DAYS + 1 - daysRemaining;
+    const unmasteredFraction = unmasteredCount / subjectTopics.length;
+    readinessScore = Math.round(readinessScore * Math.exp(-urgencyRate * unmasteredFraction));
+    proximityDecayApplied = true;
+  }
+
+  // Hard Gate: 0% Topics Mastery (zero mastered topics) caps the composite
+  // score at 15/100 so supporting signals cannot inflate an unmastered exam.
+  if (hardGateActive) {
+    readinessScore = Math.min(readinessScore, HARD_GATE_MAX_SCORE);
+  }
 
   // Grade & Diagnostics
   let grade: ExamReadinessResult['grade'] = 'At Risk';
@@ -148,13 +211,6 @@ export function calculateExamReadiness(params: {
     grade = 'At Risk';
     gradeColor = 'lavender';
   }
-
-  // Calculate Days Remaining
-  const targetDateMs = new Date(goal.targetDate).getTime();
-  const todayMs = new Date().getTime();
-  const daysRemaining = isNaN(targetDateMs)
-    ? 0
-    : Math.max(0, Math.ceil((targetDateMs - todayMs) / (1000 * 60 * 60 * 24)));
 
   // Risk Diagnostics Generation
   const riskDiagnostics: string[] = [];
@@ -182,6 +238,19 @@ export function calculateExamReadiness(params: {
     riskDiagnostics.push(`Milestone progress lagging (${milestoneScore}%) with only ${daysRemaining} days remaining.`);
   }
 
+  if (hardGateActive) {
+    riskDiagnostics.push(
+      `Hard gate: no topic has reached full mastery yet, so readiness is capped at ${HARD_GATE_MAX_SCORE}/100 until the first topic is mastered.`
+    );
+  }
+
+  if (proximityDecayApplied) {
+    const horizonLabel = daysRemaining === 0 ? 'today' : `in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}`;
+    riskDiagnostics.push(
+      `Exam is ${horizonLabel} with ${unmasteredCount} ${unmasteredCount === 1 ? 'topic' : 'topics'} not yet mastered — urgent-horizon penalty applied to the composite score.`
+    );
+  }
+
   return {
     readinessScore,
     grade,
@@ -191,6 +260,12 @@ export function calculateExamReadiness(params: {
       retentionScore,
       habitScore,
       milestoneScore
+    },
+    appliedWeights: {
+      topics: topicsWeight,
+      retention: retentionWeight,
+      habit: habitWeight,
+      milestone: milestoneWeight
     },
     riskDiagnostics,
     daysRemaining

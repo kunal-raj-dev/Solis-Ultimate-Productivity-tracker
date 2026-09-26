@@ -87,6 +87,11 @@ export interface Task extends BaseEntity {
   recurrence?: TaskRecurrence;
   isRecurring?: boolean;
   naturalLanguageInput?: string;
+  /**
+   * Plan §3.3: incremented each time the user defers this task with the
+   * one-tap "→ Tomorrow" action (Zeigarnik deferral).
+   */
+  deferralCount?: number;
 }
 
 export interface TaskFilterOptions {

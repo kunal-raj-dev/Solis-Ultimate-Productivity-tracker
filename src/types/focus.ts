@@ -2,6 +2,12 @@ import { BaseEntity, ID } from './common';
 
 export type FocusModeType = 'pomodoro' | 'deep_flow' | 'custom_timer' | 'stopwatch';
 
+/**
+ * Plan §5.1: 3-tap pre-session energy calibration captured on the Focus
+ * launch screen (low / steady / sharp) before the timer starts.
+ */
+export type PreSessionEnergy = 'low' | 'steady' | 'sharp';
+
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'break' | 'completed' | 'cancelled';
 
 export type SoundscapeType = 'none' | 'pink_noise' | 'brown_noise' | 'binaural_alpha' | 'binaural_theta' | 'rain' | 'deep_drone';
@@ -38,6 +44,7 @@ export interface FocusSession extends BaseEntity {
   targetOutcome?: string;
   checkpointCompleted?: boolean;
   parkedThoughts?: ParkedThought[];
+  preSessionEnergy?: PreSessionEnergy;
 }
 
 export interface FocusTimerState {

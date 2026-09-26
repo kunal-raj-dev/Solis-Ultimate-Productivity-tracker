@@ -243,7 +243,11 @@ describe('Phase 3 — Intelligence, Mastery & Recommendation Consolidation', () 
         progressPercentage: 50,
         priority: 'high',
         color: 'coral',
-        targetDate: '2026-09-10',
+        // Clock-robust horizon 30 days out: this test's contract is the canonical
+      // masteryEngine evaluation of topics (Phase 3), not deadline urgency — the
+      // Phase 2.2 hard gate and proximity decay key off daysRemaining and must
+      // not distort the assertion on a stale past date.
+      targetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         milestones: [{ id: 'm1', title: 'Midterm', targetDate: '2026-08-20', completed: true }],
         createdAt: '2026-08-01',
         updatedAt: '2026-08-20'

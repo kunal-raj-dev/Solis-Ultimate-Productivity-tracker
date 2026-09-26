@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, BookOpen, Sun, Moon, Bell, Sparkles } from 'lucide-react';
+import { Search, BookOpen, Sun, Moon, Bell, Sparkles, Radio } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AccountMenu } from '../AccountMenu/AccountMenu';
 import { useGuide } from '../../../context/GuideContext';
@@ -7,6 +7,8 @@ import { useTheme } from '../../../context/ThemeContext';
 import { APP_NAVIGATION } from '../../../constants/navigation';
 import { notificationService } from '../../../services/notifications/notification.service';
 import { NotificationCenterDrawer } from '../NotificationCenter/NotificationCenterDrawer';
+import { dataService } from '../../../services/dataService';
+import { countScholarsFocusingNow } from '../../../types/studyPact';
 import './AppHeader.css';
 
 export interface AppHeaderProps {
@@ -21,6 +23,35 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(() => notificationService.getUnreadCount());
+  /**
+   * Plan §8.3 — passive quiet peer presence: an anonymous live count of
+   * scholars in running rooms, shown only when someone is actually focusing.
+   * Real room state only — never a padded or simulated number.
+   */
+  const [scholarsFocusing, setScholarsFocusing] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+    const refreshPresence = () => {
+      dataService.rooms
+        .getRooms()
+        .then((rooms) => {
+          if (isMounted) setScholarsFocusing(countScholarsFocusingNow(rooms || []));
+        })
+        .catch(() => {
+          // Presence is a quiet signal; a failed poll simply stays quiet.
+        });
+    };
+    refreshPresence();
+    // Review P8F10: a passive presence signal polls on its own cadence and
+    // does NOT subscribe to the dataService event bus — a no-filter
+    // subscription re-fetched rooms on top of every app-wide mutation.
+    const interval = setInterval(refreshPresence, 60000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     const unsub = notificationService.subscribe(() => {
@@ -111,6 +142,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenSearch, onOpenAskSol
             <span className="solis-app-header__ask-label">Ask Solis</span>
             <kbd className="solis-app-header__kbd">⌘J</kbd>
           </button>
+        )}
+
+        {scholarsFocusing > 0 && (
+          <Link
+            to="/app/rooms"
+            className="solis-app-header__presence tactile-press"
+            title="Scholars focusing in Study Rooms right now"
+            aria-label={`${scholarsFocusing} ${scholarsFocusing === 1 ? 'scholar' : 'scholars'} focusing right now — open Study Rooms`}
+            data-cursor="action"
+          >
+            <Radio size={12} aria-hidden="true" />
+            <span className="solis-app-header__presence-dot" aria-hidden="true" />
+            <span className="solis-app-header__presence-label">
+              {scholarsFocusing} {scholarsFocusing === 1 ? 'scholar' : 'scholars'} focusing right now
+            </span>
+          </Link>
         )}
 
         <div className="solis-app-header__icon-btn-wrap">

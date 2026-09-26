@@ -67,7 +67,7 @@ export const TimeBlockGrid: React.FC<TimeBlockGridProps> = ({
           <p>No time blocks scheduled for this day.</p>
         </div>
       ) : (
-        <div className="solis-timeblock-list">
+        <div className="solis-timeblock-list" role="list" aria-label="Chronological agenda">
           {blocks.map((block) => {
             const hasConflict = conflicts.some(
               (c) => c.blockA.id === block.id || c.blockB.id === block.id
@@ -76,6 +76,7 @@ export const TimeBlockGrid: React.FC<TimeBlockGridProps> = ({
             return (
               <div
                 key={block.id}
+                role="listitem"
                 className={`solis-timeblock-card ${hasConflict ? 'solis-timeblock-card--conflict' : ''} ${
                   block.completed ? 'solis-timeblock-card--completed' : ''
                 }`}

@@ -1,7 +1,8 @@
-import { IDataService } from './api.interface';
+import { IDataService, DataEntityChannel, matchesChannelFilter } from './api.interface';
 import { MockDataService } from './mock/mockService';
 import { SupabaseDataService } from './supabase/supabaseService';
 import { isSupabaseConfigured } from './supabase/supabaseClient';
+import type { GuestWorkspaceSnapshot } from './migration/guestMigration';
 
 /**
  * Service Layer Factory
@@ -11,7 +12,10 @@ import { isSupabaseConfigured } from './supabase/supabaseClient';
 class ServiceContainer {
   private static instance: IDataService | null = null;
   private static mode: 'supabase' | 'mock' = 'mock';
-  private static subscribers: Set<() => void> = new Set();
+  private static subscribers: Set<{
+    fn: () => void;
+    channels?: DataEntityChannel[];
+  }> = new Set();
   private static activeUnsubscribe: (() => void) | null = null;
 
   public static getMode(): 'supabase' | 'mock' {
@@ -62,16 +66,33 @@ class ServiceContainer {
     ServiceContainer.instance = service;
     ServiceContainer.mode = mode;
 
-    ServiceContainer.activeUnsubscribe = service.subscribe(() => {
-      ServiceContainer.notifySubscribers();
+    ServiceContainer.activeUnsubscribe = service.subscribe((channel?: DataEntityChannel) => {
+      ServiceContainer.dispatch(channel);
     });
 
-    ServiceContainer.notifySubscribers();
+    ServiceContainer.dispatch();
   }
 
-  public static switchToMock(): void {
+  public static switchToMock(snapshot?: GuestWorkspaceSnapshot | null): void {
     console.info('[Solis Architecture] Switching active repository to MockDataService (Offline / Inactivity Fallback)');
-    ServiceContainer.setService(new MockDataService(), 'mock');
+    // When a guest workspace snapshot is provided (e.g. a failed real auth
+    // attempt returning the visitor to guest mode), the mock repository is
+    // restored with it instead of fresh demo seeds, so no local work is lost.
+    ServiceContainer.setService(new MockDataService(snapshot ?? undefined), 'mock');
+  }
+
+  /**
+   * Snapshot of the guest workspace held by the ACTIVE MockDataService
+   * (plan §1.3). Must be called BEFORE switching the container to Supabase —
+   * the snapshot is the only handle on the guest's local work. Returns null
+   * when the active service is not the mock provider.
+   */
+  public static snapshotMockWorkspace(): GuestWorkspaceSnapshot | null {
+    ServiceContainer.initIfNeeded();
+    if (ServiceContainer.instance instanceof MockDataService) {
+      return ServiceContainer.instance.getGuestWorkspaceSnapshot();
+    }
+    return null;
   }
 
   public static switchToSupabase(): void {
@@ -81,18 +102,35 @@ class ServiceContainer {
     }
   }
 
-  public static subscribe(listener: () => void): () => void {
+  /**
+   * Plan §6.1 scoped entity pub/sub: pages pass the entity channels they
+   * render (e.g. HabitsPage → ['habits']) and are only woken by mutations on
+   * those channels. Subscribing without channels receives every event.
+   */
+  public static subscribe(listener: () => void, channels?: DataEntityChannel[]): () => void {
     ServiceContainer.initIfNeeded();
-    ServiceContainer.subscribers.add(listener);
+    const entry = { fn: listener, channels };
+    ServiceContainer.subscribers.add(entry);
     return () => {
-      ServiceContainer.subscribers.delete(listener);
+      ServiceContainer.subscribers.delete(entry);
     };
   }
 
-  private static notifySubscribers(): void {
-    for (const sub of ServiceContainer.subscribers) {
+  /**
+   * Manual channel notification on the public contract (plan §6.1). Routes
+   * through the active provider so its query cache invalidates before any
+   * follow-up read triggered by the subscribers.
+   */
+  public static notifySubscribers(channel: DataEntityChannel): void {
+    ServiceContainer.initIfNeeded();
+    ServiceContainer.instance!.notifySubscribers(channel);
+  }
+
+  private static dispatch(channel?: DataEntityChannel): void {
+    for (const entry of ServiceContainer.subscribers) {
+      if (!matchesChannelFilter(entry.channels, channel)) continue;
       try {
-        sub();
+        entry.fn();
       } catch (err) {
         console.error('[ServiceContainer] Error notifying subscriber:', err);
       }
@@ -116,8 +154,11 @@ export const dataService: IDataService = {
   get resources() { return ServiceContainer.getService().resources; },
   get reflections() { return ServiceContainer.getService().reflections; },
   get rooms() { return ServiceContainer.getService().rooms; },
-  subscribe(listener: () => void) {
-    return ServiceContainer.subscribe(listener);
+  subscribe(listener: () => void, channels?: DataEntityChannel[]) {
+    return ServiceContainer.subscribe(listener, channels);
+  },
+  notifySubscribers(channel: DataEntityChannel) {
+    ServiceContainer.notifySubscribers(channel);
   }
 };
 

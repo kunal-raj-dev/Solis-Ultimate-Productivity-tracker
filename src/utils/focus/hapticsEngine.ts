@@ -161,6 +161,44 @@ class MicroHapticsEngine {
   }
 
   /**
+   * Soft Landing Chime (plan §5.3)
+   * Gentle two-tone ascent played ~2 minutes before a focus session concludes,
+   * giving ADHD scholars a non-symbolic, low-arousal cue to begin winding down.
+   * Quieter and warmer than the completion bell.
+   */
+  public playSoftLandingChime(volume: number = 0.09): void {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      // Warm ascending fifth: G4 (392Hz) -> C5 (523.25Hz)
+      const tones: Array<{ freq: number; startOffset: number; duration: number }> = [
+        { freq: 392, startOffset: 0, duration: 0.9 },
+        { freq: 523.25, startOffset: 0.35, duration: 1.4 }
+      ];
+
+      tones.forEach(({ freq, startOffset, duration }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + startOffset);
+
+        gain.gain.setValueAtTime(0.001, now + startOffset);
+        gain.gain.linearRampToValueAtTime(volume, now + startOffset + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + startOffset + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + startOffset);
+        osc.stop(now + startOffset + duration);
+      });
+    } catch {}
+  }
+
+  /**
    * Subtle Wood Tap
    * 25ms low-pass filtered click for tab transitions or mode toggles.
    */

@@ -182,9 +182,11 @@ export function useStudyPage() {
 
   useEffect(() => {
     loadData(true);
+    // Plan §6.1 scoped entity pub/sub: this hook renders study entities and
+    // notes; reviews, flashcards, and resources broadcast on 'all'.
     const unsubscribe = dataService.subscribe(() => {
       loadData(false);
-    });
+    }, ['study', 'notes']);
     return () => unsubscribe();
   }, [loadData]);
 

@@ -27,4 +27,5 @@ export interface DateRange {
   endDate: ISODateString;
 }
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+/** Plan §7.3: `sepia` is the low-stimulation warm-monochrome reading theme. */
+export type ThemeMode = 'light' | 'dark' | 'sepia' | 'system';

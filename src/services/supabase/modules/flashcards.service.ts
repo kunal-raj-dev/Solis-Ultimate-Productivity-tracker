@@ -80,10 +80,12 @@ export class SupabaseFlashcardService implements IFlashcardService {
         back_answer: cardData.backAnswer,
         card_type: cardData.cardType || 'standard',
         difficulty_rating: cardData.difficultyRating || 'good',
-        repetition_count: 0,
-        interval_days: 1,
-        ease_factor: 2.5,
-        next_review_date: getISODateString(new Date())
+        // Preserve supplied SM-2 scheduling state when present (guest-to-cloud
+        // migration, plan §1.3); brand-new cards fall back to fresh defaults.
+        repetition_count: cardData.repetitionCount ?? 0,
+        interval_days: cardData.intervalDays ?? 1,
+        ease_factor: cardData.easeFactor ?? 2.5,
+        next_review_date: cardData.nextReviewDate || getISODateString(new Date())
       })
       .select(`
         *,

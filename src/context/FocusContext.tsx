@@ -8,14 +8,21 @@ import React, {
 } from 'react';
 import { StudySubject } from '../types/study';
 import { Task } from '../types/task';
-import { SoundscapeType, ParkedThought } from '../types/focus';
+import { SoundscapeType, ParkedThought, PreSessionEnergy } from '../types/focus';
 import { dataService } from '../services/dataService';
 import { useToast } from './ToastContext';
 import { playFocusCompletionChime, calculateTimerRemaining } from '../utils/timer';
 import { soundscapeEngine } from '../utils/focus/soundscapeEngine';
+import { hapticsEngine } from '../utils/focus/hapticsEngine';
 
 export type FocusPreset = 'pomodoro' | 'deep_flow' | 'short_break' | 'custom';
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed' | 'cancelled';
+
+/** Plan §5.3: 'analog' renders the pie-sweep timer instead of digital numerals. */
+export type FocusTimerDisplayStyle = 'digital' | 'analog';
+
+/** Plan §5.2: countdown sessions end at a target; stopwatch sessions count up. */
+export type FocusTimerMode = 'countdown' | 'stopwatch';
 
 const STORAGE_KEY = 'solis_focus_session_v1';
 
@@ -24,6 +31,10 @@ export interface FocusContextValue {
   totalDurationSeconds: number;
   secondsRemaining: number;
   status: TimerStatus;
+  /** Plan §5.2: countdown sessions end at a target epoch; stopwatch sessions count up from zero. */
+  timerMode: FocusTimerMode;
+  /** Plan §5.2: seconds elapsed in the current stopwatch session (count-up). */
+  stopwatchElapsedSeconds: number;
   focusTitle: string;
   targetOutcome: string;
   selectedSubjectId: string;
@@ -36,6 +47,8 @@ export interface FocusContextValue {
   checkpointAcknowledged: boolean;
   isReflectionModalOpen: boolean;
   completedSessionMinutes: number;
+  /** Plan §5.1: 3-tap pre-session energy calibration for the active session. */
+  preSessionEnergy: PreSessionEnergy | null;
   subjects: StudySubject[];
   selectedSubject: StudySubject | undefined;
   tasks: Task[];
@@ -49,6 +62,8 @@ export interface FocusContextValue {
   cancelTimer: () => void;
   completeTimer: () => void;
   selectPreset: (preset: FocusPreset, customMinutes?: number) => void;
+  /** Plan §5.2: one-tap count-up stopwatch bound to a subject — no modal configuration. */
+  startQuickStopwatch: (subjectId: string) => void;
   setFocusTitle: (title: string) => void;
   setTargetOutcome: (outcome: string) => void;
   setSelectedSubjectId: (id: string) => void;
@@ -59,6 +74,7 @@ export interface FocusContextValue {
   setSoundscapeVolume: (volume: number) => void;
   toggleMute: () => void;
   setCheckpointAcknowledged: (acknowledged: boolean) => void;
+  setPreSessionEnergy: (energy: PreSessionEnergy | null) => void;
   setIsReflectionModalOpen: (open: boolean) => void;
   testAudioChime: () => void;
   parkThought: (text: string, type: 'task' | 'note' | 'question') => Promise<void>;
@@ -124,6 +140,16 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const initialFocusSeconds = getSavedFocusPreferences().defaultFocusDurationMinutes * 60;
 
   const [preset, setPresetState] = useState<FocusPreset>(persisted?.preset || 'pomodoro');
+  const [timerMode, setTimerMode] = useState<FocusTimerMode>(persisted?.timerMode || 'countdown');
+  const [stopwatchStartEpochMs, setStopwatchStartEpochMs] = useState<number | null>(
+    persisted?.stopwatchStartEpochMs ?? null
+  );
+  const [stopwatchAccumulatedMs, setStopwatchAccumulatedMs] = useState<number>(
+    persisted?.stopwatchAccumulatedMs || 0
+  );
+  const [stopwatchElapsedSeconds, setStopwatchElapsedSeconds] = useState<number>(
+    persisted?.stopwatchElapsedSeconds || 0
+  );
   const [totalDurationSeconds, setTotalDurationSeconds] = useState<number>(
     persisted?.totalDurationSeconds || initialFocusSeconds
   );
@@ -143,6 +169,12 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isMuted, setIsMuted] = useState<boolean>(persisted?.isMuted || false);
   const [checkpointAcknowledged, setCheckpointAcknowledged] = useState<boolean>(persisted?.checkpointAcknowledged || false);
   const [parkedThoughts, setParkedThoughts] = useState<ParkedThought[]>(persisted?.parkedThoughts || []);
+  const [preSessionEnergy, setPreSessionEnergy] = useState<PreSessionEnergy | null>(
+    persisted?.preSessionEnergy ?? null
+  );
+
+  // Plan §5.3: soft-landing chime fires once, ~2 minutes before a countdown ends.
+  const softLandingPlayedRef = useRef(false);
 
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
   const [completedSessionMinutes, setCompletedSessionMinutes] = useState(
@@ -172,6 +204,10 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         STORAGE_KEY,
         JSON.stringify({
           preset,
+          timerMode,
+          stopwatchStartEpochMs,
+          stopwatchAccumulatedMs,
+          stopwatchElapsedSeconds,
           totalDurationSeconds,
           status,
           targetEndTimeMs,
@@ -186,7 +222,8 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           soundscapeVolume,
           isMuted,
           checkpointAcknowledged,
-          parkedThoughts
+          parkedThoughts,
+          preSessionEnergy
         })
       );
     } catch {
@@ -194,6 +231,10 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [
     preset,
+    timerMode,
+    stopwatchStartEpochMs,
+    stopwatchAccumulatedMs,
+    stopwatchElapsedSeconds,
     totalDurationSeconds,
     status,
     targetEndTimeMs,
@@ -208,7 +249,8 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     soundscapeVolume,
     isMuted,
     checkpointAcknowledged,
-    parkedThoughts
+    parkedThoughts,
+    preSessionEnergy
   ]);
 
   // Load subjects (stable single subscription)
@@ -235,10 +277,12 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     loadSubjects();
     loadTasks();
+    // Plan §6.1 scoped entity pub/sub: the pre-session picker renders
+    // subjects and tasks only.
     const unsubscribe = dataService.subscribe(() => {
       loadSubjects();
       loadTasks();
-    });
+    }, ['tasks', 'study']);
     return () => unsubscribe();
   }, [loadSubjects, loadTasks]);
 
@@ -282,27 +326,60 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const completeTimer = useCallback(() => {
     soundscapeEngine.stop();
     setStatus('completed');
-    setSecondsRemaining(0);
     setTargetEndTimeMs(null);
     setPausedRemainingMs(null);
+
+    if (timerMode === 'stopwatch') {
+      const elapsedMs =
+        stopwatchAccumulatedMs + (stopwatchStartEpochMs !== null ? Date.now() - stopwatchStartEpochMs : 0);
+      setStopwatchStartEpochMs(null);
+      setStopwatchAccumulatedMs(elapsedMs);
+      setStopwatchElapsedSeconds(Math.floor(elapsedMs / 1000));
+      const mins = Math.max(1, Math.round(elapsedMs / 60000));
+      setCompletedSessionMinutes(mins);
+    } else {
+      setSecondsRemaining(0);
+      const mins = Math.max(1, Math.round(totalDurationSeconds / 60));
+      setCompletedSessionMinutes(mins);
+    }
 
     if (getSavedFocusPreferences().soundEnabled) {
       playFocusCompletionChime();
     }
-    const mins = Math.max(1, Math.round(totalDurationSeconds / 60));
-    setCompletedSessionMinutes(mins);
     setIsReflectionModalOpen(true);
-  }, [totalDurationSeconds]);
+  }, [timerMode, stopwatchAccumulatedMs, stopwatchStartEpochMs, totalDurationSeconds]);
 
   // Precision RAF loop
   useEffect(() => {
-    if (status !== 'running' || targetEndTimeMs === null) {
+    if (status !== 'running') {
       if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current);
         animFrameRef.current = null;
       }
       return;
     }
+
+    // Plan §5.2: stopwatch sessions count up from their start epoch.
+    if (timerMode === 'stopwatch') {
+      if (stopwatchStartEpochMs === null) return;
+
+      const tick = () => {
+        const elapsedMs = stopwatchAccumulatedMs + (Date.now() - stopwatchStartEpochMs);
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        setStopwatchElapsedSeconds((prev) => (prev !== elapsedSeconds ? elapsedSeconds : prev));
+        animFrameRef.current = requestAnimationFrame(tick);
+      };
+
+      animFrameRef.current = requestAnimationFrame(tick);
+
+      return () => {
+        if (animFrameRef.current !== null) {
+          cancelAnimationFrame(animFrameRef.current);
+        }
+      };
+    }
+
+    if (targetEndTimeMs === null) return;
 
     const tick = () => {
       const remainingSeconds = calculateTimerRemaining(
@@ -313,6 +390,20 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       );
 
       setSecondsRemaining((prev) => (prev !== remainingSeconds ? remainingSeconds : prev));
+
+      // Plan §5.3: gentle "Soft Landing" chime ~2 minutes before conclusion,
+      // once per session, for sessions long enough to land into.
+      if (
+        !softLandingPlayedRef.current &&
+        totalDurationSeconds > 120 &&
+        remainingSeconds > 0 &&
+        remainingSeconds <= 120
+      ) {
+        softLandingPlayedRef.current = true;
+        if (getSavedFocusPreferences().soundEnabled) {
+          hapticsEngine.playSoftLandingChime();
+        }
+      }
 
       if (remainingSeconds <= 0) {
         completeTimer();
@@ -328,15 +419,29 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [status, targetEndTimeMs, pausedRemainingMs, totalDurationSeconds, completeTimer]);
+  }, [status, timerMode, stopwatchStartEpochMs, stopwatchAccumulatedMs, targetEndTimeMs, pausedRemainingMs, totalDurationSeconds, completeTimer]);
 
   const startTimer = () => {
+    // Plan §5.2: stopwatch resume simply re-anchors the count-up epoch.
+    if (timerMode === 'stopwatch') {
+      if (status === 'running') return;
+      setStopwatchStartEpochMs(Date.now());
+      setStatus('running');
+      if (soundscape !== 'none' && !isMuted) {
+        soundscapeEngine.setSoundscape(soundscape, soundscapeVolume);
+      }
+      return;
+    }
+
     const now = Date.now();
     let targetEnd: number;
 
     if (status === 'paused' && pausedRemainingMs !== null) {
       targetEnd = now + pausedRemainingMs;
     } else {
+      // Fresh session start only — a resume-from-pause must not re-arm the
+      // once-per-session soft-landing chime (P5F3).
+      softLandingPlayedRef.current = false;
       targetEnd = now + totalDurationSeconds * 1000;
       setCheckpointAcknowledged(false);
       setParkedThoughts([]);
@@ -358,7 +463,20 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const pauseTimer = () => {
-    if (status !== 'running' || targetEndTimeMs === null) return;
+    if (status !== 'running') return;
+
+    // Plan §5.2: freeze the stopwatch by banking elapsed time.
+    if (timerMode === 'stopwatch') {
+      if (stopwatchStartEpochMs === null) return;
+      const now = Date.now();
+      setStopwatchAccumulatedMs((prev) => prev + (now - stopwatchStartEpochMs));
+      setStopwatchStartEpochMs(null);
+      soundscapeEngine.stop();
+      setStatus('paused');
+      return;
+    }
+
+    if (targetEndTimeMs === null) return;
     const now = Date.now();
     const remainingMs = Math.max(0, targetEndTimeMs - now);
 
@@ -376,6 +494,13 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPausedRemainingMs(null);
     setCheckpointAcknowledged(false);
     setParkedThoughts([]);
+    softLandingPlayedRef.current = false;
+    setTimerMode('countdown');
+    setStopwatchStartEpochMs(null);
+    setStopwatchAccumulatedMs(0);
+    setStopwatchElapsedSeconds(0);
+    // Plan §5.1: a new session re-runs the pre-session energy check-in.
+    setPreSessionEnergy(null);
   };
 
   const cancelTimer = () => {
@@ -386,7 +511,50 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPausedRemainingMs(null);
     setCheckpointAcknowledged(false);
     setParkedThoughts([]);
+    softLandingPlayedRef.current = false;
+    setTimerMode('countdown');
+    setStopwatchStartEpochMs(null);
+    setStopwatchAccumulatedMs(0);
+    setStopwatchElapsedSeconds(0);
+    setPreSessionEnergy(null);
     addToast({ title: 'Session cancelled', description: 'Session was not logged.', type: 'info' });
+  };
+
+  // Plan §5.2: launch a count-up stopwatch bound to a subject in one tap —
+  // no preset or modal configuration required. Deliberately a plain function
+  // so the guards below always see fresh timer state.
+  const startQuickStopwatch = (subjectId: string) => {
+    // P5F2: an active stopwatch is never silently discarded — tapping the same
+    // subject's stopwatch toggles pause/resume; a different subject is ignored.
+    if (timerMode === 'stopwatch' && (status === 'running' || status === 'paused')) {
+      if (selectedSubjectId === subjectId) {
+        if (status === 'running') {
+          pauseTimer();
+        } else {
+          startTimer();
+        }
+      }
+      return;
+    }
+
+    const subject = subjects.find((s) => s.id === subjectId);
+    setTimerMode('stopwatch');
+    setSelectedSubjectId(subjectId);
+    setFocusTitle(subject ? `Quick Stopwatch: ${subject.name}` : 'Quick Stopwatch Session');
+    // P5F1: keep the previous countdown duration intact so Reset returns to a
+    // valid idle countdown instead of a zero-length instant-complete one.
+    setSecondsRemaining(totalDurationSeconds);
+    setTargetEndTimeMs(null);
+    setPausedRemainingMs(null);
+    setStopwatchAccumulatedMs(0);
+    setStopwatchElapsedSeconds(0);
+    setStopwatchStartEpochMs(Date.now());
+    setCheckpointAcknowledged(false);
+    setParkedThoughts([]);
+    // P5F4: stopwatch sessions have no pre-session check-in — clear stale values.
+    setPreSessionEnergy(null);
+    softLandingPlayedRef.current = false;
+    setStatus('running');
   };
 
   const selectPreset = useCallback((newPreset: FocusPreset, customMinutes?: number) => {
@@ -403,6 +571,11 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTargetEndTimeMs(null);
     setPausedRemainingMs(null);
     setCheckpointAcknowledged(false);
+    // Choosing a preset returns the timer to normal countdown semantics.
+    setTimerMode('countdown');
+    setStopwatchStartEpochMs(null);
+    setStopwatchAccumulatedMs(0);
+    setStopwatchElapsedSeconds(0);
   }, []);
 
   useEffect(() => {
@@ -511,8 +684,8 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     completePlanItem?: boolean;
   }) => {
     try {
-      await dataService.focus.saveFocusSession({
-        mode: preset === 'pomodoro' ? 'pomodoro' : preset === 'deep_flow' ? 'deep_flow' : 'custom_timer',
+      const savedFocusSession = await dataService.focus.saveFocusSession({
+        mode: timerMode === 'stopwatch' ? 'stopwatch' : preset === 'pomodoro' ? 'pomodoro' : preset === 'deep_flow' ? 'deep_flow' : 'custom_timer',
         durationMinutes: completedSessionMinutes,
         subjectId: selectedSubjectId || undefined,
         subjectName: selectedSubject?.name,
@@ -525,11 +698,16 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         flowQuality: data.flowQuality,
         soundscapeType: soundscape,
         targetOutcome: targetOutcome || undefined,
+        // Plan §5.1: persist the 3-tap pre-session energy calibration.
+        preSessionEnergy: preSessionEnergy || undefined,
         notes: data.notes,
         parkedThoughts: parkedThoughts.length > 0 ? parkedThoughts : undefined
       });
 
-      // Synchronize into canonical Study Sessions & Syllabus Topic Mastery
+      // Focus Session → Study Log auto-bridge (plan §1.5): every submitted
+      // reflection also logs a canonical StudySession linked back to the
+      // FocusSession, with subject, duration, retention rating (1–5), notes,
+      // and the covered topic — eliminating manual double-entry.
       if (selectedSubjectId) {
         try {
           const rating = (Math.min(5, Math.max(1, Math.round(data.flowQuality))) as 1 | 2 | 3 | 4 | 5) || 4;
@@ -537,6 +715,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             subjectId: selectedSubjectId,
             subjectName: selectedSubject?.name || 'General Study',
             planItemId: selectedPlanItemId || undefined,
+            focusSessionId: savedFocusSession?.id,
             type: preset === 'deep_flow' ? 'deep_study' : 'active_recall',
             durationMinutes: completedSessionMinutes,
             topicsCovered: focusTitle ? [focusTitle] : [],
@@ -649,6 +828,8 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     totalDurationSeconds,
     secondsRemaining,
     status,
+    timerMode,
+    stopwatchElapsedSeconds,
     focusTitle,
     targetOutcome,
     selectedSubjectId,
@@ -661,6 +842,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     checkpointAcknowledged,
     isReflectionModalOpen,
     completedSessionMinutes,
+    preSessionEnergy,
     subjects,
     selectedSubject,
     tasks,
@@ -673,6 +855,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     cancelTimer,
     completeTimer,
     selectPreset,
+    startQuickStopwatch,
     setFocusTitle,
     setTargetOutcome,
     setSelectedSubjectId,
@@ -683,6 +866,7 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSoundscapeVolume,
     toggleMute,
     setCheckpointAcknowledged,
+    setPreSessionEnergy,
     setIsReflectionModalOpen,
     testAudioChime,
     parkThought,
