@@ -173,3 +173,45 @@ export function replaceWikilinksWithMarkdown(text: string, basePath: string = '/
     return `[${parsed.alias}](${url})`;
   });
 }
+
+/* ---------------------------------------------------------------------------
+ * Phase 2 (P2.1) — editor autocomplete primitives
+ * ------------------------------------------------------------------------- */
+
+export interface WikiLinkDraftMatch {
+  /** Index of the opening `[[` in the text. */
+  start: number;
+  /** Cursor position (end of the typed query). */
+  end: number;
+  /** Text typed between `[[` and the cursor. */
+  query: string;
+}
+
+/**
+ * Detects an unterminated `[[query` fragment ending exactly at the cursor —
+ * the user is mid-way through typing a wiki link. Links never span lines.
+ */
+export function findWikiLinkDraftAtCursor(text: string, cursor: number): WikiLinkDraftMatch | null {
+  if (cursor <= 0 || cursor > text.length) return null;
+  const upto = text.slice(0, cursor);
+  const openIdx = upto.lastIndexOf('[[');
+  if (openIdx === -1) return null;
+  const between = upto.slice(openIdx + 2);
+  if (between.includes(']]')) return null;
+  if (between.includes('\n')) return null;
+  return { start: openIdx, end: cursor, query: between };
+}
+
+/**
+ * Replaces the draft `[[query` fragment with the completed `[[Title]]` link
+ * and returns the new cursor position (just after the closing brackets).
+ */
+export function applyWikiLinkDraftSelection(
+  text: string,
+  match: WikiLinkDraftMatch,
+  title: string
+): { text: string; cursor: number } {
+  const insertion = `[[${title}]]`;
+  const next = text.slice(0, match.start) + insertion + text.slice(match.end);
+  return { text: next, cursor: match.start + insertion.length };
+}

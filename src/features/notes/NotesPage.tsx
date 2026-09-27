@@ -14,7 +14,11 @@ import {
   Download,
   Flame,
   Sparkles,
-  CheckSquare
+  CheckSquare,
+  Star,
+  Moon,
+  History,
+  Network
 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button/Button';
@@ -37,6 +41,14 @@ import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
 import { useDebouncedAutoSave, AutoSaveStatus } from '../../hooks/useDebouncedAutoSave';
+import { MarkdownToolbar } from '../../components/features/Notes/MarkdownToolbar';
+import { WikiLinkAutocomplete } from '../../components/features/Notes/WikiLinkAutocomplete';
+import { NoteHistoryPanel } from '../../components/features/Notes/NoteHistoryPanel';
+import { KnowledgeGraph } from '../../components/features/Notes/KnowledgeGraph';
+import { findWikiLinkDraftAtCursor, applyWikiLinkDraftSelection } from '../../utils/notes/wikilinks';
+import { getPinnedNoteIds, toggleNotePin } from '../../utils/notes/notePins';
+import { recordNoteSnapshot, getNoteHistory, NoteSnapshot } from '../../utils/notes/noteHistory';
+import '../../components/features/Notes/NotesEnhancements.css';
 import { Note, NoteCategory } from '../../types/note';
 import { StudySubject, StudyTopic } from '../../types/study';
 import { StudyResource } from '../../types/resource';
@@ -106,6 +118,25 @@ export const NotesPage: React.FC = () => {
   // Plan §1.2: a newer local draft is offered back to the user, never forced.
   const [draftRestorePrompt, setDraftRestorePrompt] = useState<{ title: string; content: string } | null>(null);
 
+  // Phase 2 (P2.3): pinned notes float to the top of the Knowledge Index.
+  const [pinnedIds, setPinnedIds] = useState<string[]>(() => getPinnedNoteIds());
+
+  // Phase 2 (P2.1): active `[[` wiki-link draft state for the editor.
+  const [wikiDraft, setWikiDraft] = useState<{
+    start: number;
+    end: number;
+    suggestions: Note[];
+    highlightIndex: number;
+    top: number;
+  } | null>(null);
+
+  // Phase 2 (P2.5): restorable version snapshots for the open note.
+  const [noteHistory, setNoteHistory] = useState<NoteSnapshot[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // Phase 2 (P2.6): knowledge graph overlay.
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+
   // ── Lossless 2-tier auto-save (plan §1.2) ──────────────────────────────────
   // Tier 1: 1s debounce into localStorage['solis_note_draft_${id}'].
   // Tier 2: 4s debounce through dataService.notes.updateNote. The status drives
@@ -121,6 +152,8 @@ export const NotesPage: React.FC = () => {
         subjectId: payload.subjectId || undefined,
         tags: payload.tags
       });
+      // Phase 2 (P2.5): every successful cloud sync leaves a restorable snapshot.
+      recordNoteSnapshot(payload.noteId, payload.content);
     }
   });
 
@@ -185,10 +218,11 @@ export const NotesPage: React.FC = () => {
   const noteMetrics = useMemo(() => calculateNoteMetrics(content), [content]);
 
   // Plan §3.6: instant client-side filtering — 0 network calls per keystroke.
-  // Matches title, content, tags, and subject name.
+  // Matches title, content, tags, and subject name. Phase 2 (P2.3): pinned
+  // notes always float above the rest (recency within each group).
   const visibleNotes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return notes.filter((n) => {
+    const filtered = notes.filter((n) => {
       if (filterCategory !== 'all' && n.category !== filterCategory) return false;
       if (filterSubjectId !== 'all' && (n.subjectId || '') !== filterSubjectId) return false;
       if (q) {
@@ -199,7 +233,17 @@ export const NotesPage: React.FC = () => {
       }
       return true;
     });
-  }, [notes, searchQuery, filterCategory, filterSubjectId]);
+    return [...filtered].sort((a, b) => {
+      const aPinned = pinnedIds.includes(a.id) ? 1 : 0;
+      const bPinned = pinnedIds.includes(b.id) ? 1 : 0;
+      if (aPinned !== bPinned) return bPinned - aPinned;
+      return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+    });
+  }, [notes, searchQuery, filterCategory, filterSubjectId, pinnedIds]);
+
+  const handleTogglePin = (noteId: string) => {
+    setPinnedIds(toggleNotePin(noteId));
+  };
 
   const handleExportMarkdown = () => {
     if (!selectedNote) return;
@@ -447,6 +491,10 @@ export const NotesPage: React.FC = () => {
     setTags(note.tags || []);
     setSaveStatus('saved');
     setMobileView('editor');
+    // Phase 2 (P2.5): load restorable snapshots for the incoming note.
+    setNoteHistory(getNoteHistory(note.id));
+    setIsHistoryOpen(false);
+    setWikiDraft(null);
   };
 
   const handleCreateNote = async (initialTitle?: string, initialSubId?: string) => {
@@ -626,6 +674,92 @@ export const NotesPage: React.FC = () => {
     if (payload) autoSave.schedule(payload);
   };
 
+  /* ── Phase 2 (P2.1): `[[` wiki-link autocomplete wiring ───────────────── */
+
+  const EDITOR_LINE_HEIGHT_PX = 27;
+
+  const updateWikiDraft = (text: string, cursor: number) => {
+    const match = findWikiLinkDraftAtCursor(text, cursor);
+    if (!match) {
+      setWikiDraft(null);
+      return;
+    }
+    const q = match.query.trim().toLowerCase();
+    const suggestions = notes
+      .filter(
+        (n) =>
+          n.id !== selectedNote?.id &&
+          n.title &&
+          (!q || n.title.toLowerCase().includes(q))
+      )
+      .slice(0, 6);
+    const lineIndex = text.slice(0, match.start).split('\n').length - 1;
+    const ta = contentTextareaRef.current;
+    const scrollTop = ta ? ta.scrollTop : 0;
+    setWikiDraft({
+      start: match.start,
+      end: match.end,
+      suggestions,
+      highlightIndex: suggestions.length > 0 ? 0 : -1,
+      top: Math.max(0, 12 + lineIndex * EDITOR_LINE_HEIGHT_PX - scrollTop)
+    });
+  };
+
+  const handleEditTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    handleContentChange(e.target.value);
+    updateWikiDraft(e.target.value, e.target.selectionStart);
+  };
+
+  const handleWikiSelect = (noteTitle: string) => {
+    if (!wikiDraft) return;
+    const { text: next, cursor } = applyWikiLinkDraftSelection(content, { start: wikiDraft.start, end: wikiDraft.end, query: '' }, noteTitle);
+    handleContentChange(next);
+    setWikiDraft(null);
+    requestAnimationFrame(() => {
+      const ta = contentTextareaRef.current;
+      if (ta) {
+        ta.focus();
+        ta.setSelectionRange(cursor, cursor);
+      }
+    });
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!wikiDraft || wikiDraft.suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setWikiDraft((d) => (d ? { ...d, highlightIndex: (d.highlightIndex + 1) % d.suggestions.length } : d));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setWikiDraft((d) =>
+        d ? { ...d, highlightIndex: (d.highlightIndex - 1 + d.suggestions.length) % d.suggestions.length } : d
+      );
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      const picked = wikiDraft.suggestions[wikiDraft.highlightIndex] ?? wikiDraft.suggestions[0];
+      if (picked) handleWikiSelect(picked.title);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setWikiDraft(null);
+    }
+  };
+
+  const handleApplyMarkdown = (next: string, selection?: { start: number; end: number }) => {
+    handleContentChange(next);
+    requestAnimationFrame(() => {
+      const ta = contentTextareaRef.current;
+      if (ta) {
+        ta.focus();
+        if (selection) ta.setSelectionRange(selection.start, selection.end);
+      }
+    });
+  };
+
+  const handleRestoreHistory = (restored: string) => {
+    handleContentChange(restored);
+    addToast({ title: 'Version restored', description: 'The snapshot is back in the editor — save to keep it.', type: 'success' });
+  };
+
   /**
    * Plan §8.2: a grounded flashcard's citation chip jumps back to the exact
    * note paragraph (`sourceLineIndex`, 0-based). Switches the canvas to edit
@@ -724,6 +858,15 @@ export const NotesPage: React.FC = () => {
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Network size={14} />}
+              onClick={() => setIsGraphOpen(true)}
+              title="Open the knowledge graph — notes connected by wiki-links"
+            >
+              Graph
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -850,12 +993,36 @@ export const NotesPage: React.FC = () => {
                   onClick={() => handleSelectNote(note)}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Badge variant="neutral" style={{ fontSize: '10px', textTransform: 'capitalize' }}>
-                      {note.category.replace('_', ' ')}
-                    </Badge>
-                    <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
-                      {formatFriendlyDate(note.updatedAt)}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Badge variant="neutral" style={{ fontSize: '10px', textTransform: 'capitalize' }}>
+                        {note.category.replace('_', ' ')}
+                      </Badge>
+                      {/* Phase 2 (P2.8): evening-closure reflections are visually
+                          distinct from study notes so their origin is obvious. */}
+                      {(note.category === 'reflection' || (note.tags || []).includes('daily-closure')) && (
+                        <span className="solis-note-card__source" title="Created during Evening Closure">
+                          <Moon size={10} />
+                          Reflection
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <button
+                        type="button"
+                        className={`solis-note-card__pin ${pinnedIds.includes(note.id) ? 'solis-note-card__pin--pinned' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTogglePin(note.id);
+                        }}
+                        title={pinnedIds.includes(note.id) ? 'Unpin note' : 'Pin note to top'}
+                        aria-label={pinnedIds.includes(note.id) ? `Unpin ${note.title}` : `Pin ${note.title}`}
+                      >
+                        <Star size={13} fill={pinnedIds.includes(note.id) ? 'currentColor' : 'none'} />
+                      </button>
+                      <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-muted)' }}>
+                        {formatFriendlyDate(note.updatedAt)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="solis-note-card__title">{note.title || 'Untitled Note'}</div>
@@ -1079,12 +1246,31 @@ export const NotesPage: React.FC = () => {
                     { value: 'split', label: 'Split' }
                   ]}
                 />
+                {/* Phase 2 (P2.2): markdown formatting for the writing surface. */}
+                {noteViewMode !== 'read' && (
+                  <MarkdownToolbar
+                    value={content}
+                    onChange={handleApplyMarkdown}
+                    textareaRef={contentTextareaRef}
+                  />
+                )}
                 <span className="solis-notes-toolbar__metrics">
                   {noteMetrics.wordCount} words • ~{noteMetrics.readingTimeMinutes}m read
                 </span>
               </div>
 
               <div className="solis-notes-toolbar__right">
+                {/* Phase 2 (P2.5): restorable version history of this note. */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<History size={13} />}
+                  onClick={() => setIsHistoryOpen((v) => !v)}
+                  disabled={noteHistory.length === 0}
+                  title={noteHistory.length === 0 ? 'Snapshots appear after this note syncs' : 'Restore a recent version'}
+                >
+                  History{noteHistory.length > 0 ? ` (${noteHistory.length})` : ''}
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1097,15 +1283,36 @@ export const NotesPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Phase 2 (P2.5): version history dropdown. */}
+            {isHistoryOpen && (
+              <NoteHistoryPanel
+                history={noteHistory}
+                onRestore={handleRestoreHistory}
+                onClose={() => setIsHistoryOpen(false)}
+              />
+            )}
+
             {/* Thinking Body according to active mode */}
             {noteViewMode === 'edit' && (
-              <textarea
-                ref={contentTextareaRef}
-                value={content}
-                onChange={(e) => handleContentChange(e.target.value)}
-                placeholder="Write structured insights, mathematical derivations, architecture proofs, or lecture syntheses..."
-                className="solis-notes-canvas__body"
-              />
+              <div style={{ position: 'relative', flex: 1, display: 'flex', minHeight: 0 }}>
+                <textarea
+                  ref={contentTextareaRef}
+                  value={content}
+                  onChange={handleEditTextareaChange}
+                  onKeyDown={handleEditKeyDown}
+                  onBlur={() => setTimeout(() => setWikiDraft(null), 120)}
+                  placeholder="Write structured insights, mathematical derivations, architecture proofs, or lecture syntheses... Type [[ to link another note."
+                  className="solis-notes-canvas__body"
+                />
+                {wikiDraft && (
+                  <WikiLinkAutocomplete
+                    suggestions={wikiDraft.suggestions.map((n) => ({ id: n.id, title: n.title }))}
+                    highlightIndex={wikiDraft.highlightIndex}
+                    top={wikiDraft.top}
+                    onSelect={handleWikiSelect}
+                  />
+                )}
+              </div>
             )}
 
             {noteViewMode === 'read' && (
@@ -1150,6 +1357,19 @@ export const NotesPage: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Phase 2 (P2.6): knowledge graph overlay. */}
+      {isGraphOpen && (
+        <KnowledgeGraph
+          notes={notes}
+          onOpenNote={(noteId) => {
+            const target = notes.find((n) => n.id === noteId);
+            if (target) handleSelectNote(target);
+            setIsGraphOpen(false);
+          }}
+          onClose={() => setIsGraphOpen(false)}
+        />
+      )}
 
       {/* Flashcard Create Modal from Note */}
       {selectedNote && (

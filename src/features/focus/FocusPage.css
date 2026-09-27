@@ -517,3 +517,31 @@
   }
 }
 
+
+/* Phase 2 (P2.7): Study → Notes contextual bridge in the pre-session area. */
+.solis-focus-notes-bridge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 520px;
+  width: 100%;
+  padding: 8px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-secondary);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-swift, 150ms) ease, color var(--duration-swift, 150ms) ease;
+}
+
+.solis-focus-notes-bridge:hover {
+  border-color: var(--color-amber-500);
+  color: var(--text-primary);
+}
+
+.solis-focus-notes-bridge svg {
+  flex-shrink: 0;
+  color: var(--color-amber-500);
+}

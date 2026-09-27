@@ -1,0 +1,285 @@
+/* Phase 2 notes enhancements — autocomplete, markdown toolbar, history,
+   knowledge graph, pin & reflection badges. */
+
+/* ── P2.1 Wiki-link autocomplete ─────────────────────────────────────────── */
+.solis-wikilink-autocomplete {
+  position: absolute;
+  left: 12px;
+  z-index: 40;
+  min-width: 220px;
+  max-width: 320px;
+  background: var(--bg-surface-elevated, var(--bg-surface-primary));
+  border: 1px solid var(--border-default, var(--border-subtle));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown, 0 8px 24px rgba(0, 0, 0, 0.18));
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.solis-wikilink-autocomplete__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.solis-wikilink-autocomplete__item svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.solis-wikilink-autocomplete__item--active,
+.solis-wikilink-autocomplete__item:hover {
+  background: var(--bg-surface-secondary);
+}
+
+.solis-wikilink-autocomplete__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── P2.2 Markdown toolbar ───────────────────────────────────────────────── */
+.solis-md-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.solis-md-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.solis-md-toolbar__btn:hover:not(:disabled) {
+  background: var(--bg-surface-elevated, var(--bg-surface-primary));
+  color: var(--text-primary);
+}
+
+.solis-md-toolbar__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── P2.5 Version history panel ──────────────────────────────────────────── */
+.solis-note-history {
+  position: absolute;
+  right: 16px;
+  top: 52px;
+  z-index: 40;
+  width: 300px;
+  background: var(--bg-surface-elevated, var(--bg-surface-primary));
+  border: 1px solid var(--border-default, var(--border-subtle));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-dropdown, 0 8px 24px rgba(0, 0, 0, 0.18));
+  padding: 8px;
+}
+
+.solis-note-history__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 2px 4px 8px;
+}
+
+.solis-note-history__close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.solis-note-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.solis-note-history__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-note-history__item:hover {
+  background: var(--bg-surface-secondary);
+}
+
+.solis-note-history__when {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.solis-note-history__words {
+  color: var(--text-muted);
+}
+
+.solis-note-history__restore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-primary);
+  color: var(--text-primary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+
+/* ── P2.6 Knowledge graph overlay ────────────────────────────────────────── */
+.solis-knowledge-graph {
+  position: fixed;
+  inset: 5vh 5vw;
+  z-index: 90;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-default, var(--border-subtle));
+  border-radius: var(--radius-xl, 18px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 22px;
+  overflow: hidden;
+}
+
+.solis-knowledge-graph__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-body-md, 16px);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-knowledge-graph__header svg {
+  color: var(--color-amber-500);
+}
+
+.solis-knowledge-graph__meta {
+  margin-left: 8px;
+  font-size: var(--text-caption);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.solis-knowledge-graph__close {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-secondary);
+  border-radius: var(--radius-full, 999px);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.solis-knowledge-graph__svg {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.solis-knowledge-graph__edge {
+  stroke: var(--border-default, var(--border-subtle));
+  stroke-width: 1.2;
+}
+
+.solis-knowledge-graph__node {
+  cursor: pointer;
+}
+
+.solis-knowledge-graph__node circle {
+  fill: var(--bg-surface-secondary);
+  stroke: var(--text-muted);
+  stroke-width: 1.4;
+}
+
+.solis-knowledge-graph__node--connected circle {
+  stroke: var(--color-amber-500);
+  fill: rgba(230, 168, 75, 0.12);
+}
+
+.solis-knowledge-graph__node:hover circle {
+  stroke: var(--color-coral-500);
+}
+
+.solis-knowledge-graph__node text {
+  font-size: 10px;
+  fill: var(--text-secondary);
+  pointer-events: none;
+}
+
+.solis-knowledge-graph__empty {
+  margin: auto;
+  color: var(--text-secondary);
+  font-size: var(--text-body-sm);
+}
+
+.solis-knowledge-graph__hint {
+  margin: 8px 0 0;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ── P2.3 pin + P2.8 reflection badges on note cards ────────────────────── */
+.solis-note-card__pin {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+}
+
+.solis-note-card__pin--pinned {
+  color: var(--color-amber-500);
+}
+
+.solis-note-card__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-lavender-500, #8b7bd8);
+}

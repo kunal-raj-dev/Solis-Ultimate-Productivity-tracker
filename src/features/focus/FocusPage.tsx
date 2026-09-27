@@ -49,6 +49,7 @@ import {
 } from '../../utils/focus/tabDefense';
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
+import { dataService } from '../../services/dataService';
 import { useFocus, FocusPreset } from '../../context/FocusContext';
 import { SoundscapeType, PreSessionEnergy } from '../../types/focus';
 import { formatSecondsToTimer } from '../../utils/formatters';
@@ -305,6 +306,30 @@ export const FocusPage: React.FC = () => {
       }
     }
   }, [searchParams, location.state, setSelectedSubjectId, setSelectedPlanItemId, setSelectedTaskId, setSelectedBlockId, setFocusTitle, selectPreset]);
+
+  // Phase 2 (P2.7): count the learner's notes on the selected subject so the
+  // pre-session bridge can surface them ("You have N notes on X").
+  const [subjectNotesCount, setSubjectNotesCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedSubjectId || status !== 'idle') {
+      setSubjectNotesCount(0);
+      return;
+    }
+    dataService.notes
+      .getNotes()
+      .then((allNotes) => {
+        if (!cancelled) {
+          setSubjectNotesCount(allNotes.filter((n) => n.subjectId === selectedSubjectId).length);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSubjectNotesCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSubjectId, status]);
 
   const handleStart = () => {
     hapticsEngine.playMechanicalTick();
@@ -781,8 +806,25 @@ export const FocusPage: React.FC = () => {
                     )}
                   </div>
                 )}
-              </div>
-            )}
+                      </div>
+                )}
+
+                {/* Phase 2 (P2.7): Study → Notes contextual bridge — surface the
+                    learner's own notes on this subject before the session starts. */}
+                {status === 'idle' && selectedSubject && subjectNotesCount > 0 && (
+                  <button
+                    type="button"
+                    className="solis-focus-notes-bridge tactile-press"
+                    onClick={() => navigate(`/app/notes?subjectId=${selectedSubject.id}`)}
+                    title="Open these notes in Knowledge Studio"
+                  >
+                    <BookOpen size={13} />
+                    <span>
+                      You have {subjectNotesCount} note{subjectNotesCount === 1 ? '' : 's'} on{' '}
+                      <strong>{selectedSubject.name}</strong> — review them while you study?
+                    </span>
+                  </button>
+                )}
 
             {/* Active Task indicator in running/paused mode */}
             {status !== 'idle' && activeTask && !isZenMode && (
