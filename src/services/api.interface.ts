@@ -87,6 +87,12 @@ export interface IStudyService {
   deleteSession(id: string): Promise<boolean>;
 
   // Study Plan
+  /**
+   * Phase 0 (P0-07) contract: the TODAY plan only — items whose
+   * `scheduledDate` is today, plus undated legacy rows. Items scheduled for
+   * future days belong to their day's projection, not the today queue.
+   * Both backends (mock and Supabase) enforce this identically.
+   */
   getTodayPlan(): Promise<StudyPlanItem[]>;
   createPlanItem(item: Partial<StudyPlanItem>): Promise<StudyPlanItem>;
   updatePlanItem(id: string, updates: Partial<StudyPlanItem>): Promise<StudyPlanItem>;

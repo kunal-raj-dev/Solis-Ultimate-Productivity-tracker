@@ -2,21 +2,28 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { dataService } from '../services/dataService';
 import { PeerCheerEmoji } from '../types/presence';
 
-describe('Feature 3.3: Ambient Peer Presence System', () => {
+/**
+ * Phase 0 (V2) integrity rewrite: the ambient presence service must never
+ * report simulated peers. Until real cross-room presence backing ships
+ * (Phase 2 rooms work), the honest contract is: zero peers, ghost-mode
+ * preference persists, subscribers are notified with the true (empty) list.
+ */
+describe('Phase 0 integrity: Ambient Peer Presence is honest', () => {
   beforeEach(async () => {
     // Reset ghost mode
     await dataService.presence.setGhostMode(false);
   });
 
-  it('fetches live study peers successfully', async () => {
+  it('never reports simulated peers in production mode', async () => {
     const peers = await dataService.presence.getLivePeers();
-    expect(peers.length).toBeGreaterThanOrEqual(3);
-    const peerNames = peers.map((p) => p.displayName);
-    expect(peerNames).toContain('Elena Rostova');
-    expect(peerNames).toContain('Marcus Chen');
+    expect(peers).toHaveLength(0);
+    const knownFakeNames = ['Elena Rostova', 'Marcus Chen', 'Maya Patel', 'Jordan Miller'];
+    for (const name of knownFakeNames) {
+      expect(peers.map((p) => p.displayName)).not.toContain(name);
+    }
   });
 
-  it('updates caller study presence and broadcasts to peer list', async () => {
+  it('updateMyPresence does not fabricate a peer entry', async () => {
     await dataService.presence.updateMyPresence({
       currentSubject: 'Neurology Diagnostics',
       activity: 'deep_work',
@@ -24,65 +31,44 @@ describe('Feature 3.3: Ambient Peer Presence System', () => {
     });
 
     const peers = await dataService.presence.getLivePeers();
-    const myPresence = peers.find((p) => p.currentSubject === 'Neurology Diagnostics');
-    expect(myPresence).toBeDefined();
-    expect(myPresence?.elapsedMinutes).toBe(35);
-    expect(myPresence?.activity).toBe('deep_work');
+    expect(peers).toHaveLength(0);
   });
 
-  it('sends quiet non-disruptive emoji cheer to a peer', async () => {
-    const peers = await dataService.presence.getLivePeers();
-    const targetPeer = peers.find((p) => p.displayName === 'Elena Rostova');
-    expect(targetPeer).toBeDefined();
-
+  it('sendCheer without real peers is a safe no-op', async () => {
     const cheerEmoji: PeerCheerEmoji = '🔥';
-    await dataService.presence.sendCheer(targetPeer!.userId, cheerEmoji);
-
-    const updatedPeers = await dataService.presence.getLivePeers();
-    const updatedTarget = updatedPeers.find((p) => p.userId === targetPeer!.userId);
-    expect(updatedTarget?.cheersReceived?.length).toBeGreaterThan(0);
-    const lastCheer = updatedTarget?.cheersReceived?.[updatedTarget.cheersReceived.length - 1];
-    expect(lastCheer?.emoji).toBe('🔥');
+    await expect(dataService.presence.sendCheer('usr_does_not_exist', cheerEmoji)).resolves.toBeUndefined();
+    const peers = await dataService.presence.getLivePeers();
+    expect(peers).toHaveLength(0);
   });
 
-  it('enforces complete focus privacy in Ghost Mode', async () => {
-    // 1. First make sure presence is registered
-    await dataService.presence.updateMyPresence({
-      currentSubject: 'Quantum Mechanics',
-      elapsedMinutes: 20
-    });
-
-    let peers = await dataService.presence.getLivePeers();
-    expect(peers.some((p) => p.currentSubject === 'Quantum Mechanics')).toBe(true);
-
-    // 2. Enable Ghost Mode
+  it('ghost-mode preference persists and is honored', async () => {
     await dataService.presence.setGhostMode(true);
-    const isGhost = await dataService.presence.getGhostMode();
-    expect(isGhost).toBe(true);
+    expect(await dataService.presence.getGhostMode()).toBe(true);
 
-    // 3. Current user must not appear in live peers list
-    peers = await dataService.presence.getLivePeers();
-    expect(peers.some((p) => p.currentSubject === 'Quantum Mechanics')).toBe(false);
+    // Ghost mode never reintroduces peers either way
+    const peersWhileGhost = await dataService.presence.getLivePeers();
+    expect(peersWhileGhost).toHaveLength(0);
 
-    // 4. Disable Ghost Mode
     await dataService.presence.setGhostMode(false);
     expect(await dataService.presence.getGhostMode()).toBe(false);
+    expect(await dataService.presence.getLivePeers()).toHaveLength(0);
   });
 
-  it('notifies subscribers reactively upon presence changes', async () => {
-    let notifiedPeersCount = 0;
+  it('notifies subscribers reactively with the true (empty) peer list', async () => {
+    let notifiedPeersCount = -1;
     const unsubscribe = dataService.presence.subscribeToPresence((peers) => {
       notifiedPeersCount = peers.length;
     });
 
-    expect(notifiedPeersCount).toBeGreaterThan(0);
+    // Initial synchronous notification is honest
+    expect(notifiedPeersCount).toBe(0);
 
     await dataService.presence.updateMyPresence({
       currentSubject: 'Microbial Ecology',
       elapsedMinutes: 45
     });
 
-    expect(notifiedPeersCount).toBeGreaterThan(0);
+    expect(notifiedPeersCount).toBe(0);
     unsubscribe();
   });
 });

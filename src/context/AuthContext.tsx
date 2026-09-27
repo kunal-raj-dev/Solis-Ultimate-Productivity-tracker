@@ -9,6 +9,7 @@ import {
   GuestWorkspaceSnapshot
 } from '../services/migration/guestMigration';
 import { formatAuthError } from '../utils/authErrors';
+import { queryCache } from '../services/cache';
 
 export type AuthStatus = 'initializing' | 'authenticated' | 'unauthenticated' | 'auth_error';
 
@@ -142,6 +143,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Guard against race condition: only update if this is the newest request
       if (!isMountedRef.current || currentSeq !== seqRef.current) return;
 
+      // Phase 0 (V2): the query cache is user-scoped — every scope change
+      // (login, logout, guest↔account, provider switch) clears it wholesale,
+      // so cached data can never leak across accounts on a shared browser.
+      queryCache.setUserScope(currentUser?.id ?? null);
+
       if (currentUser) {
         setUser(currentUser);
         setAuthStatus('authenticated');
@@ -152,6 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       if (!isMountedRef.current || currentSeq !== seqRef.current) return;
       console.error('Session sync error:', err);
+      queryCache.setUserScope(null);
       setUser(null);
       setAuthStatus('unauthenticated');
     }

@@ -2,6 +2,13 @@
 -- SOLIS — PHASE 4 POSTGRESQL SCHEMA REFERENCE (Strictly Acyclic RLS)
 -- Advanced Study System, Knowledge Workspace & Domain Interconnection
 -- ============================================================================
+-- Phase 0 (V2, G5/D17) SOURCE-OF-TRUTH NOTICE:
+--   Supabase migrations (supabase/migrations/) are the AUTHORITATIVE schema.
+--   This file is a reference snapshot and may lag. Do not apply it to a
+--   database and do not extend it — write a migration instead. Verify the
+--   deployed schema against this build with `npm run schema:check`, and
+--   regenerate application row types with `npm run types:db`.
+-- ============================================================================
 
 -- 1. ENHANCE SUBJECTS WITH STATUS & DESCRIPTION
 ALTER TABLE public.subjects

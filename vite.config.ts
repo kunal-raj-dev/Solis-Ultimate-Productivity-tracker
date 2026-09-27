@@ -8,8 +8,26 @@ function keepaliveDevPlugin() {
     configureServer(server: any) {
       server.middlewares.use('/api/keepalive', async (_req: any, res: any) => {
         const startTime = Date.now();
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://tmxrupqgttaxlcrrcubt.supabase.co';
-        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_-vxrkvw_6Ef3rwFd957ymw_gfmM99Co';
+        // Phase 0 (P0-10) env hygiene: no committed project URL/key fallbacks —
+        // the dev keepalive is inert unless .env provides the credentials.
+        const supabaseUrl = process.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseAnonKey) {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-store, max-age=0');
+          res.statusCode = 503;
+          res.end(JSON.stringify({
+            service: 'Solis Productivity OS',
+            environment: 'development',
+            keepalive: 'not_configured',
+            status: 'degraded',
+            supabase: { status: 'env_missing' },
+            timestamp: new Date().toISOString(),
+            uptimeMessage: 'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env to enable the dev keepalive.'
+          }, null, 2));
+          return;
+        }
 
         let supabaseStatus = 'unknown';
         let latencyMs = 0;

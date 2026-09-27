@@ -63,7 +63,10 @@ export class SupabaseTaskService implements ITaskService {
       );
     }
 
-    queryCache.set(cacheKey, result);
+    // Phase 0: classified under the 'tasks' channel — task mutations
+    // invalidate these entries specifically; other domains' mutations
+    // invalidate them only if they broadcast on 'all'.
+    queryCache.set(cacheKey, result, 'tasks');
     return result;
   };
 
@@ -114,14 +117,17 @@ export class SupabaseTaskService implements ITaskService {
       .select()
       .single();
 
-    if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache') || error.message?.includes('column'))) {
-      const retryResult = await this.ctx.client
-        .from('tasks')
-        .insert(basePayload)
-        .select()
-        .single();
-      data = retryResult.data;
-      error = retryResult.error;
+    // Phase 0 (V2) fail-loud law: a PGRST204/schema-cache error used to be
+    // retried with the newer columns silently stripped, corrupting the write
+    // (a recurrence task silently became a one-off). The correct response is
+    // to surface the mismatch — migrations and the deploy-time schema check
+    // (scripts/check-schema.mjs) own schema drift, not silent fallbacks.
+    if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
+      console.error(
+        '[Solis] Task insert failed on a schema mismatch (PGRST204). The deployed table does not match this build. ' +
+        'Run scripts/check-schema.mjs and apply pending migrations — do NOT strip columns to force the write.',
+        error
+      );
     }
 
     if (error || !data) throw error || new Error('Failed to create task');
@@ -169,20 +175,16 @@ export class SupabaseTaskService implements ITaskService {
       .select(`*, subtasks (*)`)
       .single();
 
-    if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache') || error.message?.includes('column'))) {
-      delete payload.recurrence;
-      delete payload.is_recurring;
-      delete payload.natural_language_input;
-      delete payload.deferral_count;
-      const retryResult = await this.ctx.client
-        .from('tasks')
-        .update(payload)
-        .eq('id', id)
-        .eq('user_id', userId)
-        .select(`*, subtasks (*)`)
-        .single();
-      data = retryResult.data;
-      error = retryResult.error;
+    // Phase 0 (V2) fail-loud law: the old retry silently deleted the newer
+    // columns (recurrence, deferral_count, …) from the payload, so an update
+    // that should have rescheduled a recurring task silently downgraded it.
+    // Surface the mismatch instead of corrupting the write.
+    if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
+      console.error(
+        '[Solis] Task update failed on a schema mismatch (PGRST204). The deployed table does not match this build. ' +
+        'Run scripts/check-schema.mjs and apply pending migrations — do NOT strip columns to force the write.',
+        error
+      );
     }
 
     if (error || !data) throw error || new Error(`Task ${id} update failed`);

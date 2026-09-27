@@ -2,51 +2,20 @@ import { IPresenceService } from '../../api.interface';
 import { PeerPresence, PeerCheerEmoji } from '../../../types/presence';
 import { SupabaseServiceContext } from './types';
 
+/**
+ * Phase 0 (V2) integrity fix — formerly this service returned four hardcoded
+ * fictional peers ("Elena Rostova", "Marcus Chen", …) as production data, which
+ * violated the repository's own no-fake-integration rule and made the ambient
+ * "Friends Studying Now" widget lie to every signed-in user.
+ *
+ * Until a real cross-room presence query exists (scheduled with the Phase-2
+ * rooms work), this service reports the truth: there is no ambient peer
+ * presence. The widget renders its genuine empty state. The ghost-mode
+ * preference is kept — it becomes meaningful the moment real backing arrives.
+ */
 export class SupabasePresenceService implements IPresenceService {
   private _ghostMode: boolean = false;
   private _presenceSubscribers: Array<(peers: PeerPresence[]) => void> = [];
-  private _peers: PeerPresence[] = [
-    {
-      userId: 'usr_peer_elena',
-      displayName: 'Elena Rostova',
-      avatarSeed: 'elena',
-      currentSubject: 'Cell Biology',
-      activity: 'deep_work',
-      elapsedMinutes: 42,
-      lastHeartbeat: new Date().toISOString(),
-      cheersReceived: []
-    },
-    {
-      userId: 'usr_peer_marcus',
-      displayName: 'Marcus Chen',
-      avatarSeed: 'marcus',
-      currentSubject: 'Organic Chemistry',
-      activity: 'spaced_recall',
-      elapsedMinutes: 25,
-      lastHeartbeat: new Date().toISOString(),
-      cheersReceived: []
-    },
-    {
-      userId: 'usr_peer_maya',
-      displayName: 'Maya Patel',
-      avatarSeed: 'maya',
-      currentSubject: 'Microeconomics',
-      activity: 'reading',
-      elapsedMinutes: 58,
-      lastHeartbeat: new Date().toISOString(),
-      cheersReceived: []
-    },
-    {
-      userId: 'usr_peer_jordan',
-      displayName: 'Jordan Miller',
-      avatarSeed: 'jordan',
-      currentSubject: 'Linear Algebra',
-      activity: 'deep_work',
-      elapsedMinutes: 18,
-      lastHeartbeat: new Date().toISOString(),
-      cheersReceived: []
-    }
-  ];
 
   constructor(private ctx: SupabaseServiceContext) {
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -59,78 +28,27 @@ export class SupabasePresenceService implements IPresenceService {
   }
 
   getLivePeers = async (): Promise<PeerPresence[]> => {
-    let myId = 'usr_current_scholar';
-    try {
-      const res = await Promise.resolve(this.ctx.getUserId()).catch(() => null);
-      if (res) myId = res;
-    } catch {
-      // offline
-    }
-
-    return JSON.parse(
-      JSON.stringify(
-        this._peers.filter((p) => {
-          if (p.isGhostMode) return false;
-          if (this._ghostMode && (p.userId === myId || p.userId === 'usr_current_scholar' || p.userId === 'usr_mock_scholar')) return false;
-          return true;
-        })
-      )
-    );
+    // Honest by construction: no simulated peers, no synthetic activity.
+    // Real ambient presence requires a cross-room participant query and is
+    // tracked for the Phase-2 rooms milestone — until then, empty.
+    return [];
   };
 
   updateMyPresence = async (presence: Partial<PeerPresence>): Promise<void> => {
-    let myId = 'usr_current_scholar';
-    try {
-      const res = await Promise.resolve(this.ctx.getUserId()).catch(() => null);
-      if (res) myId = res;
-    } catch {
-      // Guest or offline
-    }
-
-    const existingIndex = this._peers.findIndex((p) => p.userId === myId);
-    const updated: PeerPresence = {
-      userId: myId,
-      displayName: 'You (Studying)',
-      avatarSeed: 'me',
-      currentSubject: presence.currentSubject || 'General Study',
-      activity: presence.activity || 'deep_work',
-      elapsedMinutes: presence.elapsedMinutes || 1,
-      isGhostMode: this._ghostMode,
-      lastHeartbeat: new Date().toISOString(),
-      cheersReceived: existingIndex >= 0 ? this._peers[existingIndex].cheersReceived : [],
-      ...presence
-    };
-
-    if (this._ghostMode) {
-      if (existingIndex >= 0) {
-        this._peers.splice(existingIndex, 1);
-      }
-    } else {
-      if (existingIndex >= 0) {
-        this._peers[existingIndex] = updated;
-      } else {
-        this._peers.unshift(updated);
-      }
-    }
-
+    // Broadcasting one's own presence to peers needs the same real backing as
+    // reading peers; today the only honest answer is that nothing is broadcast.
+    // The call stays valid (it persists the ghost-mode flag) and notifies with
+    // the true (empty) peer list so subscribers render honest state.
     this.ctx.notify();
-    this._presenceSubscribers.forEach((cb) => cb(JSON.parse(JSON.stringify(this._peers))));
+    this._presenceSubscribers.forEach((cb) => cb([]));
+    void presence;
   };
 
   sendCheer = async (toUserId: string, emoji: PeerCheerEmoji): Promise<void> => {
-    const peer = this._peers.find((p) => p.userId === toUserId);
-    if (peer) {
-      if (!peer.cheersReceived) peer.cheersReceived = [];
-      peer.cheersReceived.push({
-        id: `cheer_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        fromUserId: 'usr_me',
-        fromDisplayName: 'You',
-        emoji,
-        sentAt: new Date().toISOString()
-      });
-      this.ctx.notify();
-      this._presenceSubscribers.forEach((cb) => cb(JSON.parse(JSON.stringify(this._peers))));
-    }
+    // Without real peers there is no one to cheer; keep the contract, do
+    // nothing, and let the UI's empty state prevent reaching this path.
+    void toUserId;
+    void emoji;
   };
 
   setGhostMode = async (isGhost: boolean): Promise<void> => {
@@ -143,20 +61,8 @@ export class SupabasePresenceService implements IPresenceService {
       // ignore
     }
 
-    let myId = 'usr_current_scholar';
-    try {
-      const res = await Promise.resolve(this.ctx.getUserId()).catch(() => null);
-      if (res) myId = res;
-    } catch {
-      // offline
-    }
-
-    if (isGhost) {
-      this._peers = this._peers.filter((p) => p.userId !== myId && p.userId !== 'usr_current_scholar' && p.userId !== 'usr_mock_scholar');
-    }
-
     this.ctx.notify();
-    this._presenceSubscribers.forEach((cb) => cb(JSON.parse(JSON.stringify(this._peers))));
+    this._presenceSubscribers.forEach((cb) => cb([]));
   };
 
   getGhostMode = async (): Promise<boolean> => {
@@ -165,7 +71,7 @@ export class SupabasePresenceService implements IPresenceService {
 
   subscribeToPresence = (callback: (peers: PeerPresence[]) => void): () => void => {
     this._presenceSubscribers.push(callback);
-    callback(JSON.parse(JSON.stringify(this._peers)));
+    callback([]);
     return () => {
       this._presenceSubscribers = this._presenceSubscribers.filter((cb) => cb !== callback);
     };

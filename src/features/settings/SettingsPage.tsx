@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, User, Sliders, Moon, Sun, Shield, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Check, Eye, EyeOff, AlertCircle, Brain } from 'lucide-react';
+import { Save, User, Sliders, Moon, Sun, Shield, ShieldCheck, LogOut, Download, FileJson, FileSpreadsheet, Upload, Bell, BookOpen, RotateCcw, Sparkles, Calendar, Check, Eye, EyeOff, AlertCircle, Brain } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
 import { Badge } from '../../components/ui/Badge/Badge';
@@ -33,6 +33,8 @@ import { notificationService } from '../../services/notifications/notification.s
 import type { SmartNotificationPreferences } from '../../types/notification';
 import type { UserPreferences } from '../../types/auth';
 import { getISODateString } from '../../utils/date';
+import { telemetryService } from '../../services/telemetry/telemetry.service';
+import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
 import { generateIcsCalendar } from '../../utils/calendar/icsGenerator';
 
 /** Plan §1.6 — the Gemini key is a session-scoped secret, never a persistent one. */
@@ -127,6 +129,8 @@ export const SettingsPage: React.FC = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isAiTesting, setIsAiTesting] = useState(false);
   const [aiTestResult, setAiTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  // Phase 0 (P0-08): product telemetry is opt-in, off by default.
+  const [telemetryOptIn, setTelemetryOptIn] = useState(() => telemetryService.isOptedIn());
   const [notifPrefs, setNotifPrefs] = useState<SmartNotificationPreferences>(
     () => notificationService.getPreferences()
   );
@@ -994,6 +998,41 @@ export const SettingsPage: React.FC = () => {
                     <span>{aiTestResult.message}</span>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Phase 0 (P0-08): opt-in product telemetry */}
+          <Card>
+            <CardHeader>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={18} color="var(--color-sage-500)" />
+                <CardTitle>Product Telemetry</CardTitle>
+                <Badge variant={telemetryOptIn ? 'sage' : 'neutral'}>
+                  {telemetryOptIn ? 'On' : 'Off (default)'}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <p style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  Help improve Solis by sharing anonymous usage counters (event names and coarse
+                  numbers — how often features are used, error rates, performance). Telemetry is{' '}
+                  <strong>off by default</strong>, always stored on this device, and never contains
+                  your notes, session content, or anything you wrote.
+                </p>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: 'var(--text-body-sm)' }}>
+                  <Checkbox
+                    checked={telemetryOptIn}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setTelemetryOptIn(next);
+                      telemetryService.setOptIn(next);
+                    }}
+                    aria-label="Opt in to anonymous product telemetry"
+                  />
+                  <span>Share anonymous usage counters to improve Solis</span>
+                </label>
               </div>
             </CardContent>
           </Card>

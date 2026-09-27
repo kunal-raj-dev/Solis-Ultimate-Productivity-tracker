@@ -5,6 +5,7 @@ import { MarketingLayout } from './layouts/MarketingLayout';
 import { AuthLayout } from './layouts/AuthLayout';
 import { AppLayout } from './layouts/AppLayout';
 import { RouteFallback } from './components/feedback/RouteFallback/RouteFallback';
+import { RouteErrorBoundary } from './components/feedback/RouteErrorBoundary';
 
 // Route-level code splitting
 const LandingPage = lazy(() => import('./features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -26,6 +27,13 @@ const GuideCenterRoute = lazy(() => import('./features/guides/GuideCenterRoute')
 const RoomsPage = lazy(() => import('./features/rooms/RoomsPage').then(m => ({ default: m.RoomsPage })));
 const ActiveRoomView = lazy(() => import('./features/rooms/ActiveRoomView').then(m => ({ default: m.ActiveRoomView })));
 
+/**
+ * Phase 0 (P0-08): per-route error containment. Every feature page is wrapped
+ * in its own RouteErrorBoundary so a crash in one page is contained to that
+ * page — the app shell, navigation and all other routes stay reachable.
+ */
+const bounded = (element: React.ReactNode) => <RouteErrorBoundary>{element}</RouteErrorBoundary>;
+
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -39,31 +47,31 @@ export const App: React.FC = () => {
 
             {/* Authentication Routes */}
             <Route path="/auth" element={<AuthLayout />}>
-              <Route path="login" element={<LoginPage />} />
-              <Route path="signup" element={<SignupPage />} />
-              <Route path="forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="reset-password" element={<ResetPasswordPage />} />
+              <Route path="login" element={bounded(<LoginPage />)} />
+              <Route path="signup" element={bounded(<SignupPage />)} />
+              <Route path="forgot-password" element={bounded(<ForgotPasswordPage />)} />
+              <Route path="reset-password" element={bounded(<ResetPasswordPage />)} />
               <Route index element={<Navigate to="/auth/login" replace />} />
             </Route>
 
             {/* Main Application Shell Routes */}
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<Navigate to="/app/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="today" element={<DashboardPage />} />
-              <Route path="tasks" element={<TasksPage />} />
-              <Route path="study" element={<StudyPage />} />
-              <Route path="focus" element={<FocusPage />} />
-              <Route path="habits" element={<HabitsPage />} />
-              <Route path="goals" element={<GoalsPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="notes" element={<NotesPage />} />
-              <Route path="review" element={<WeeklyReviewPage />} />
-              <Route path="rooms" element={<RoomsPage />} />
-              <Route path="rooms/:roomId" element={<ActiveRoomView />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="guides" element={<GuideCenterRoute />} />
-              <Route path="guides/:guideId" element={<GuideCenterRoute />} />
+              <Route path="dashboard" element={bounded(<DashboardPage />)} />
+              <Route path="today" element={bounded(<DashboardPage />)} />
+              <Route path="tasks" element={bounded(<TasksPage />)} />
+              <Route path="study" element={bounded(<StudyPage />)} />
+              <Route path="focus" element={bounded(<FocusPage />)} />
+              <Route path="habits" element={bounded(<HabitsPage />)} />
+              <Route path="goals" element={bounded(<GoalsPage />)} />
+              <Route path="analytics" element={bounded(<AnalyticsPage />)} />
+              <Route path="notes" element={bounded(<NotesPage />)} />
+              <Route path="review" element={bounded(<WeeklyReviewPage />)} />
+              <Route path="rooms" element={bounded(<RoomsPage />)} />
+              <Route path="rooms/:roomId" element={bounded(<ActiveRoomView />)} />
+              <Route path="settings" element={bounded(<SettingsPage />)} />
+              <Route path="guides" element={bounded(<GuideCenterRoute />)} />
+              <Route path="guides/:guideId" element={bounded(<GuideCenterRoute />)} />
             </Route>
 
             {/* 404 Catch-All */}

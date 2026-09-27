@@ -10,7 +10,9 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "verify": "tsc -b && vitest run && vite build",
-    "keepalive": "node scripts/keepalive.mjs"
+    "keepalive": "node scripts/keepalive.mjs",
+    "schema:check": "node scripts/check-schema.mjs",
+    "types:db": "node scripts/generate-db-types.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

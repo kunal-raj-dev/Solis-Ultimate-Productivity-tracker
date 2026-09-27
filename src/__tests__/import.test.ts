@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { validateSolisBackup, executeWorkspaceImport } from '../utils/import';
 import { createWorkspaceBackup } from '../utils/export';
 import { MockDataService } from '../services/mock/mockService';
+import { getISODateString } from '../utils/date';
 
 describe('Solis Workspace Import & Recovery Engine', () => {
   it('validates a correct solis-export-v1 backup successfully', () => {
@@ -175,7 +176,9 @@ describe('Solis Workspace Import & Recovery Engine', () => {
           topicId: 'rt-top-1',
           title: 'Review LTP papers',
           targetMinutes: 45,
-          scheduledDate: '2026-09-01',
+          // Scheduled today so the restored item appears in getTodayPlan()
+          // under the Phase 0 (P0-07) today-only contract.
+          scheduledDate: getISODateString(new Date()),
           scheduledTime: '02:00 PM',
           priority: 'high',
           completed: true,
@@ -452,11 +455,25 @@ describe('Solis Workspace Import & Recovery Engine', () => {
     expect(writeMilestone!.completed).toBe(false);
 
     // Study plan items restore with their completion state and mapped subject.
+    // Phase 0 (P0-07) contract: getTodayPlan returns today's items only — the
+    // restored item is scheduled today, so it appears; a future-dated item
+    // must not leak into the today queue.
     const plans = await mockService.study.getTodayPlan();
     const plan = plans.find((p) => p.title === 'Review LTP papers');
     expect(plan).toBeDefined();
     expect(plan!.subjectId).toBe(subject!.id);
     expect(plan!.completed).toBe(true);
+
+    await mockService.study.createPlanItem({
+      subjectId: subject!.id,
+      title: 'Future-dated item',
+      targetMinutes: 30,
+      scheduledDate: '2099-01-01',
+      priority: 'low',
+      completed: false
+    });
+    const todayPlans = await mockService.study.getTodayPlan();
+    expect(todayPlans.find((p) => p.title === 'Future-dated item')).toBeUndefined();
   });
 
   it('skips already-existing records in merge_skip mode instead of duplicating them', async () => {

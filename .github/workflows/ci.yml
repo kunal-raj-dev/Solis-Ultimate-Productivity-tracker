@@ -1,0 +1,96 @@
+name: Solis CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      # Phase 0 (P0-01) gate: the 1,100+ test suite never ran on push before
+      # V2 — this job is the single cheapest high-value fix from the audit.
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Test suite
+        run: npx vitest run
+
+      - name: Production build
+        run: npx vite build
+
+      - name: Upload build for Lighthouse
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+  lighthouse:
+    name: Lighthouse + accessibility budgets
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Phase 0 (P0-01/G7): budgets start at WARN severity for one baseline
+    # quarter (see docs/decisions/ADR-003-ci-budgets.md) so the baseline is
+    # recorded without blocking; flip to error severity in .lighthouserc.json
+    # after the Phase-1 UI work stabilizes.
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Build
+        run: npx vite build
+
+      - name: Run Lighthouse CI against the static build
+        run: npx --yes @lhci/cli@0.14.x autorun
+
+  schema-check:
+    name: Deployed schema matches this build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Phase 0 (P0-02): fails loudly when the deployed tables lack columns this
+    # build writes. Skips by design when credentials are not configured.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run schema check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: node scripts/check-schema.mjs

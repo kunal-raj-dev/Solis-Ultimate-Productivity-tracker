@@ -291,28 +291,43 @@ export class SupabaseStudyService implements IStudyService {
 
   // Study Plan
   getTodayPlan = async (): Promise<StudyPlanItem[]> => {
-    const cacheKey = 'study_plan_today';
+    // Phase 0 (P0-07) date-scoped hot read: the "today" plan is filtered
+    // server-side (scheduled_date = today, plus undated legacy rows) instead
+    // of fetching every plan item ever created, and the sessions join is
+    // scoped to the returned plan items instead of the whole sessions table.
+    const today = getISODateString(new Date());
+    const cacheKey = `study_plan_today:${today}`;
     const cached = queryCache.get<StudyPlanItem[]>(cacheKey);
     if (cached) return cached;
 
     const userId = await this.ctx.getUserId();
-    const [planRes, subjectsRes, sessionsRes] = await Promise.all([
+    const [planRes, subjectsRes] = await Promise.all([
       this.ctx.client
         .from('study_plan_items')
         .select('*')
         .eq('user_id', userId)
+        .or(`scheduled_date.eq.${today},scheduled_date.is.null`)
         .order('created_at', { ascending: true }),
-      this.ctx.client.from('subjects').select('id, name').eq('user_id', userId),
-      this.ctx.client.from('study_sessions').select('plan_item_id, duration_minutes').eq('user_id', userId)
+      this.ctx.client.from('subjects').select('id, name').eq('user_id', userId)
     ]);
 
     if (planRes.error) throw planRes.error;
     const subjectsMap = new Map((subjectsRes.data || []).map((s: any) => [s.id, s.name]));
-    const sessions = sessionsRes.data || [];
+    const planRows = planRes.data || [];
+    const planIds = planRows.map((row: any) => row.id);
 
-    const result = (planRes.data || []).map((row: any) => {
+    const sessions = planIds.length
+      ? await this.ctx.client
+          .from('study_sessions')
+          .select('plan_item_id, duration_minutes')
+          .eq('user_id', userId)
+          .in('plan_item_id', planIds)
+      : { data: [], error: null };
+    if (sessions.error) throw sessions.error;
+
+    const result = planRows.map((row: any) => {
       const resolvedSubject = subjectsMap.get(row.subject_id) || row.subject_name || 'General Study';
-      const itemSessions = sessions.filter((s: any) => s.plan_item_id === row.id);
+      const itemSessions = (sessions.data || []).filter((s: any) => s.plan_item_id === row.id);
       const actualMinutes = itemSessions.reduce((acc: number, curr: any) => acc + (curr.duration_minutes || 0), 0);
       return mapStudyPlanItem(row, resolvedSubject, actualMinutes);
     });

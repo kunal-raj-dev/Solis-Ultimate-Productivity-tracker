@@ -19,6 +19,7 @@ import {
   DataEntityChannel,
   matchesChannelFilter
 } from '../api.interface';
+import { queryCache } from '../cache';
 import {
   MOCK_USER,
   MOCK_TASKS,
@@ -354,6 +355,12 @@ export class MockDataService implements IDataService {
   }
 
   private notify(channel?: DataEntityChannel): void {
+    // Phase 0 (V2) cache parity: the shared query cache is written by the
+    // Supabase backend, so mock mutations must invalidate it too — otherwise
+    // stale cloud entries survive a guest→account provider switch until their
+    // TTL expires. Mock reads are in-memory and never cached, so a full clear
+    // here is cheap and strictly conservative.
+    queryCache.invalidate();
     for (const entry of this.listeners) {
       if (!matchesChannelFilter(entry.channels, channel)) continue;
       try {
@@ -1154,12 +1161,18 @@ export class MockDataService implements IDataService {
     // Plan
     getTodayPlan: async (): Promise<StudyPlanItem[]> => {
       await delay(20);
+      // Phase 0 (P0-07): contract parity with the Supabase backend — the
+      // "today" plan contains items scheduled for today plus undated legacy
+      // rows, never items scheduled for future days.
+      const today = getISODateString(new Date());
       const subjectsMap = new Map(this._subjects.map((s) => [s.id, s.name]));
 
-      const planWithNames = this._studyPlan.map((p) => ({
-        ...p,
-        subjectName: subjectsMap.get(p.subjectId) || p.subjectName || 'General Study'
-      }));
+      const planWithNames = this._studyPlan
+        .filter((p) => !p.scheduledDate || p.scheduledDate === today)
+        .map((p) => ({
+          ...p,
+          subjectName: subjectsMap.get(p.subjectId) || p.subjectName || 'General Study'
+        }));
 
       const { enrichedPlan } = calculatePlannedVsActual(planWithNames, this._studySessions);
       return enrichedPlan;

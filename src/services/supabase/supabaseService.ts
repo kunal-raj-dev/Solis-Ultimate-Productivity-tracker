@@ -120,8 +120,12 @@ export class SupabaseDataService implements IDataService {
 
   private notify(channel?: DataEntityChannel): void {
     // Cache invalidation law: invalidate the client-side query cache BEFORE
-    // any listener performs a follow-up read.
-    queryCache.invalidate();
+    // any listener performs a follow-up read. Phase 0: invalidation is
+    // channel-scoped — entries cached under this channel plus channel-agnostic
+    // ('all') entries are dropped; other domains' entries survive. Entries that
+    // do not declare a channel default to 'all', so unclassified reads keep
+    // the exact pre-V2 invalidation behavior.
+    queryCache.invalidateChannel(channel);
     for (const entry of this.listeners) {
       if (!matchesChannelFilter(entry.channels, channel)) continue;
       try {
@@ -136,6 +140,7 @@ export class SupabaseDataService implements IDataService {
     // Fast path: retrieve local session user ID without HTTP roundtrip
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
+      queryCache.setUserScope(session.user.id);
       return session.user.id;
     }
 
@@ -143,6 +148,7 @@ export class SupabaseDataService implements IDataService {
     if (error || !user) {
       throw new Error('Unauthorized: No active authenticated Supabase session.');
     }
+    queryCache.setUserScope(user.id);
     return user.id;
   }
 }
