@@ -48,6 +48,19 @@ import {
   calculateTopicRetentionForecast
 } from '../../utils/intelligence/masteryIntelligence';
 import { calculateOverallHabitStreak } from '../../utils/streaks';
+import {
+  computeWeeklyBuckets,
+  computeWeekOverWeekComparison,
+  computeSubjectTimeBreakdown,
+  computeFocusQualityTrend
+} from '../../utils/analytics/trends';
+import {
+  WeekOverWeekDeltas,
+  StudyHoursBarChart,
+  SubjectTimeBreakdownCard,
+  FocusQualityTrendCard,
+  TaskVelocityCard
+} from '../../components/features/Analytics/TrendCharts';
 import { queryCache } from '../../services/cache';
 import './AnalyticsPage.css';
 
@@ -312,6 +325,28 @@ export const AnalyticsPage: React.FC = () => {
     }
   };
 
+  // Phase 1 (P1.1/P1.4/P1.6): trailing weekly buckets + week-over-week
+  // comparison, computed from the full unscoped dataset — trends are
+  // inherently cross-window and deliberately ignore the scope toggle.
+  const weeklyBuckets = useMemo(
+    () => computeWeeklyBuckets({ tasks, studySessions: sessions, focusSessions, weeks: 8 }),
+    [tasks, sessions, focusSessions]
+  );
+
+  const weekComparison = useMemo(
+    () => computeWeekOverWeekComparison({ tasks, studySessions: sessions, focusSessions, habits }),
+    [tasks, sessions, focusSessions, habits]
+  );
+
+  // Phase 1 (P1.3): per-subject time distribution across all logged work.
+  const subjectBreakdown = useMemo(
+    () => computeSubjectTimeBreakdown({ studySessions: sessions, focusSessions, subjects }),
+    [sessions, focusSessions, subjects]
+  );
+
+  // Phase 1 (P1.7): flow-quality sparkline across recent rated focus sessions.
+  const focusQualityTrend = useMemo(() => computeFocusQualityTrend({ focusSessions }), [focusSessions]);
+
   const getHeatmapLevelClass = (minutes: number): string => {
     if (minutes >= 120) return 'solis-heatmap-cell--l4';
     if (minutes >= 60) return 'solis-heatmap-cell--l3';
@@ -475,6 +510,17 @@ export const AnalyticsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 02.5 // TRENDS & COMPARISONS (Phase 1: bars, deltas, breakdown, sparkline) */}
+      <section className="solis-trends-section" aria-label="Trends and week-over-week comparisons">
+        <WeekOverWeekDeltas comparison={weekComparison} />
+        <div className="solis-trends-grid">
+          <StudyHoursBarChart buckets={weeklyBuckets} />
+          <SubjectTimeBreakdownCard slices={subjectBreakdown} />
+          <FocusQualityTrendCard points={focusQualityTrend} />
+          <TaskVelocityCard buckets={weeklyBuckets} />
+        </div>
+      </section>
 
       {/* 03 // ACTIONABLE RECOMMENDATIONS LAYER */}
       <section className="solis-recommendations-layer">

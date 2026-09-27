@@ -3,10 +3,12 @@
  */
 
 import { Task } from '../types/task';
-import { StudySubject, StudyTopic } from '../types/study';
+import { StudySession, StudySubject, StudyTopic } from '../types/study';
+import { FocusSession } from '../types/focus';
 import { Note } from '../types/note';
 import { Goal } from '../types/goal';
 import { SOLIS_GUIDES } from '../data/guides';
+import { getWeekStart } from './analytics/trends';
 
 export type CommandItemType =
   | 'action'
@@ -16,7 +18,8 @@ export type CommandItemType =
   | 'note'
   | 'subject'
   | 'topic'
-  | 'goal';
+  | 'goal'
+  | 'analytics';
 
 export interface CommandItem {
   id: string;
@@ -37,6 +40,8 @@ export interface WorkspaceDataSources {
   subjects?: StudySubject[];
   topics?: StudyTopic[];
   goals?: Goal[];
+  studySessions?: StudySession[];
+  focusSessions?: FocusSession[];
 }
 
 export const DEFAULT_NAVIGATION_COMMANDS: CommandItem[] = [
@@ -150,6 +155,57 @@ export const DEFAULT_NAVIGATION_COMMANDS: CommandItem[] = [
     actionUrl: '/app/settings'
   }
 ];
+
+/**
+ * Phase 1 (P1.8): analytics quick facts for the Command Palette — the week's
+ * headline numbers, reachable (and searchable) directly from Cmd+K.
+ */
+export function buildAnalyticsQuickFacts(sources: WorkspaceDataSources): CommandItem[] {
+  const facts: CommandItem[] = [];
+  const weekStartTime = getWeekStart(new Date()).getTime();
+  const inCurrentWeek = (iso?: string | null): boolean => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    return !Number.isNaN(t) && t >= weekStartTime;
+  };
+
+  const studyMinutes = (sources.studySessions || [])
+    .filter((s) => inCurrentWeek(s.completedAt || s.createdAt))
+    .reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
+  const focusMinutes = (sources.focusSessions || [])
+    .filter((f) => f.completed && inCurrentWeek(f.createdAt))
+    .reduce((acc, f) => acc + (f.durationMinutes || 0), 0);
+
+  const totalMinutes = studyMinutes + focusMinutes;
+  if (totalMinutes > 0) {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    facts.push({
+      id: 'fact-week-study',
+      title: `This week: ${h > 0 ? `${h}h ${m}m` : `${m}m`} studied`,
+      subtitle: 'Analytics quick fact — open the full report',
+      type: 'analytics',
+      badge: 'Stats',
+      actionUrl: '/app/analytics'
+    });
+  }
+
+  if (sources.tasks) {
+    const tasksCompleted = sources.tasks.filter(
+      (t) => t.status === 'completed' && inCurrentWeek(t.completedAt)
+    ).length;
+    facts.push({
+      id: 'fact-week-tasks',
+      title: `This week: ${tasksCompleted} task${tasksCompleted === 1 ? '' : 's'} completed`,
+      subtitle: 'Analytics quick fact — open the full report',
+      type: 'analytics',
+      badge: 'Stats',
+      actionUrl: '/app/analytics'
+    });
+  }
+
+  return facts;
+}
 
 export function searchWorkspace(
   query: string,
@@ -287,6 +343,16 @@ export function searchWorkspace(
         guideId: guide.id,
         actionUrl: `/app/guides?guide=${guide.id}`
       });
+    }
+  }
+
+  // 8. Analytics quick facts (Phase 1, P1.8) — searchable alongside content.
+  for (const fact of buildAnalyticsQuickFacts(sources)) {
+    if (
+      fact.title.toLowerCase().includes(normalized) ||
+      (fact.subtitle && fact.subtitle.toLowerCase().includes(normalized))
+    ) {
+      results.push(fact);
     }
   }
 

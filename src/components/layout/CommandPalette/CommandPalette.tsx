@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {
   searchWorkspace,
+  buildAnalyticsQuickFacts,
   DEFAULT_NAVIGATION_COMMANDS,
   CommandItem,
   WorkspaceDataSources
@@ -54,9 +55,11 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
         dataService.tasks.getTasks().catch(() => []),
         dataService.notes.getNotes().catch(() => []),
         dataService.study.getSubjects().catch(() => []),
-        dataService.goals.getGoals().catch(() => [])
-      ]).then(([tasks, notes, subjects, goals]) => {
-        setSources({ tasks, notes, subjects, goals });
+        dataService.goals.getGoals().catch(() => []),
+        dataService.study.getRecentSessions().catch(() => []),
+        dataService.focus.getRecentSessions().catch(() => [])
+      ]).then(([tasks, notes, subjects, goals, studySessions, focusSessions]) => {
+        setSources({ tasks, notes, subjects, goals, studySessions, focusSessions });
       });
     }
   }, [isOpen]);
@@ -150,9 +153,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     ? searchWorkspace(query, sources)
     : [];
 
+  // Phase 1 (P1.8): headline week stats surfaced directly in the palette.
+  const analyticsQuickFacts = buildAnalyticsQuickFacts(sources);
+
   const itemsToDisplay: CommandItem[] = query.trim()
-    ? searchResults
-    : [...quickActions, ...DEFAULT_NAVIGATION_COMMANDS];
+    ? [
+        ...searchResults,
+        ...analyticsQuickFacts.filter((fact) =>
+          `${fact.title} ${fact.subtitle ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())
+        )
+      ]
+    : [...quickActions, ...analyticsQuickFacts, ...DEFAULT_NAVIGATION_COMMANDS];
 
   const handleSelect = useCallback(
     (item: CommandItem) => {

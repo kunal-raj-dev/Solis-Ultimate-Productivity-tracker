@@ -1,0 +1,247 @@
+/* TrendCharts (Phase 1) — weekly bars, deltas, subject breakdown, sparkline. */
+
+.solis-wow-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--space-md);
+}
+
+.solis-wow-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full, 999px);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-secondary);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.solis-wow-delta strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.solis-wow-delta--up {
+  color: var(--color-sage-600, #2f7d5c);
+}
+
+.solis-wow-delta--up strong {
+  color: var(--color-sage-600, #2f7d5c);
+}
+
+.solis-wow-delta--down {
+  color: var(--color-coral-600, #c2492f);
+}
+
+.solis-wow-delta--down strong {
+  color: var(--color-coral-600, #c2492f);
+}
+
+.solis-wow-delta__vs {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.solis-trend-card {
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.solis-trend-card__header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.solis-trend-card__header svg {
+  color: var(--color-amber-500);
+  flex-shrink: 0;
+}
+
+.solis-trend-card__avg {
+  margin-left: auto;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.solis-trend-card__empty {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.solis-trend-card__legend {
+  display: flex;
+  gap: 14px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.solis-trend-card__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.solis-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.solis-legend-dot--study {
+  background: var(--color-coral-500);
+}
+
+.solis-legend-dot--focus {
+  background: var(--color-amber-500);
+}
+
+/* Weekly bars */
+.solis-weekbars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 120px;
+}
+
+.solis-weekbars__col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.solis-weekbars__stack {
+  flex: 1;
+  width: 100%;
+  max-width: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-radius: var(--radius-xs, 3px);
+  overflow: hidden;
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline, var(--border-subtle));
+}
+
+.solis-weekbars__bar {
+  width: 100%;
+  transition: height var(--duration-default, 200ms) ease;
+}
+
+.solis-weekbars__bar--study {
+  background: var(--color-coral-500);
+  opacity: 0.85;
+}
+
+.solis-weekbars__bar--focus {
+  background: var(--color-amber-500);
+  opacity: 0.85;
+}
+
+.solis-weekbars__label {
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Subject slices */
+.solis-subject-slices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.solis-subject-slice {
+  display: grid;
+  grid-template-columns: 110px 1fr 52px;
+  align-items: center;
+  gap: 10px;
+}
+
+.solis-subject-slice__name {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-subject-slice__track {
+  height: 8px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--bg-surface-primary);
+  border: 1px solid var(--border-hairline, var(--border-subtle));
+  overflow: hidden;
+}
+
+.solis-subject-slice__fill {
+  height: 100%;
+  border-radius: var(--radius-full, 999px);
+}
+
+.solis-subject-slice__value {
+  font-size: var(--text-caption);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Flow sparkline */
+.solis-flow-spark {
+  width: 100%;
+  max-width: 280px;
+  height: 64px;
+}
+
+/* Task velocity bars */
+.solis-velocity-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 72px;
+}
+
+.solis-velocity-bars__col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+}
+
+.solis-velocity-bars__bar {
+  width: 70%;
+  max-width: 22px;
+  min-height: 2px;
+  border-radius: var(--radius-xs, 3px) var(--radius-xs, 3px) 0 0;
+  background: var(--color-lavender-500);
+  opacity: 0.85;
+}
+
+.solis-velocity-bars__value {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
