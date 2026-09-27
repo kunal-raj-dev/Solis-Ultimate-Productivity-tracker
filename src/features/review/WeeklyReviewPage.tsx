@@ -40,6 +40,7 @@ import {
   getPreviousWeekStudyMinutes
 } from '../../utils/intelligence/narrativeReport';
 import { getISODateString, addDays } from '../../utils/date';
+import { computeWeekOverWeekComparison, getWeekStart } from '../../utils/analytics/trends';
 import './WeeklyReviewPage.css';
 
 export const WeeklyReviewPage: React.FC = () => {
@@ -68,6 +69,8 @@ export const WeeklyReviewPage: React.FC = () => {
   const [nextWeekTargetHours, setNextWeekTargetHours] = useState('0');
   const [createActionableTask, setCreateActionableTask] = useState(true);
   const [createGoalHorizon, setCreateGoalHorizon] = useState(false);
+  // Phase 3 (P3.7): review completion can seed next week's study plan.
+  const [seedNextWeekPlan, setSeedNextWeekPlan] = useState(true);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
@@ -184,6 +187,67 @@ export const WeeklyReviewPage: React.FC = () => {
     hasEditedTargetHours.current = true;
     setNextWeekTargetHours(value);
   };
+
+  /* ── Phase 3: history, streak, trend deltas, and grounded prompts ─────── */
+
+  // P3.9: deterministic this-week vs last-week comparison for Step 1.
+  const weekComparison = useMemo(
+    () => computeWeekOverWeekComparison({ tasks, studySessions: sessions, focusSessions, habits }),
+    [tasks, sessions, focusSessions, habits]
+  );
+
+  // P3.5: the review's own persisted history — every review saves a note
+  // tagged 'weekly-review'.
+  const reviewNotes = useMemo(
+    () =>
+      notes
+        .filter((n) => (n.tags || []).includes('weekly-review'))
+        .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        .slice(0, 8),
+    [notes]
+  );
+
+  // P3.8: consecutive weeks with a completed review, counting back from this
+  // week (or last week if this week's review hasn't happened yet).
+  const reviewStreakWeeks = useMemo(() => {
+    const weekKeys = new Set(
+      notes
+        .filter((n) => (n.tags || []).includes('weekly-review') && n.createdAt)
+        .map((n) => getISODateString(getWeekStart(new Date(n.createdAt as string))))
+    );
+    if (weekKeys.size === 0) return 0;
+    let streak = 0;
+    let cursor = getWeekStart(new Date());
+    if (!weekKeys.has(getISODateString(cursor))) {
+      cursor = addDays(cursor, -7); // last week still preserves the streak
+      if (!weekKeys.has(getISODateString(cursor))) return 0;
+    }
+    while (weekKeys.has(getISODateString(cursor))) {
+      streak += 1;
+      cursor = addDays(cursor, -7);
+    }
+    return streak;
+  }, [notes]);
+
+  // P3.6: data-grounded prompt hints so no reflection field is a blank page.
+  const breakthroughsPlaceholder = useMemo(() => {
+    const learningTopic = topics.find((t) => t.masteryLevel === 'learning');
+    if (learningTopic) {
+      return `e.g. Finally understood ${learningTopic.title} — what made it click?`;
+    }
+    const studiedSubject = subjects.find((s) => sessions.some((x) => x.subjectId === s.id));
+    return studiedSubject
+      ? `e.g. A concept in ${studiedSubject.name} that finally clicked this week...`
+      : 'e.g. Understood Quadratic Equations and solved 10 practice problems...';
+  }, [topics, subjects, sessions]);
+
+  const frictionPlaceholder = useMemo(() => {
+    const slipping = pendingTasks.find((t) => t.dueDate && t.dueDate < getISODateString(new Date()));
+    if (slipping) {
+      return `e.g. "${slipping.title}" keeps slipping — break it into smaller steps?`;
+    }
+    return 'e.g. Science lab report took longer than expected; need to break down tasks into smaller steps...';
+  }, [pendingTasks]);
 
   const handleGenerateAiSynthesis = async () => {
     setIsGeneratingAi(true);
@@ -311,6 +375,43 @@ ${frictionPoints.trim() || '_No major friction reported._'}
         });
       }
 
+      // Phase 3 (P3.7): seed next week's study plan so the review's output
+      // becomes next Monday's input. Three spaced sessions on Mon/Wed/Fri.
+      if (seedNextWeekPlan) {
+        try {
+          const seedSubject =
+            subjects.find((s) => s.id === selectedSubjectId) ||
+            subjects.find((s) => s.status !== 'archived');
+          const nextMonday = addDays(getWeekStart(new Date()), 7);
+          const seedOffsets = [0, 2, 4];
+          const seedTitleBase = nextWeekCommitment.trim() || seedSubject?.name || 'Focused study';
+          const created: string[] = [];
+          for (const offset of seedOffsets) {
+            const sessionDate = addDays(nextMonday, offset);
+            const item = await dataService.study.createPlanItem({
+              subjectId: seedSubject?.id,
+              subjectName: seedSubject?.name,
+              title: `Commitment: ${seedTitleBase}`.slice(0, 90),
+              targetMinutes: 60,
+              scheduledDate: getISODateString(sessionDate),
+              priority: 'high',
+              completed: false,
+              notes: 'Seeded from last week’s review commitment'
+            });
+            created.push(item.id);
+          }
+          if (created.length > 0) {
+            addToast({
+              title: "Next week's plan seeded",
+              description: `3 study sessions queued for ${getISODateString(nextMonday)} onward.`,
+              type: 'info'
+            });
+          }
+        } catch (planErr) {
+          console.warn('Could not seed next week plan items:', planErr);
+        }
+      }
+
       addToast({
         title: 'Weekly Review Synthesized',
         description: 'Saved as a permanent Knowledge Note with linked action items.',
@@ -395,6 +496,69 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                 <strong>Study Status:</strong> {intelReport.rhythm.hasSufficientData ? 'Study momentum active and measured.' : 'Initial study calibration cycle in progress.'}
               </div>
 
+              {/* Phase 3 (P3.9): week-over-week trend, computed automatically. */}
+              <div className="solis-review-intel-banner" style={{ marginTop: '10px' }}>
+                <strong>vs Last Week:</strong>{' '}
+                {(() => {
+                  const total = weekComparison.current.studyMinutes + weekComparison.current.focusMinutes;
+                  const hours = (total / 60).toFixed(1);
+                  const delta = weekComparison.studyMinutesDeltaPct;
+                  const arrow = delta === null ? '' : delta > 0 ? '▲' : delta < 0 ? '▼' : '–';
+                  const deltaText = delta === null ? 'no baseline yet' : `${arrow} ${Math.abs(delta)}%`;
+                  const habitText =
+                    weekComparison.current.habitCompletionRate !== null
+                      ? ` · habit consistency ${Math.round(weekComparison.current.habitCompletionRate * 100)}%`
+                      : '';
+                  return `Study time ${hours}h (${deltaText})${habitText} · ${weekComparison.current.tasksCompleted} tasks done (last week: ${weekComparison.previous.tasksCompleted})`;
+                })()}
+              </div>
+
+              {/* Phase 3 (P3.5 + P3.8): the review's own history and streak. */}
+              {(reviewNotes.length > 0 || reviewStreakWeeks > 0) && (
+                <div
+                  className="solis-review-intel-banner"
+                  style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}
+                  aria-label="Review history and streak"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <strong>Review Streak:</strong>
+                    {reviewStreakWeeks > 0 ? (
+                      <span style={{ color: 'var(--color-amber-500)', fontWeight: 600 }}>
+                        {reviewStreakWeeks} consecutive week{reviewStreakWeeks === 1 ? '' : 's'} 🔥
+                      </span>
+                    ) : (
+                      <span>Complete this review to start a streak.</span>
+                    )}
+                  </div>
+                  {reviewNotes.length > 0 && (
+                    <div>
+                      <strong style={{ fontSize: 'var(--text-caption)' }}>Past Reviews:</strong>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '4px' }}>
+                        {reviewNotes.slice(0, 5).map((rn) => (
+                          <button
+                            key={rn.id}
+                            type="button"
+                            onClick={() => navigate(`/app/notes?id=${rn.id}`)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              textAlign: 'left',
+                              fontSize: 'var(--text-caption)',
+                              color: 'var(--text-secondary)',
+                              cursor: 'pointer'
+                            }}
+                            title="Open this review in Knowledge Studio"
+                          >
+                            • {rn.title} — {rn.createdAt ? new Date(rn.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Plan §5.6: deterministic 5-sentence weekly narrative */}
               <div
                 className="solis-review-intel-banner"
@@ -434,7 +598,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
               </p>
               <Textarea
                 label="Key Learnings & Breakthroughs"
-                placeholder="e.g. Understood Quadratic Equations and solved 10 practice problems..."
+                placeholder={breakthroughsPlaceholder}
                 value={breakthroughs}
                 onChange={(e) => setBreakthroughs(e.target.value)}
                 rows={5}
@@ -474,7 +638,7 @@ ${frictionPoints.trim() || '_No major friction reported._'}
 
               <Textarea
                 label="What caused friction or delay this week?"
-                placeholder="e.g. Science lab report took longer than expected; need to break down tasks into smaller steps..."
+                placeholder={frictionPlaceholder}
                 value={frictionPoints}
                 onChange={(e) => setFrictionPoints(e.target.value)}
                 rows={4}
@@ -707,6 +871,16 @@ ${frictionPoints.trim() || '_No major friction reported._'}
                       aria-label="Set up a weekly Goal Horizon"
                     />
                     <span>Set up a weekly Goal Horizon in Goals</span>
+                  </label>
+
+                  {/* Phase 3 (P3.7): close the review → next-week loop. */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: 'var(--text-body-sm)' }}>
+                    <Checkbox
+                      checked={seedNextWeekPlan}
+                      onChange={(e) => setSeedNextWeekPlan(e.target.checked)}
+                      aria-label="Seed next week's study plan"
+                    />
+                    <span>Seed 3 study sessions into next week&apos;s plan (Mon / Wed / Fri)</span>
                   </label>
                 </div>
 

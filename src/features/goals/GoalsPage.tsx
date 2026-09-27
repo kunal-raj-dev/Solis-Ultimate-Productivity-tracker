@@ -28,6 +28,8 @@ import { Flashcard } from '../../types/learning';
 import { Task } from '../../types/task';
 import { StudyResource } from '../../types/resource';
 import { Habit } from '../../types/habit';
+import { generateGoalStudyPlanDrafts, computeRequiredWeeklyHours } from '../../utils/planning/goalPlanGenerator';
+import { formatErrorMessage } from '../../utils/errors';
 import './GoalsPage.css';
 
 export const GoalsPage: React.FC = () => {
@@ -232,11 +234,86 @@ export const GoalsPage: React.FC = () => {
         description: goal.title,
         type: 'success'
       });
+      // Phase 3 (P3.4): completing a goal leaves a reflection note behind, so
+      // the achievement becomes part of the knowledge base rather than a
+      // checkbox that vanishes into the archive.
+      if (newStatus === 'completed') {
+        try {
+          await dataService.notes.createNote({
+            title: `Goal Retrospective — ${goal.title}`,
+            content: `## What I learned from "${goal.title}"\n\n### Outcome\n- Goal completed on ${new Date().toISOString().slice(0, 10)}\n- Progress: ${goal.progressPercentage ?? 100}%\n\n### What worked\n\n\n### What I would do differently\n\n### Carry-forward lessons\n`,
+            category: 'reflection',
+            subjectId: goal.subjectId || undefined,
+            tags: ['goal-retrospective', 'reflection', goal.title.slice(0, 30).replace(/\s+/g, '-').toLowerCase()]
+          });
+          addToast({
+            title: 'Retrospective note created',
+            description: 'A "What I Learned" reflection was added to your Notes.',
+            type: 'info'
+          });
+        } catch {
+          // Retrospective is best-effort; the status change already succeeded.
+        }
+      }
     } catch {
       setGoals(prevGoals);
       addToast({ title: 'Failed to update status', type: 'error' });
     }
   };
+
+  // Phase 3 (P3.2): translate an exam goal into spaced, date-scoped study
+  // plan items using the deterministic goalPlanGenerator.
+  const handleGenerateStudyPlan = useCallback(
+    async (goal: Goal) => {
+      try {
+        const goalTopics = topics.filter((t) => t.subjectId === goal.subjectId);
+        const drafts = generateGoalStudyPlanDrafts({ goal, topics: goalTopics });
+        if (drafts.length === 0) {
+          addToast({
+            title: 'Nothing to schedule',
+            description: 'Set a future target date on this goal to generate a plan.',
+            type: 'info'
+          });
+          return;
+        }
+        const subject = subjects.find((s) => s.id === goal.subjectId);
+        const created = await Promise.all(
+          drafts.map((d) =>
+            dataService.study.createPlanItem({
+              subjectId: goal.subjectId || subject?.id,
+              subjectName: subject?.name,
+              title: d.title,
+              targetMinutes: d.targetMinutes,
+              scheduledDate: d.scheduledDate,
+              priority: d.priority,
+              completed: false,
+              notes: d.notes
+            })
+          )
+        );
+        addToast({
+          title: 'Study plan generated',
+          description: `${created.length} session${created.length === 1 ? '' : 's'} scheduled before ${goal.targetDate}. Review them on each day's Study page.`,
+          type: 'success'
+        });
+      } catch (err) {
+        addToast({ title: 'Could not generate plan', description: formatErrorMessage(err), type: 'error' });
+      }
+    },
+    [topics, subjects, addToast]
+  );
+
+  // Phase 3 (P3.3): suggested weekly hours per exam goal, derived from its
+  // open topics and the time remaining until the target date.
+  const requiredWeeklyHoursByGoal = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const goal of goals) {
+      if (goal.experienceType !== 'exam' || !goal.targetDate || goal.status !== 'active') continue;
+      const goalTopics = topics.filter((t) => t.subjectId === goal.subjectId);
+      map.set(goal.id, computeRequiredWeeklyHours({ topics: goalTopics, targetDate: goal.targetDate }));
+    }
+    return map;
+  }, [goals, topics]);
 
   const handleLaunchFocus = (subjectId?: string, title?: string) => {
     navigate(
@@ -454,6 +531,8 @@ export const GoalsPage: React.FC = () => {
                   }}
                   onLaunchFocus={handleLaunchFocus}
                   onToggleStatus={handleToggleStatus}
+                  onGenerateStudyPlan={handleGenerateStudyPlan}
+                  requiredWeeklyHours={requiredWeeklyHoursByGoal.get(goal.id)}
                 />
               ))}
             </div>

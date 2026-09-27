@@ -43,6 +43,10 @@ export interface GoalCardProps {
   onOpenExamWorkspace: (goal: Goal) => void;
   onOpenProjectWorkspace: (goal: Goal) => void;
   onToggleStatus: (goal: Goal) => Promise<void>;
+  /** Phase 3 (P3.2): creates date-scoped study plan items for this goal. */
+  onGenerateStudyPlan?: (goal: Goal) => void;
+  /** Phase 3 (P3.3): suggested weekly hours to be ready by the target date. */
+  requiredWeeklyHours?: number;
 }
 
 export const GoalCard: React.FC<GoalCardProps> = ({
@@ -59,7 +63,9 @@ export const GoalCard: React.FC<GoalCardProps> = ({
   onLaunchFocus,
   onOpenExamWorkspace,
   onOpenProjectWorkspace,
-  onToggleStatus
+  onToggleStatus,
+  onGenerateStudyPlan,
+  requiredWeeklyHours
 }) => {
   const navigate = useNavigate();
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
@@ -225,6 +231,14 @@ export const GoalCard: React.FC<GoalCardProps> = ({
                 </span>
               )}
 
+              {/* Phase 3 (P3.3): suggested weekly pace derived from open
+                  topics and the days remaining until the target date. */}
+              {requiredWeeklyHours !== undefined && requiredWeeklyHours > 0 && isValidDate && (
+                <span className="solis-goal-card__exam-pill" title="Suggested pace from your open topics and the time remaining">
+                  <Clock size={11} /> Pace: ~<strong>{requiredWeeklyHours}h</strong>/week
+                </span>
+              )}
+
               {/* Exam Readiness Preview Pill */}
               {examReadiness && (
                 <button
@@ -240,14 +254,28 @@ export const GoalCard: React.FC<GoalCardProps> = ({
               )}
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<GraduationCap size={14} />}
-              onClick={() => onOpenExamWorkspace(goal)}
-            >
-              Open Exam Command Workspace →
-            </Button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {/* Phase 3 (P3.2): goal → study plan generation. */}
+              {onGenerateStudyPlan && goal.status === 'active' && (
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  leftIcon={<ListTodo size={14} />}
+                  onClick={() => onGenerateStudyPlan(goal)}
+                  title="Create spaced study plan items between now and the exam date"
+                >
+                  Generate Study Plan
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<GraduationCap size={14} />}
+                onClick={() => onOpenExamWorkspace(goal)}
+              >
+                Open Exam Command Workspace →
+              </Button>
+            </div>
           </div>
         )}
 
