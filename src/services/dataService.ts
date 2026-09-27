@@ -156,6 +156,9 @@ export const dataService: IDataService = {
   get rooms() { return ServiceContainer.getService().rooms; },
   get pacts() { return ServiceContainer.getService().pacts; },
   get presence() { return ServiceContainer.getService().presence; },
+  get schedule() { return ServiceContainer.getService().schedule; },
+  get proposals() { return ServiceContainer.getService().proposals; },
+  get stateSync() { return ServiceContainer.getService().stateSync; },
   subscribe(listener: () => void, channels?: DataEntityChannel[]) {
     return ServiceContainer.subscribe(listener, channels);
   },

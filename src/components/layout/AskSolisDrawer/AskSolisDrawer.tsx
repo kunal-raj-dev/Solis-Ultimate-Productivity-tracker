@@ -19,6 +19,8 @@ interface ChatMessage {
   sources?: MessageSource[];
   latencyMs?: number;
   isSecurityWarning?: boolean;
+  /** V2 Phase 1 (P1-19): surfaced confidence over the answer. */
+  grounding?: { sourceCount: number; faithfulnessScore: number | null; sourceTier: 'grounded' | 'ungrounded' } | null;
 }
 
 interface AskSolisDrawerProps {
@@ -85,7 +87,9 @@ export const AskSolisDrawer: React.FC<AskSolisDrawerProps> = ({ isOpen, onClose 
             score: Math.round(r.score * 1000) / 1000
           })) : undefined,
           latencyMs: durationMs,
-          isSecurityWarning: isSec
+          isSecurityWarning: isSec,
+          // V2 Phase 1 (P1-19): the trust surface — how grounded the answer is.
+          grounding: !isSec ? aiService.getLastGroundingMeta() : null
         }
       ]);
     } catch (err: any) {
@@ -164,6 +168,15 @@ export const AskSolisDrawer: React.FC<AskSolisDrawerProps> = ({ isOpen, onClose 
                               </span>
                             ))}
                           </div>
+                          {/* V2 Phase 1 (P1-19): surfaced faithfulness + source tier. */}
+                          {msg.grounding && msg.grounding.faithfulnessScore !== null && (
+                            <span
+                              className="solis-ask-telemetry-badge"
+                              title={`Grounded from ${msg.grounding.sourceCount} of your notes — the model's answer stayed faithful to them at ${msg.grounding.faithfulnessScore}%`}
+                            >
+                              ✓ {msg.grounding.faithfulnessScore}% grounded · {msg.grounding.sourceCount} source{msg.grounding.sourceCount === 1 ? '' : 's'}
+                            </span>
+                          )}
                           {msg.latencyMs !== undefined && (
                             <span className="solis-ask-telemetry-badge" title="RAG retrieval + LLM round-trip">
                               <Cpu size={10} /> {msg.latencyMs}ms

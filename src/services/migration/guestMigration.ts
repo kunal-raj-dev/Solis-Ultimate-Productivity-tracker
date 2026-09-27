@@ -1,9 +1,11 @@
 import { dataService } from '../dataService';
-import type { StudySubject, StudyTopic } from '../../types/study';
-import type { Task } from '../../types/task';
+import type { StudySubject, StudyTopic, StudyPlanItem } from '../../types/study';
+import type { Task, TaskTimeBlock } from '../../types/task';
 import type { Note } from '../../types/note';
 import type { Habit } from '../../types/habit';
 import type { Flashcard } from '../../types/learning';
+import type { Goal } from '../../types/goal';
+import { getISODateString, addDays } from '../../utils/date';
 
 /**
  * Solis - Guest-to-Cloud Automatic Data Migration Protocol (plan §1.3)
@@ -30,6 +32,11 @@ export interface GuestWorkspaceSnapshot {
   notes: Note[];
   habits: Habit[];
   flashcards: Flashcard[];
+  /** V2 Phase 1 (P1-09): previously silently dropped, now carried + migrated. */
+  goals?: Goal[];
+  /** V2 Phase 1 (P1-09): carried so the exclusion can be REPORTED, not silent. */
+  planItems?: StudyPlanItem[];
+  timeBlocks?: TaskTimeBlock[];
 }
 
 export interface GuestMigrationCounts {
@@ -43,6 +50,12 @@ export interface GuestMigrationCounts {
   flashcards: number;
   /** Records (or links) skipped because a foreign key could not be re-mapped. */
   skipped: number;
+  /** V2 Phase 1 (P1-09): goals carried into the cloud account. */
+  goals: number;
+  /** V2 Phase 1 (P1-09): plan items left in the local archive (reported, not silent). */
+  excludedPlanItems: number;
+  /** V2 Phase 1 (P1-09): time blocks left in the local archive (reported, not silent). */
+  excludedTimeBlocks: number;
 }
 
 export interface GuestMigrationResult {
@@ -58,7 +71,8 @@ export function countGuestRecords(snapshot: GuestWorkspaceSnapshot): number {
     snapshot.tasks.length +
     snapshot.notes.length +
     snapshot.habits.length +
-    snapshot.flashcards.length
+    snapshot.flashcards.length +
+    (snapshot.goals?.length ?? 0)
   );
 }
 
@@ -89,7 +103,10 @@ export async function migrateGuestWorkspaceToCloud(
     habits: 0,
     habitRecords: 0,
     flashcards: 0,
-    skipped: 0
+    skipped: 0,
+    goals: 0,
+    excludedPlanItems: snapshot.planItems?.length ?? 0,
+    excludedTimeBlocks: snapshot.timeBlocks?.length ?? 0
   };
 
   // 1. Subjects (roots of the knowledge graph).
@@ -261,6 +278,42 @@ export async function migrateGuestWorkspaceToCloud(
       nextReviewDate: card.nextReviewDate
     });
     counts.flashcards++;
+  }
+
+  // 7. Goals (V2 Phase 1, P1-09): previously dropped silently — now carried
+  // with their subject re-mapped. Target date slides to tomorrow when it was
+  // already past at migration time, so no restored goal is born overdue.
+  const tomorrow = getISODateString(addDays(new Date(), 1));
+  for (const goal of snapshot.goals || []) {
+    try {
+      const newSubjectId = goal.subjectId ? subjectIdMap.get(goal.subjectId) : undefined;
+      if (goal.subjectId && !newSubjectId) counts.skipped++;
+      await dataService.goals.createGoal({
+        title: goal.title,
+        description: goal.description,
+        category: goal.category,
+        horizon: goal.horizon,
+        priority: goal.priority,
+        subjectId: newSubjectId,
+        subjectName: goal.subjectName,
+        targetDate: goal.targetDate && goal.targetDate >= tomorrow ? goal.targetDate : tomorrow,
+        experienceType: goal.experienceType,
+        status: 'active',
+        progressPercentage: goal.progressPercentage || 0,
+        color: goal.color || 'coral',
+        milestones: (goal.milestones || []).map((m) => ({
+          id: m.id,
+          title: m.title,
+          targetDate: m.targetDate,
+          completed: m.completed,
+          completedAt: m.completedAt
+        }))
+      });
+      counts.goals++;
+    } catch (err) {
+      console.warn('[GuestMigration] Failed to migrate goal:', goal.title, err);
+      counts.skipped++;
+    }
   }
 
   return { counts, backupKey: null };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gauge, Sparkles, ArrowRight } from 'lucide-react';
+import { Gauge, Sparkles, ArrowRight, Inbox } from 'lucide-react';
 import { Button } from '../../ui/Button/Button';
 import { ExplainableRecommendation } from '../../../types/learningIntelligence';
 import { ProductivityScoreBreakdown } from '../../../utils/productivity';
@@ -11,6 +11,8 @@ export interface DashboardIntelligenceBriefProps {
   summary: DailySummary;
   topRecommendations: ExplainableRecommendation[];
   onRecommendationAction: (rec: ExplainableRecommendation) => void;
+  /** V2 Phase 1 (P1-14): file the insight into the triage inbox. */
+  onSendToTriage?: (rec: ExplainableRecommendation) => void;
 }
 
 function formatStudyMinutes(minutes: number): string {
@@ -30,7 +32,8 @@ export const DashboardIntelligenceBrief: React.FC<DashboardIntelligenceBriefProp
   breakdown,
   summary,
   topRecommendations,
-  onRecommendationAction
+  onRecommendationAction,
+  onSendToTriage
 }) => {
   const contextLine = [
     formatStudyMinutes(summary.totalStudyMinutes),
@@ -80,6 +83,18 @@ export const DashboardIntelligenceBrief: React.FC<DashboardIntelligenceBriefProp
                 {rec.actionLabel}
                 <ArrowRight size={12} />
               </Button>
+              {onSendToTriage && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="solis-intel-brief__rec-action tactile-press"
+                  onClick={() => onSendToTriage(rec)}
+                  title="File this insight into the triage inbox to decide later"
+                  aria-label={`Send ${rec.title} to triage`}
+                >
+                  <Inbox size={13} />
+                </Button>
+              )}
             </div>
           ))
         )}

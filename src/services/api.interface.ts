@@ -11,6 +11,15 @@ import { RecurringStudyRoutine } from '../types/planning';
 import { StudyResource, ResourceFilterOptions } from '../types/resource';
 import { DailyReflection } from '../types/reflection';
 import {
+  ScheduleEntry,
+  ScheduleEntryRangeFilter,
+  ScheduleEntrySourceKind,
+  ScheduleEntryStatus,
+  ScheduleUpsertFromSource
+} from '../types/schedule';
+import { Proposal, ProposalStatus } from '../types/proposal';
+import { StateSyncItem, StateSyncKeyClass } from '../types/stateSync';
+import {
   StudyRoom,
   RoomParticipant,
   RoomMessage,
@@ -235,6 +244,54 @@ export interface IPresenceService {
 }
 
 /**
+ * V2 Phase 1 (C3) — canonical schedule model. Every planning surface projects
+ * from these entries; `upsertFromSource` is the write-through adapter used by
+ * task/plan-item/time-block mutations so the model can never diverge from its
+ * sources. See src/types/schedule.ts.
+ */
+export interface IScheduleService {
+  getEntries(filter?: ScheduleEntryRangeFilter): Promise<ScheduleEntry[]>;
+  getEntriesForDate(date: string): Promise<ScheduleEntry[]>;
+  getEntryBySource(
+    sourceKind: ScheduleEntrySourceKind,
+    sourceId: string,
+    date?: string
+  ): Promise<ScheduleEntry | null>;
+  /** Create-or-update by (sourceKind, sourceId, date) — the dual-write primitive. */
+  upsertFromSource(entry: ScheduleUpsertFromSource): Promise<ScheduleEntry>;
+  updateEntry(id: string, updates: Partial<ScheduleEntry>): Promise<ScheduleEntry>;
+  setStatus(id: string, status: ScheduleEntryStatus, actualMinutes?: number): Promise<ScheduleEntry>;
+  deleteBySource(sourceKind: ScheduleEntrySourceKind, sourceId: string): Promise<boolean>;
+  /** One-time idempotent migration of existing tasks/plan items into the model. */
+  backfillFromSources(): Promise<{ created: number; skipped: number }>;
+}
+
+/**
+ * V2 Phase 1 (C5) — proposal / approve-diff objects. Every engine- or
+ * AI-proposed plan change lands here for the triage inbox; see
+ * src/types/proposal.ts. `create` dedupes on `dedupeKey` while a matching
+ * proposal is still open.
+ */
+export interface IProposalService {
+  list(status?: ProposalStatus): Promise<Proposal[]>;
+  create(proposal: Partial<Proposal> & { title: string }): Promise<Proposal>;
+  approve(id: string): Promise<Proposal>;
+  dismiss(id: string): Promise<Proposal>;
+  countOpen(): Promise<number>;
+}
+
+/**
+ * V2 Phase 1 (C2) — user-scoped state continuity. Both backends implement the
+ * same contract; localStorage remains the offline cache in front of the cloud.
+ */
+export interface IStateSyncService {
+  getAll(): Promise<StateSyncItem[]>;
+  get(key: string): Promise<StateSyncItem | null>;
+  put(key: string, keyClass: StateSyncKeyClass, payload: unknown): Promise<StateSyncItem>;
+  remove(key: string): Promise<boolean>;
+}
+
+/**
  * Scoped entity pub/sub channels (plan §6.1).
  * A mutation notifies only the subscribers that declared an interest in its
  * channel, so a single habit toggle no longer fires queries on every mounted
@@ -242,7 +299,19 @@ export interface IPresenceService {
  * Domains outside this enum (flashcards, reviews, routines, resources,
  * reflections, rooms, auth) broadcast on 'all'.
  */
-export type DataEntityChannel = 'tasks' | 'habits' | 'notes' | 'study' | 'focus' | 'goals' | 'pacts' | 'presence' | 'all';
+export type DataEntityChannel =
+  | 'tasks'
+  | 'habits'
+  | 'notes'
+  | 'study'
+  | 'focus'
+  | 'goals'
+  | 'pacts'
+  | 'presence'
+  | 'schedule'
+  | 'proposals'
+  | 'state_sync'
+  | 'all';
 
 /**
  * Shared dispatch predicate for the scoped entity event bus.
@@ -276,6 +345,12 @@ export interface IDataService {
   rooms: IRoomService;
   pacts: IStudyPactService;
   presence: IPresenceService;
+  /** V2 Phase 1 (C3): canonical schedule model + projections source. */
+  schedule: IScheduleService;
+  /** V2 Phase 1 (C5): proposal / approve-diff objects — the triage backbone. */
+  proposals: IProposalService;
+  /** V2 Phase 1 (C2): user-scoped state continuity (device-local keys → cloud). */
+  stateSync: IStateSyncService;
   subscribe(listener: () => void, channels?: DataEntityChannel[]): () => void;
   notifySubscribers(channel: DataEntityChannel): void;
 }

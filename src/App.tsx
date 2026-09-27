@@ -26,6 +26,7 @@ const WeeklyReviewPage = lazy(() => import('./features/review/WeeklyReviewPage')
 const GuideCenterRoute = lazy(() => import('./features/guides/GuideCenterRoute').then(m => ({ default: m.GuideCenterRoute })));
 const RoomsPage = lazy(() => import('./features/rooms/RoomsPage').then(m => ({ default: m.RoomsPage })));
 const ActiveRoomView = lazy(() => import('./features/rooms/ActiveRoomView').then(m => ({ default: m.ActiveRoomView })));
+const TriagePage = lazy(() => import('./features/triage/TriagePage').then(m => ({ default: m.TriagePage })));
 
 /**
  * Phase 0 (P0-08): per-route error containment. Every feature page is wrapped
@@ -70,6 +71,7 @@ export const App: React.FC = () => {
               <Route path="rooms" element={bounded(<RoomsPage />)} />
               <Route path="rooms/:roomId" element={bounded(<ActiveRoomView />)} />
               <Route path="settings" element={bounded(<SettingsPage />)} />
+              <Route path="triage" element={bounded(<TriagePage />)} />
               <Route path="guides" element={bounded(<GuideCenterRoute />)} />
               <Route path="guides/:guideId" element={bounded(<GuideCenterRoute />)} />
             </Route>

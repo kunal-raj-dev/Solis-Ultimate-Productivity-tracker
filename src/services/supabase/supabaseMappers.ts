@@ -11,6 +11,9 @@ import { StudyResource } from '../../types/resource';
 import { DailyReflection } from '../../types/reflection';
 import { StudyRoom, RoomParticipant, RoomMessage, RoomTimelineEvent, RoomReflection } from '../../types/room';
 import { CloudStudyPact } from '../../types/studyPact';
+import { ScheduleEntry } from '../../types/schedule';
+import { Proposal } from '../../types/proposal';
+import { StateSyncItem } from '../../types/stateSync';
 import { calculateStreaks } from '../../utils/streaks';
 import { getISODateString } from '../../utils/date';
 
@@ -509,6 +512,50 @@ export function mapStudyPact(row: any): CloudStudyPact {
     updatedAt: row.updated_at,
     completedAt: row.completed_at || null,
     summary: row.summary || undefined
+  };
+}
+
+export function mapScheduleEntry(row: any): ScheduleEntry {
+  return {
+    id: row.id,
+    entryType: row.entry_type || 'flexible',
+    sourceKind: row.source_kind || 'manual',
+    sourceId: row.source_id || undefined,
+    title: row.title,
+    date: row.date,
+    startHour: row.start_hour ?? undefined,
+    durationMinutes: row.duration_minutes ?? 30,
+    status: row.status || 'planned',
+    actualMinutes: row.actual_minutes ?? 0,
+    provenance: row.provenance || undefined,
+    recurrenceRule: row.recurrence_rule || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+export function mapProposal(row: any): Proposal {
+  return {
+    id: row.id,
+    kind: row.kind || 'insight_action',
+    source: row.source || 'engine',
+    title: row.title,
+    evidence: row.evidence || undefined,
+    diff: row.diff || undefined,
+    status: row.status || 'open',
+    dedupeKey: row.dedupe_key || undefined,
+    createdAt: row.created_at,
+    decidedAt: row.decided_at || null
+  };
+}
+
+export function mapStateSyncItem(row: any): StateSyncItem {
+  return {
+    key: row.key,
+    keyClass: row.key_class || 'user_content',
+    payload: row.payload ?? null,
+    updatedAt: row.updated_at,
+    deviceOrigin: row.device_origin || undefined
   };
 }
 

@@ -39,6 +39,13 @@ export const APP_NAVIGATION: NavSectionConfig[] = [
         path: '/app/rooms',
         iconName: 'Users',
         description: 'Study together with friends in quiet rooms'
+      },
+      {
+        id: 'triage',
+        label: 'Triage',
+        path: '/app/triage',
+        iconName: 'Inbox',
+        description: 'Insights and proposals waiting for your decision'
       }
     ]
   },

@@ -14,6 +14,7 @@ import {
   Loader2,
   Sparkles,
   Users,
+  Inbox,
   Sun,
   Moon,
   PanelLeftClose,
@@ -24,6 +25,7 @@ import { useData } from '../../../context/DataContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useTheme } from '../../../context/ThemeContext';
 import { useToast } from '../../../context/ToastContext';
+import { dataService } from '../../../services/dataService';
 import { Avatar } from '../../ui/Avatar/Avatar';
 import { Logo } from '../../ui/Logo/Logo';
 import { cn } from '../../../utils/classNames';
@@ -41,7 +43,8 @@ const ICON_MAP: Record<string, React.FC<{ size?: number }>> = {
   FileText,
   Sliders,
   Sparkles,
-  Users
+  Users,
+  Inbox
 };
 
 export interface SidebarProps {
@@ -61,6 +64,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
   );
   const momentumScore = summary?.momentumScore ?? 0;
   const pendingTasks = summary ? Math.max(0, summary.totalTasksCount - summary.completedTasksCount) : 0;
+
+  // V2 Phase 1 (P1-13): the Triage nav item carries the live count of open
+  // proposals — decisions get a visible address in the chrome.
+  const [openProposalCount, setOpenProposalCount] = React.useState(0);
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      dataService.proposals
+        .countOpen()
+        .then((n) => {
+          if (!cancelled) setOpenProposalCount(n);
+        })
+        .catch(() => {});
+    };
+    load();
+    const unsubscribe = dataService.subscribe(load, ['proposals']);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -110,7 +134,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggleC
             <div className="solis-sidebar__list">
               {section.items.map((item) => {
                 const IconComponent = ICON_MAP[item.iconName] || Compass;
-                const badgeValue = item.id === 'tasks' ? pendingTasks : item.badge;
+                const badgeValue =
+                  item.id === 'tasks'
+                    ? pendingTasks
+                    : item.id === 'triage'
+                    ? openProposalCount
+                    : item.badge;
 
                 return (
                   <NavLink

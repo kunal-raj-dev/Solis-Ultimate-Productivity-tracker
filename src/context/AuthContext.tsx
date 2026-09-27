@@ -65,9 +65,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const runGuestMigration = useCallback(async (snapshot: GuestWorkspaceSnapshot): Promise<void> => {
     setGuestMigration({ status: 'running' });
     try {
-      await migrateGuestWorkspaceToCloud(snapshot);
+      const result = await migrateGuestWorkspaceToCloud(snapshot);
       archiveGuestSnapshot(snapshot);
-      if (isMountedRef.current) setGuestMigration({ status: 'idle' });
+      // V2 Phase 1 (P1-09): honest migration summary — nothing is dropped
+      // silently. Excluded classes stay in the local archive and the user is
+      // told exactly what they were.
+      const excluded = result.counts.excludedPlanItems + result.counts.excludedTimeBlocks;
+      if (isMountedRef.current && excluded > 0) {
+        setGuestMigration({
+          status: 'idle',
+          message:
+            `Migrated with ${result.counts.goals} goal${result.counts.goals === 1 ? '' : 's'}. ` +
+            `${result.counts.excludedPlanItems} study-plan item${result.counts.excludedPlanItems === 1 ? '' : 's'} and ` +
+            `${result.counts.excludedTimeBlocks} time block${result.counts.excludedTimeBlocks === 1 ? '' : 's'} stayed in the local archive — ` +
+            'they are tied to this device and can be re-created on your account.'
+        });
+      } else if (isMountedRef.current) {
+        setGuestMigration({ status: 'idle' });
+      }
     } catch (err) {
       console.error('[AuthContext] Guest-to-cloud migration failed:', err);
       // Archive everything that did not reach the cloud BEFORE surfacing the

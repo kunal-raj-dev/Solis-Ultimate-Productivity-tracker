@@ -12,7 +12,8 @@ import {
   Clock,
   Plus,
   Sun,
-  AlertTriangle
+  AlertTriangle,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
@@ -51,7 +52,10 @@ import { createLearningIntelligenceSnapshot } from '../../utils/intelligence';
 import { calculateDailySummary } from '../../utils/productivity';
 import { ExplainableRecommendation } from '../../types/learningIntelligence';
 import { DashboardIntelligenceBrief } from '../../components/features/Intelligence/DashboardIntelligenceBrief';
+import { UnifiedReflectionsTimeline } from '../../components/features/Reflection/UnifiedReflectionsTimeline';
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
+import { projectScheduleEntriesToTimeBlocks } from '../../utils/planning/scheduleProjections';
+import { ScheduleEntry } from '../../types/schedule';
 import { evaluateHabitTier, getTierMeta } from '../../utils/habits/tieredHabits';
 import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
 import { WelcomeBackModal } from '../../components/features/Activation/WelcomeBackModal';
@@ -78,6 +82,11 @@ export const DashboardPage: React.FC = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  // V2 Phase 1 (C3): canonical schedule entries for today + due-review count.
+  const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
+  const [dueReviewCount, setDueReviewCount] = useState(0);
+  // V2 Phase 1 (C5): open proposals for the triage badge.
+  const [openProposalCount, setOpenProposalCount] = useState(0);
   const [recentSessions, setRecentSessions] = useState<StudySession[]>([]);
   const [recentFocus, setRecentFocus] = useState<FocusSession[]>([]);
   const [routines, setRoutines] = useState<RecurringStudyRoutine[]>([]);
@@ -181,7 +190,15 @@ export const DashboardPage: React.FC = () => {
   }, [subjects.length, tasks.length, recentFocus.length, notes.length, habits.length]);
 
   // Time Blocking Memo Calculations
+  // V2 Phase 1 (P1-05) — flagged hybrid cutover, first surface: when the
+  // canonical model has entries for today, the timeline PROJECTS from it
+  // (entityId still points at the owning domain, so toggles behave exactly
+  // as before). When the model is empty for today (fresh account, or
+  // backfill still running), the V1 derivation keeps rendering.
   const timeBlocks = useMemo(() => {
+    if (scheduleEntries.length > 0) {
+      return projectScheduleEntriesToTimeBlocks(scheduleEntries, getISODateString(currentTime));
+    }
     return buildTimeBlocks({
       studyPlan,
       tasks,
@@ -190,7 +207,7 @@ export const DashboardPage: React.FC = () => {
       taskTimeBlocks,
       targetDate: getISODateString(currentTime)
     });
-  }, [studyPlan, tasks, recentFocus, routines, taskTimeBlocks, currentTime]);
+  }, [scheduleEntries, studyPlan, tasks, recentFocus, routines, taskTimeBlocks, currentTime]);
 
   const timeConflicts = useMemo(() => findTimeBlockConflicts(timeBlocks), [timeBlocks]);
   const timeStats = useMemo(() => calculateTimeAllocation(timeBlocks), [timeBlocks]);
@@ -223,6 +240,11 @@ export const DashboardPage: React.FC = () => {
       } catch {
         // storage unavailable — intention stays in session state only
       }
+      // V2 Phase 1 (P1-08/C2): the intention is user_content — it follows the
+      // student to any device. localStorage stays as the offline cache.
+      void dataService.stateSync
+        .put(`intention:${getISODateString(new Date())}`, 'user_content', { text: latestIntentionRef.current })
+        .catch(() => {});
       setIntentionSaved(true);
       setTimeout(() => setIntentionSaved(false), 2000);
     }, 1000);
@@ -242,6 +264,26 @@ export const DashboardPage: React.FC = () => {
         }
       }
     };
+  }, []);
+
+  // V2 Phase 1 (P1-08/C2): read-through from the state-continuity service —
+  // a second device (or a re-login) adopts the cloud values when present.
+  useEffect(() => {
+    const today = getISODateString(new Date());
+    void dataService.stateSync
+      .get(`intention:${today}`)
+      .then((item) => {
+        const payload = item?.payload as { text?: string } | null;
+        if (payload && typeof payload.text === 'string') setDailyIntention(payload.text);
+      })
+      .catch(() => {});
+    void dataService.stateSync
+      .get(`ritual:morning:${today}`)
+      .then((item) => {
+        const payload = item?.payload as { completed?: boolean } | null;
+        if (payload?.completed) setIsMorningPlanned(true);
+      })
+      .catch(() => {});
   }, []);
 
   // Phase 0 P0.3: the morning ritual persists its completion record
@@ -278,6 +320,26 @@ export const DashboardPage: React.FC = () => {
 
   const loadDashboardData = useCallback(async () => {
     try {
+      const today = getISODateString(new Date());
+
+      // V2 Phase 1 (P1-03/P1-16): idempotent backfill of the canonical
+      // schedule model and auto-materialization of recurring routines —
+      // both once per day, both fire-and-forget (never block the load).
+      try {
+        const backfillKey = `solis_v2_backfilled_${today}`;
+        if (!localStorage.getItem(backfillKey)) {
+          localStorage.setItem(backfillKey, '1');
+          void dataService.schedule.backfillFromSources().catch(() => {});
+        }
+        const routinesKey = `solis_routines_materialized_${today}`;
+        if (!localStorage.getItem(routinesKey) && dataService.routines?.materializeRoutinesForToday) {
+          localStorage.setItem(routinesKey, '1');
+          void dataService.routines.materializeRoutinesForToday().catch(() => {});
+        }
+      } catch {
+        // storage unavailable — backfill simply runs unguarded
+      }
+
       const [
         taskRes,
         planRes,
@@ -291,7 +353,9 @@ export const DashboardPage: React.FC = () => {
         refRes,
         blocksRes,
         goalRes,
-        flashRes
+        flashRes,
+        scheduleRes,
+        proposalsRes
       ] = await Promise.allSettled([
         dataService.tasks.getTasks(),
         dataService.study.getTodayPlan(),
@@ -305,13 +369,15 @@ export const DashboardPage: React.FC = () => {
         dataService.reflections ? dataService.reflections.getReflections(5) : Promise.resolve([]),
         dataService.tasks.getTimeBlocks ? dataService.tasks.getTimeBlocks(getISODateString(new Date())) : Promise.resolve([]),
         dataService.goals ? dataService.goals.getGoals() : Promise.resolve([]),
-        dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([])
+        dataService.flashcards ? dataService.flashcards.getFlashcards() : Promise.resolve([]),
+        dataService.schedule.getEntriesForDate(today),
+        dataService.proposals.countOpen()
       ]);
 
       // Plan §6.3 partial fetch failure resilience: fulfilled slices still
       // populate the page (cached data first), while the rejected count
       // drives the gentle retry banner.
-      const failedFetches = [taskRes, planRes, subRes, noteRes, habitRes, sessRes, focusRes, dailySumRes, rtnRes, refRes, blocksRes, goalRes, flashRes]
+      const failedFetches = [taskRes, planRes, subRes, noteRes, habitRes, sessRes, focusRes, dailySumRes, rtnRes, refRes, blocksRes, goalRes, flashRes, scheduleRes, proposalsRes]
         .filter((res) => res.status === 'rejected');
       if (failedFetches.length > 0) {
         console.warn(
@@ -341,7 +407,35 @@ export const DashboardPage: React.FC = () => {
       if (refRes.status === 'fulfilled') setReflections(refRes.value);
       if (blocksRes.status === 'fulfilled') setTaskTimeBlocks(blocksRes.value);
       if (goalRes.status === 'fulfilled') setGoals(goalRes.value || []);
-      if (flashRes.status === 'fulfilled') setFlashcards(flashRes.value || []);
+      if (flashRes.status === 'fulfilled') {
+        setFlashcards(flashRes.value || []);
+        // V2 Phase 1 (P1-10): due-review materialization — one defended
+        // review block when spaced-repetition cards are due, capped at 30m.
+        try {
+          const todayKey = getISODateString(new Date());
+          const dueCount = (flashRes.value || []).filter((f) => {
+            const due = f.nextReviewDate || (f as unknown as { dueDate?: string }).dueDate;
+            return due && due <= todayKey;
+          }).length;
+          setDueReviewCount(dueCount);
+          if (dueCount > 0) {
+            const durationMinutes = Math.max(15, Math.min(30, Math.ceil(dueCount / 4) * 5));
+            await dataService.schedule.upsertFromSource({
+              sourceKind: 'review',
+              sourceId: `review-${todayKey}`,
+              title: `Due recall — ${dueCount} card${dueCount === 1 ? '' : 's'}`,
+              date: todayKey,
+              durationMinutes,
+              entryType: 'defended',
+              provenance: { dueCount }
+            });
+          }
+        } catch {
+          // materialization is best-effort; the banner still shows the count
+        }
+      }
+      if (scheduleRes.status === 'fulfilled') setScheduleEntries(scheduleRes.value);
+      if (proposalsRes.status === 'fulfilled') setOpenProposalCount(proposalsRes.value);
 
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -357,7 +451,7 @@ export const DashboardPage: React.FC = () => {
     // flashcards, analytics) broadcast on 'all' and still reach it.
     const unsubscribe = dataService.subscribe(() => {
       loadDashboardData();
-    }, ['tasks', 'habits', 'notes', 'study', 'focus', 'goals']);
+    }, ['tasks', 'habits', 'notes', 'study', 'focus', 'goals', 'schedule', 'proposals']);
     return () => unsubscribe();
   }, [loadDashboardData]);
 
@@ -553,6 +647,11 @@ export const DashboardPage: React.FC = () => {
     } catch {
       // storage unavailable — gentle start applies to this session's state only
     }
+    // V2 Phase 1 (C2): the welcome-back choice is user_content — it follows
+    // the student across devices so a second login gets the same calm entry.
+    void dataService.stateSync
+      .put(`welcomeback:choice:${getISODateString(new Date())}`, 'user_content', { choice: 'gentle_start' })
+      .catch(() => {});
     setWelcomeBackChoice('gentle_start');
     addToast({
       title: 'Gentle Start Active',
@@ -608,6 +707,10 @@ export const DashboardPage: React.FC = () => {
   };
 
   const handlePriorityTriage = () => {
+    // V2 Phase 1 (C2): the welcome-back choice is user_content.
+    void dataService.stateSync
+      .put(`welcomeback:choice:${getISODateString(new Date())}`, 'user_content', { choice: 'priority_triage' })
+      .catch(() => {});
     setWelcomeBackChoice('priority_triage');
     addToast({
       title: 'Priority Triage Active',
@@ -698,6 +801,15 @@ export const DashboardPage: React.FC = () => {
       } catch {
         addToast({ title: 'Update failed', type: 'error' });
       }
+    } else if (block.type === 'review' || block.type === 'rest' || block.type === 'buffer' || block.type === 'external') {
+      // V2 Phase 1 (P1-05): schedule-native block types — completion writes
+      // straight to the canonical model entry.
+      try {
+        await dataService.schedule.setStatus(block.id, block.completed ? 'planned' : 'done', block.durationMinutes);
+        await loadDashboardData();
+      } catch {
+        addToast({ title: 'Update failed', type: 'error' });
+      }
     }
   };
 
@@ -726,16 +838,33 @@ export const DashboardPage: React.FC = () => {
       }
 
       if (refData.tomorrowIntentions && refData.tomorrowIntentions.length > 0) {
+        const tomorrowKey = getISODateString(addDays(new Date(), 1));
         for (const intention of refData.tomorrowIntentions) {
           const trimmed = intention?.trim();
           if (trimmed) {
             try {
-              await dataService.tasks.createTask({
-                title: trimmed,
-                category: 'deep_work',
-                priority: 'high',
-                tags: ['tomorrow-priority']
-              });
+              // V2 Phase 1 (P1-17): link-or-create — if an unfinished task
+              // with the same title already exists, carry IT forward instead
+              // of duplicating the work into a new row.
+              const existing = tasks.find(
+                (t) =>
+                  t.status !== 'completed' &&
+                  t.title.trim().toLowerCase() === trimmed.toLowerCase()
+              );
+              if (existing) {
+                await dataService.tasks.updateTask(existing.id, {
+                  dueDate: tomorrowKey,
+                  priority: 'high'
+                });
+              } else {
+                await dataService.tasks.createTask({
+                  title: trimmed,
+                  category: 'deep_work',
+                  priority: 'high',
+                  dueDate: tomorrowKey,
+                  tags: ['tomorrow-priority']
+                });
+              }
             } catch (taskErr) {
               console.warn('Could not auto-create tomorrow intention task:', taskErr);
             }
@@ -835,7 +964,36 @@ export const DashboardPage: React.FC = () => {
     if (payload.topicTitle) params.set('title', payload.topicTitle);
     if (payload.suggestedDurationMinutes) params.set('duration', String(payload.suggestedDurationMinutes));
     navigate(`/app/focus?${params.toString()}`);
-  }, [navigate]);
+  }, [navigate, addToast]);
+
+  // V2 Phase 1 (P1-14/C5): analytics insights become proposal objects — the
+  // write-back that was missing ("the app tells me things but makes me do
+  // the work"). dedupeKey keeps one open proposal per insight.
+  const handleSendRecommendationToTriage = useCallback(
+    (rec: ExplainableRecommendation) => {
+      void dataService.proposals
+        .create({
+          kind: 'insight_action',
+          source: 'engine',
+          title: rec.title,
+          evidence: rec.evidence || rec.signal,
+          diff: { actionUrl: rec.actionPayload?.targetRoute || '/app/focus', actionLabel: rec.actionLabel },
+          dedupeKey: `insight:${rec.id}`
+        })
+        .then((created) => {
+          addToast({
+            title: 'Filed in Triage',
+            description: `"${created.title}" is waiting in Needs-a-decision.`,
+            type: 'info'
+          });
+          setOpenProposalCount((prev) => prev + 1);
+        })
+        .catch(() => {
+          addToast({ title: 'Could not file the insight', type: 'error' });
+        });
+    },
+    [addToast]
+  );
 
   // Plan §3.2: priority triage — sort active tasks by priority
   // (urgent → high → medium → low) and due date before rendering.
@@ -956,6 +1114,7 @@ export const DashboardPage: React.FC = () => {
                 summary={dailyMomentum.summary}
                 topRecommendations={topRecommendations}
                 onRecommendationAction={handleRecommendationAction}
+                onSendToTriage={handleSendRecommendationToTriage}
               />
             </div>
 
@@ -1032,6 +1191,70 @@ export const DashboardPage: React.FC = () => {
       {/* Cognitive Load Alert if needed */}
       {cognitiveReport.status !== 'optimal' && (
         <CognitiveLoadAlert report={cognitiveReport} />
+      )}
+
+      {/* V2 Phase 1 (P1-11): due-recall block — the strongest deterministic
+          engine finally renders inside the day instead of a hop away. */}
+      {dueReviewCount > 0 && (
+        <div
+          className="solis-due-recall-banner"
+          role="status"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--bg-surface-secondary)',
+            border: '1px solid var(--color-amber-500)'
+          }}
+        >
+          <BookOpen size={18} color="var(--color-amber-500)" aria-hidden="true" />
+          <div style={{ flex: 1 }}>
+            <strong style={{ color: 'var(--text-primary)' }}>
+              {dueReviewCount} card{dueReviewCount === 1 ? '' : 's'} due for review
+            </strong>
+            <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)' }}>
+              A defended recall block is on today's timeline — memory that never pushes on the calendar is memory you lose.
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            size="sm"
+            className="tactile-press"
+            rightIcon={<ArrowRight size={14} />}
+            onClick={() => navigate('/app/study')}
+          >
+            Start recall drill
+          </Button>
+        </div>
+      )}
+
+      {/* V2 Phase 1 (P1-13): triage entry point — decisions get one address. */}
+      {openProposalCount > 0 && (
+        <button
+          type="button"
+          className="tactile-press"
+          onClick={() => navigate('/app/triage')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '10px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--bg-surface-secondary)',
+            border: '1px solid var(--border-subtle)',
+            cursor: 'pointer',
+            textAlign: 'left',
+            width: '100%'
+          }}
+        >
+          <CheckCircle2 size={16} color="var(--color-coral-500)" aria-hidden="true" />
+          <span style={{ flex: 1, fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)' }}>
+            <strong>{openProposalCount}</strong> insight{openProposalCount === 1 ? '' : 's'} need{openProposalCount === 1 ? 's' : ''} a decision
+          </span>
+          <ArrowRight size={14} color="var(--text-secondary)" aria-hidden="true" />
+        </button>
       )}
 
       {/* ZONES 3 & 4 // ASYMMETRIC MASTER GRID (Priority Tasks left / Unified Schedule right) */}
@@ -1300,6 +1523,18 @@ export const DashboardPage: React.FC = () => {
         </section>
       </section>
 
+      {/* V2 Phase 1 (P1-15): unified reflections — evening closures, weekly
+          reviews, and drift-pad thoughts in one honest timeline. */}
+      <section className="solis-panel" aria-label="Unified reflections timeline">
+        <div className="solis-panel__header">
+          <div className="solis-panel__title-group">
+            <FileText size={16} className="solis-panel__icon" aria-hidden="true" />
+            <h2 className="solis-panel__title">Reflections Timeline</h2>
+          </div>
+        </div>
+        <UnifiedReflectionsTimeline reflections={reflections} notes={notes} />
+      </section>
+
       {/* Guided 90-Second Morning Planning Ritual Modal (F-201) */}
       <MorningPlanningModal
         isOpen={isMorningModalOpen}
@@ -1309,6 +1544,10 @@ export const DashboardPage: React.FC = () => {
         dailyCapacityMinutes={getDefaultDailyCapacityMinutes()}
         onPlanningCompleted={() => {
           setIsMorningPlanned(true);
+          // V2 Phase 1 (C2): the morning-completion flag follows the student.
+          void dataService.stateSync
+            .put(`ritual:morning:${getISODateString(new Date())}`, 'user_content', { completed: true })
+            .catch(() => {});
           loadDashboardData();
         }}
       />

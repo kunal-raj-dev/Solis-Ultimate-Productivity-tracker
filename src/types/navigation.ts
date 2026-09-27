@@ -9,6 +9,7 @@ export type NavId =
   | 'notes'
   | 'review'
   | 'rooms'
+  | 'triage'
   | 'settings'
   | 'guides';
 

@@ -11,6 +11,43 @@ import { SupabaseServiceContext } from './types';
 export class SupabaseTaskService implements ITaskService {
   constructor(private ctx: SupabaseServiceContext) {}
 
+  /**
+   * V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+   * Best-effort — a schedule write failure never breaks the primary task
+   * mutation; the idempotent backfill repairs the model on next load.
+   */
+  private syncScheduleEntry = async (task: {
+    id: string;
+    title: string;
+    status: string;
+    due_date?: string | null;
+    estimated_minutes?: number | null;
+    completed_minutes?: number | null;
+    priority?: string;
+    category?: string;
+  }): Promise<void> => {
+    try {
+      await this.ctx.getServices().schedule.upsertFromSource({
+        sourceKind: 'task',
+        sourceId: task.id,
+        title: task.title,
+        date: task.due_date || getISODateString(new Date()),
+        durationMinutes: task.estimated_minutes || 30,
+        entryType: 'flexible',
+        status:
+          task.status === 'completed'
+            ? 'done'
+            : task.status === 'in_progress'
+            ? 'in_progress'
+            : 'planned',
+        actualMinutes: task.completed_minutes || 0,
+        provenance: { priority: task.priority, category: task.category }
+      });
+    } catch (err) {
+      console.warn('[Solis] Schedule dual-write (task) failed — backfill will repair:', err);
+    }
+  };
+
   getTasks = async (filter?: TaskFilterOptions): Promise<Task[]> => {
     const cacheKey = `tasks:${JSON.stringify(filter || {})}`;
     const cached = queryCache.get<Task[]>(cacheKey);
@@ -132,6 +169,9 @@ export class SupabaseTaskService implements ITaskService {
 
     if (error || !data) throw error || new Error('Failed to create task');
 
+    // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+    await this.syncScheduleEntry(data);
+
     this.ctx.notify();
     return mapTask(data, []);
   };
@@ -213,6 +253,10 @@ export class SupabaseTaskService implements ITaskService {
       } catch {}
     }
 
+    // V2 Phase 1 (P1-02): dual-write into the canonical schedule model —
+    // on every update, not just status changes (title/due-date edits matter).
+    await this.syncScheduleEntry(data);
+
     this.ctx.notify();
     return mapTask(data, data.subtasks || []);
   };
@@ -226,6 +270,12 @@ export class SupabaseTaskService implements ITaskService {
       .eq('user_id', userId);
 
     if (error) throw error;
+    // V2 Phase 1 (P1-02): the projection dies with its source.
+    try {
+      await this.ctx.getServices().schedule.deleteBySource('task', id);
+    } catch (err) {
+      console.warn('[Solis] Schedule delete (task) failed — backfill will repair:', err);
+    }
     this.ctx.notify();
     return true;
   };

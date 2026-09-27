@@ -17,9 +17,15 @@ import {
   IStudyPactService,
   IPresenceService,
   DataEntityChannel,
-  matchesChannelFilter
+  matchesChannelFilter,
+  IScheduleService,
+  IProposalService,
+  IStateSyncService
 } from '../api.interface';
 import { queryCache } from '../cache';
+import { ScheduleEntry, ScheduleUpsertFromSource, ScheduleEntryStatus } from '../../types/schedule';
+import { Proposal, ProposalStatus } from '../../types/proposal';
+import { StateSyncItem, StateSyncKeyClass } from '../../types/stateSync';
 import {
   MOCK_USER,
   MOCK_TASKS,
@@ -139,6 +145,10 @@ export class MockDataService implements IDataService {
   private _resources: StudyResource[] = JSON.parse(JSON.stringify(MOCK_RESOURCES));
   private _reflections: DailyReflection[] = JSON.parse(JSON.stringify(MOCK_REFLECTIONS));
   private _timeBlocks: TaskTimeBlock[] = JSON.parse(JSON.stringify(MOCK_TIME_BLOCKS));
+  // V2 Phase 1 (C3/C5/C2): canonical schedule model, proposal layer, state sync.
+  private _scheduleEntries: ScheduleEntry[] = [];
+  private _proposals: Proposal[] = [];
+  private _stateSyncItems = new Map<string, StateSyncItem>();
   private _roomEvents: RoomTimelineEvent[] = [
     {
       id: 'evt_1',
@@ -409,8 +419,90 @@ export class MockDataService implements IDataService {
       tasks: this._tasks.map((t) => ({ ...t })),
       notes: this._notes.map((n) => ({ ...n })),
       habits: this._habits.map((h) => ({ ...h, history: { ...(h.history || {}) } })),
-      flashcards: this._flashcards.map((f) => ({ ...f }))
+      flashcards: this._flashcards.map((f) => ({ ...f })),
+      // V2 Phase 1 (P1-09): goals now migrate; plan items and time blocks are
+      // carried so their exclusion can be REPORTED to the user, not silent.
+      goals: this._goals.map((g) => ({ ...g, milestones: (g.milestones || []).map((m) => ({ ...m })) })),
+      planItems: this._studyPlan.map((p) => ({ ...p })),
+      timeBlocks: this._timeBlocks.map((b) => ({ ...b }))
     };
+  }
+
+  // ── V2 Phase 1 (P1-02): write-through adapters ────────────────────────────
+  // Task and plan-item mutations keep the canonical schedule model in lockstep
+  // (dual-write). Failures here never break the primary mutation — the model
+  // is repaired by the idempotent backfill on next load.
+
+  private _syncScheduleFromTask(task: Task): void {
+    try {
+      const today = getISODateString(new Date());
+      const existing = this._scheduleEntries.find(
+        (e) => e.sourceKind === 'task' && e.sourceId === task.id && e.date === (task.dueDate || today)
+      );
+      const status: ScheduleEntryStatus =
+        task.status === 'completed'
+          ? 'done'
+          : task.status === 'in_progress'
+          ? 'in_progress'
+          : 'planned';
+      if (existing) {
+        existing.title = task.title;
+        existing.durationMinutes = task.estimatedMinutes || 30;
+        existing.status = status;
+        existing.actualMinutes = task.completedMinutes || 0;
+        existing.updatedAt = new Date().toISOString();
+      } else {
+        this._scheduleEntries.push({
+          id: `sched_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          entryType: 'flexible',
+          sourceKind: 'task',
+          sourceId: task.id,
+          title: task.title,
+          date: task.dueDate || today,
+          durationMinutes: task.estimatedMinutes || 30,
+          status,
+          actualMinutes: task.completedMinutes || 0,
+          provenance: { priority: task.priority, category: task.category },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn('[Solis] Schedule dual-write (task) failed — backfill will repair:', err);
+    }
+  }
+
+  private _syncScheduleFromPlanItem(item: StudyPlanItem): void {
+    try {
+      const date = item.scheduledDate || getISODateString(new Date());
+      const existing = this._scheduleEntries.find(
+        (e) => e.sourceKind === 'study_plan_item' && e.sourceId === item.id && e.date === date
+      );
+      if (existing) {
+        existing.title = item.title;
+        existing.durationMinutes = item.targetMinutes || 45;
+        existing.status = item.completed ? 'done' : 'planned';
+        existing.actualMinutes = item.actualMinutesLogged || 0;
+        existing.updatedAt = new Date().toISOString();
+      } else {
+        this._scheduleEntries.push({
+          id: `sched_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          entryType: 'defended',
+          sourceKind: 'study_plan_item',
+          sourceId: item.id,
+          title: item.title,
+          date,
+          durationMinutes: item.targetMinutes || 45,
+          status: item.completed ? 'done' : 'planned',
+          actualMinutes: item.actualMinutesLogged || 0,
+          provenance: { subjectId: item.subjectId, subjectName: item.subjectName, priority: item.priority },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      console.warn('[Solis] Schedule dual-write (plan item) failed — backfill will repair:', err);
+    }
   }
 
   /* ==========================================================================
@@ -640,6 +732,8 @@ export class MockDataService implements IDataService {
       };
 
       this._tasks.unshift(newTask);
+      // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+      this._syncScheduleFromTask(newTask);
       this.notify('tasks');
       return { ...newTask };
     },
@@ -670,6 +764,8 @@ export class MockDataService implements IDataService {
       };
 
       this._tasks[index] = updated;
+      // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+      this._syncScheduleFromTask(updated);
 
       // Bidirectional sync with linked study plan item and time blocks
       if (updates.status !== undefined) {
@@ -698,7 +794,13 @@ export class MockDataService implements IDataService {
       const before = this._tasks.length;
       this._tasks = this._tasks.filter((t) => t.id !== id);
       const deleted = this._tasks.length < before;
-      if (deleted) this.notify('tasks');
+      if (deleted) {
+        // V2 Phase 1 (P1-02): the projection dies with its source.
+        this._scheduleEntries = this._scheduleEntries.filter(
+          (e) => !(e.sourceKind === 'task' && e.sourceId === id)
+        );
+        this.notify('tasks');
+      }
       return deleted;
     },
 
@@ -1201,6 +1303,8 @@ export class MockDataService implements IDataService {
       };
 
       this._studyPlan.push(newPlan);
+      // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+      this._syncScheduleFromPlanItem(newPlan);
       this.notify('study');
       return { ...newPlan };
     },
@@ -1217,6 +1321,8 @@ export class MockDataService implements IDataService {
       };
 
       this._studyPlan[index] = updated;
+      // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+      this._syncScheduleFromPlanItem(updated);
       this.notify('study');
       return { ...updated };
     },
@@ -1232,7 +1338,13 @@ export class MockDataService implements IDataService {
       const before = this._studyPlan.length;
       this._studyPlan = this._studyPlan.filter((p) => p.id !== id);
       const deleted = this._studyPlan.length < before;
-      if (deleted) this.notify('study');
+      if (deleted) {
+        // V2 Phase 1 (P1-02): the projection dies with its source.
+        this._scheduleEntries = this._scheduleEntries.filter(
+          (e) => !(e.sourceKind === 'study_plan_item' && e.sourceId === id)
+        );
+        this.notify('study');
+      }
       return deleted;
     }
   };
@@ -2994,6 +3106,288 @@ export class MockDataService implements IDataService {
       return () => {
         this._presenceSubscribers = this._presenceSubscribers.filter((cb) => cb !== callback);
       };
+    }
+  };
+
+  // ── V2 Phase 1 (C3): canonical schedule model ─────────────────────────────
+  schedule: IScheduleService = {
+    getEntries: async (filter?: { from?: string; to?: string }): Promise<ScheduleEntry[]> => {
+      await delay(15);
+      const entries = this._scheduleEntries.filter((e) => {
+        if (filter?.from && e.date < filter.from) return false;
+        if (filter?.to && e.date > filter.to) return false;
+        return true;
+      });
+      return JSON.parse(JSON.stringify(entries));
+    },
+
+    getEntriesForDate: async (date: string): Promise<ScheduleEntry[]> => {
+      await delay(10);
+      return JSON.parse(
+        JSON.stringify(
+          this._scheduleEntries
+            .filter((e) => e.date === date)
+            .sort((a, b) => (a.startHour ?? 24) - (b.startHour ?? 24))
+        )
+      );
+    },
+
+    getEntryBySource: async (
+      sourceKind: ScheduleEntry['sourceKind'],
+      sourceId: string,
+      date?: string
+    ): Promise<ScheduleEntry | null> => {
+      await delay(10);
+      const found = this._scheduleEntries.find(
+        (e) => e.sourceKind === sourceKind && e.sourceId === sourceId && (!date || e.date === date)
+      );
+      return found ? JSON.parse(JSON.stringify(found)) : null;
+    },
+
+    upsertFromSource: async (entry: ScheduleUpsertFromSource): Promise<ScheduleEntry> => {
+      await delay(15);
+      const existing = this._scheduleEntries.find(
+        (e) =>
+          e.sourceKind === entry.sourceKind &&
+          e.sourceId === entry.sourceId &&
+          e.date === entry.date
+      );
+      const now = new Date().toISOString();
+
+      if (existing) {
+        existing.title = entry.title;
+        existing.startHour = entry.startHour ?? existing.startHour;
+        existing.durationMinutes = entry.durationMinutes;
+        existing.entryType = entry.entryType;
+        existing.status = entry.status || existing.status;
+        existing.actualMinutes = entry.actualMinutes ?? existing.actualMinutes;
+        existing.provenance = entry.provenance || existing.provenance;
+        existing.recurrenceRule = entry.recurrenceRule ?? existing.recurrenceRule;
+        existing.updatedAt = now;
+        this.notify('schedule');
+        return JSON.parse(JSON.stringify(existing));
+      }
+
+      const created: ScheduleEntry = {
+        id: `sched_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        entryType: entry.entryType,
+        sourceKind: entry.sourceKind,
+        sourceId: entry.sourceId,
+        title: entry.title,
+        date: entry.date,
+        startHour: entry.startHour,
+        durationMinutes: entry.durationMinutes,
+        status: entry.status || 'planned',
+        actualMinutes: entry.actualMinutes ?? 0,
+        provenance: entry.provenance,
+        recurrenceRule: entry.recurrenceRule ?? undefined,
+        createdAt: now,
+        updatedAt: now
+      };
+      this._scheduleEntries.push(created);
+      this.notify('schedule');
+      return JSON.parse(JSON.stringify(created));
+    },
+
+    updateEntry: async (id: string, updates: Partial<ScheduleEntry>): Promise<ScheduleEntry> => {
+      await delay(15);
+      const entry = this._scheduleEntries.find((e) => e.id === id);
+      if (!entry) throw new Error(`Schedule entry ${id} not found`);
+      if (updates.title !== undefined) entry.title = updates.title;
+      if (updates.startHour !== undefined) entry.startHour = updates.startHour;
+      if (updates.durationMinutes !== undefined) entry.durationMinutes = updates.durationMinutes;
+      if (updates.status !== undefined) entry.status = updates.status;
+      if (updates.actualMinutes !== undefined) entry.actualMinutes = updates.actualMinutes;
+      if (updates.entryType !== undefined) entry.entryType = updates.entryType;
+      if (updates.provenance !== undefined) entry.provenance = updates.provenance;
+      entry.updatedAt = new Date().toISOString();
+      this.notify('schedule');
+      return JSON.parse(JSON.stringify(entry));
+    },
+
+    setStatus: async (id: string, status: ScheduleEntryStatus, actualMinutes?: number): Promise<ScheduleEntry> => {
+      await delay(10);
+      const entry = this._scheduleEntries.find((e) => e.id === id);
+      if (!entry) throw new Error(`Schedule entry ${id} not found`);
+      entry.status = status;
+      if (actualMinutes !== undefined) entry.actualMinutes = actualMinutes;
+      entry.updatedAt = new Date().toISOString();
+      this.notify('schedule');
+      return JSON.parse(JSON.stringify(entry));
+    },
+
+    deleteBySource: async (
+      sourceKind: ScheduleEntry['sourceKind'],
+      sourceId: string
+    ): Promise<boolean> => {
+      await delay(10);
+      const before = this._scheduleEntries.length;
+      this._scheduleEntries = this._scheduleEntries.filter(
+        (e) => !(e.sourceKind === sourceKind && e.sourceId === sourceId)
+      );
+      const deleted = this._scheduleEntries.length < before;
+      if (deleted) this.notify('schedule');
+      return deleted;
+    },
+
+    backfillFromSources: async (): Promise<{ created: number; skipped: number }> => {
+      await delay(30);
+      const today = getISODateString(new Date());
+      let created = 0;
+      let considered = 0;
+
+      for (const task of this._tasks) {
+        if (task.status === 'completed' || task.status === 'archived') continue;
+        considered += 1;
+        const existing = this._scheduleEntries.find(
+          (e) => e.sourceKind === 'task' && e.sourceId === task.id && e.date === (task.dueDate || today)
+        );
+        if (existing) continue;
+        this._scheduleEntries.push({
+          id: `sched_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          entryType: 'flexible',
+          sourceKind: 'task',
+          sourceId: task.id,
+          title: task.title,
+          date: task.dueDate || today,
+          durationMinutes: task.estimatedMinutes || 30,
+          status: task.status === 'in_progress' ? 'in_progress' : 'planned',
+          actualMinutes: 0,
+          provenance: { priority: task.priority, category: task.category },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        created += 1;
+      }
+
+      for (const item of this._studyPlan) {
+        considered += 1;
+        const date = item.scheduledDate || today;
+        const existing = this._scheduleEntries.find(
+          (e) => e.sourceKind === 'study_plan_item' && e.sourceId === item.id && e.date === date
+        );
+        if (existing) continue;
+        this._scheduleEntries.push({
+          id: `sched_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          entryType: 'defended',
+          sourceKind: 'study_plan_item',
+          sourceId: item.id,
+          title: item.title,
+          date,
+          durationMinutes: item.targetMinutes || 45,
+          status: item.completed ? 'done' : 'planned',
+          actualMinutes: item.actualMinutesLogged || 0,
+          provenance: { subjectId: item.subjectId, subjectName: item.subjectName, priority: item.priority },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        created += 1;
+      }
+
+      if (created > 0) this.notify('schedule');
+      return { created, skipped: considered - created };
+    }
+  };
+
+  // ── V2 Phase 1 (C5): proposal / approve-diff layer ────────────────────────
+  proposals: IProposalService = {
+    list: async (status?: ProposalStatus): Promise<Proposal[]> => {
+      await delay(15);
+      const proposals = status ? this._proposals.filter((p) => p.status === status) : this._proposals;
+      return JSON.parse(JSON.stringify(proposals));
+    },
+
+    create: async (proposal: Partial<Proposal> & { title: string }): Promise<Proposal> => {
+      await delay(15);
+      // Open-proposal dedupe: repeated insight write-backs must not flood
+      // the triage inbox (mirrors the Supabase partial unique index).
+      if (proposal.dedupeKey) {
+        const existing = this._proposals.find(
+          (p) => p.dedupeKey === proposal.dedupeKey && p.status === 'open'
+        );
+        if (existing) return JSON.parse(JSON.stringify(existing));
+      }
+
+      const created: Proposal = {
+        id: `prop_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        kind: proposal.kind || 'insight_action',
+        source: proposal.source || 'engine',
+        title: proposal.title,
+        evidence: proposal.evidence,
+        diff: proposal.diff,
+        status: 'open',
+        dedupeKey: proposal.dedupeKey,
+        createdAt: new Date().toISOString(),
+        decidedAt: null
+      };
+      this._proposals.unshift(created);
+      this.notify('proposals');
+      return JSON.parse(JSON.stringify(created));
+    },
+
+    approve: async (id: string): Promise<Proposal> => {
+      await delay(10);
+      const proposal = this._proposals.find((p) => p.id === id);
+      if (!proposal) throw new Error(`Proposal ${id} not found`);
+      proposal.status = 'approved';
+      proposal.decidedAt = new Date().toISOString();
+      this.notify('proposals');
+      return JSON.parse(JSON.stringify(proposal));
+    },
+
+    dismiss: async (id: string): Promise<Proposal> => {
+      await delay(10);
+      const proposal = this._proposals.find((p) => p.id === id);
+      if (!proposal) throw new Error(`Proposal ${id} not found`);
+      proposal.status = 'dismissed';
+      proposal.decidedAt = new Date().toISOString();
+      this.notify('proposals');
+      return JSON.parse(JSON.stringify(proposal));
+    },
+
+    countOpen: async (): Promise<number> => {
+      await delay(5);
+      return this._proposals.filter((p) => p.status === 'open').length;
+    }
+  };
+
+  // ── V2 Phase 1 (C2): user-scoped state continuity ─────────────────────────
+  stateSync: IStateSyncService = {
+    getAll: async (): Promise<StateSyncItem[]> => {
+      await delay(15);
+      return JSON.parse(JSON.stringify(Array.from(this._stateSyncItems.values())));
+    },
+
+    get: async (key: string): Promise<StateSyncItem | null> => {
+      await delay(10);
+      const item = this._stateSyncItems.get(key);
+      return item ? JSON.parse(JSON.stringify(item)) : null;
+    },
+
+    put: async (key: string, keyClass: StateSyncKeyClass, payload: unknown): Promise<StateSyncItem> => {
+      await delay(10);
+      const now = new Date().toISOString();
+      const existing = this._stateSyncItems.get(key);
+      // LWW: a lagging device write must not clobber a newer one.
+      if (existing && existing.updatedAt > now) return JSON.parse(JSON.stringify(existing));
+
+      const item: StateSyncItem = {
+        key,
+        keyClass,
+        payload: payload ?? null,
+        updatedAt: now,
+        deviceOrigin: 'mock'
+      };
+      this._stateSyncItems.set(key, item);
+      this.notify('state_sync');
+      return JSON.parse(JSON.stringify(item));
+    },
+
+    remove: async (key: string): Promise<boolean> => {
+      await delay(10);
+      const removed = this._stateSyncItems.delete(key);
+      if (removed) this.notify('state_sync');
+      return removed;
     }
   };
 }

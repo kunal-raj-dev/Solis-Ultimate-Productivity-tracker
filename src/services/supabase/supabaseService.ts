@@ -26,6 +26,9 @@ import {
   IRoomService,
   IStudyPactService,
   IPresenceService,
+  IScheduleService,
+  IProposalService,
+  IStateSyncService,
   DataEntityChannel,
   matchesChannelFilter
 } from '../api.interface';
@@ -48,6 +51,9 @@ import { SupabaseReflectionService } from './modules/reflections.service';
 import { SupabaseRoomsService } from './modules/rooms.service';
 import { SupabaseStudyPactService } from './modules/studyPact.service';
 import { SupabasePresenceService } from './modules/presence.service';
+import { SupabaseScheduleService } from './modules/schedule.service';
+import { SupabaseProposalService } from './modules/proposals.service';
+import { SupabaseStateSyncService } from './modules/stateSync.service';
 
 export class SupabaseDataService implements IDataService {
   private listeners: Set<{
@@ -71,6 +77,9 @@ export class SupabaseDataService implements IDataService {
   public rooms: IRoomService;
   public pacts: IStudyPactService;
   public presence: IPresenceService;
+  public schedule: IScheduleService;
+  public proposals: IProposalService;
+  public stateSync: IStateSyncService;
 
   constructor() {
     // Plan §6.1 scoped entity pub/sub: every domain module emits its own
@@ -91,6 +100,9 @@ export class SupabaseDataService implements IDataService {
     this.goals = new SupabaseGoalService(ctxFor('goals'));
     this.pacts = new SupabaseStudyPactService(ctxFor('pacts'));
     this.presence = new SupabasePresenceService(ctxFor('presence'));
+    this.schedule = new SupabaseScheduleService(ctxFor('schedule'));
+    this.proposals = new SupabaseProposalService(ctxFor('proposals'));
+    this.stateSync = new SupabaseStateSyncService(ctxFor('state_sync'));
 
     const globalCtx = ctxFor('all');
     this.auth = new SupabaseAuthService(globalCtx);

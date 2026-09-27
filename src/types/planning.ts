@@ -1,6 +1,19 @@
 import { BaseEntity, ID } from './common';
 
-export type TimeBlockType = 'study_plan' | 'focus_session' | 'task_deadline' | 'routine' | 'task_block';
+/**
+ * V2 Phase 1: schedule-native block types added for projections from the
+ * canonical schedule model (src/utils/planning/scheduleProjections.ts).
+ */
+export type TimeBlockType =
+  | 'study_plan'
+  | 'focus_session'
+  | 'task_deadline'
+  | 'routine'
+  | 'task_block'
+  | 'review'
+  | 'rest'
+  | 'buffer'
+  | 'external';
 
 export interface TimeBlock {
   id: string;

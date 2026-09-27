@@ -1354,8 +1354,8 @@ export const FocusPage: React.FC = () => {
           addToast({ title: 'Focus session cancelled', type: 'info' });
         }}
         title="Abort Active Focus Flow?"
-        description="Are you sure you want to stop this focus block? Elapsed progress for this block will not be recorded in your daily momentum."
-        confirmLabel="Abort Session"
+        description="Are you sure you want to stop this focus block? Time already elapsed (2 minutes or more) is recorded as honest partial work — it counts toward your pace, never against you."
+        confirmLabel="End & Record Partial"
         cancelLabel="Continue Flow"
         variant="danger"
       />

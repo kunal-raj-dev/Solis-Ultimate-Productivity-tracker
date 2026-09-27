@@ -541,6 +541,57 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const cancelTimer = () => {
     soundscapeEngine.stop();
+
+    // V2 Phase 1 (P1-18) — honest partial-work capture. V1 discarded aborted
+    // sessions entirely ("Elapsed progress will not be recorded"), which lied
+    // to the analytics about real-world work. Now an intentional abort with
+    // meaningful elapsed time is recorded as a partial session: included in
+    // minutes and calibration, never in streaks, with neutral copy.
+    let elapsedMinutes = 0;
+    if (timerMode === 'stopwatch') {
+      const elapsedMs =
+        stopwatchAccumulatedMs + (stopwatchStartEpochMs !== null ? Date.now() - stopwatchStartEpochMs : 0);
+      elapsedMinutes = Math.floor(elapsedMs / 60000);
+    } else {
+      elapsedMinutes = Math.floor(Math.max(0, totalDurationSeconds - secondsRemaining) / 60);
+    }
+
+    const shouldRecordPartial = elapsedMinutes >= 2;
+    if (shouldRecordPartial) {
+      void dataService.focus
+        .saveFocusSession({
+          mode: timerMode === 'stopwatch' ? 'stopwatch' : preset === 'pomodoro' ? 'pomodoro' : preset === 'deep_flow' ? 'deep_flow' : 'custom_timer',
+          durationMinutes: elapsedMinutes,
+          subjectId: selectedSubjectId || undefined,
+          subjectName: selectedSubject?.name,
+          planItemId: selectedPlanItemId || undefined,
+          taskId: selectedTaskId || undefined,
+          topic: focusTitle || 'Partial focus session',
+          title: focusTitle || 'Partial focus session',
+          completed: false,
+          notes: 'Recorded as partial work — ended intentionally before the target.'
+        })
+        .then((session) => {
+          // Linked task gets credit for the partial minutes (no completion).
+          if (selectedTaskId && activeTask) {
+            void dataService.tasks
+              .updateTask(selectedTaskId, {
+                completedMinutes: (activeTask.completedMinutes || 0) + elapsedMinutes
+              })
+              .catch(() => {});
+          }
+          addToast({
+            title: 'Partial session recorded',
+            description: `${elapsedMinutes}m kept on the record — it still counts toward your pace.`,
+            type: 'info'
+          });
+          void session;
+        })
+        .catch(() => {
+          // partial capture is best-effort
+        });
+    }
+
     setStatus('cancelled');
     setSecondsRemaining(totalDurationSeconds);
     setTargetEndTimeMs(null);
@@ -554,7 +605,13 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStopwatchAccumulatedMs(0);
     setStopwatchElapsedSeconds(0);
     setPreSessionEnergy(null);
-    addToast({ title: 'Session cancelled', description: 'Session was not logged.', type: 'info' });
+    addToast({
+      title: shouldRecordPartial ? 'Session ended — partial work saved' : 'Session cancelled',
+      description: shouldRecordPartial
+        ? `${elapsedMinutes}m recorded as partial work.`
+        : 'Session was too short to record.',
+      type: 'info'
+    });
   };
 
   // Plan §5.2: launch a count-up stopwatch bound to a subject in one tap —

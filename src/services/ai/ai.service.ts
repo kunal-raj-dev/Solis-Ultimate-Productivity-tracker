@@ -620,9 +620,26 @@ ${contextBlock}`;
       if (faithfulness.score < 0.4 && faithfulness.ungroundedClaims.length > 0) {
         console.warn('Potential hallucination detected in model output:', faithfulness.ungroundedClaims);
       }
+      // V2 Phase 1 (P1-19/C26a): surfaced confidence — the score already
+      // existed but was invisible. The drawer reads this meta right after the
+      // call and renders "grounded · N sources · faithfulness X%".
+      this._lastGroundingMeta = {
+        sourceCount: rankedChunks.length,
+        faithfulnessScore: Math.round(faithfulness.score * 100),
+        sourceTier: 'grounded' as const
+      };
+    } else {
+      this._lastGroundingMeta = { sourceCount: 0, faithfulnessScore: null, sourceTier: 'ungrounded' as const };
     }
 
     return responseText;
+  }
+
+  private _lastGroundingMeta: { sourceCount: number; faithfulnessScore: number | null; sourceTier: 'grounded' | 'ungrounded' } | null = null;
+
+  /** V2 Phase 1 (P1-19): grounding metadata for the LAST askSolis call. */
+  public getLastGroundingMeta(): { sourceCount: number; faithfulnessScore: number | null; sourceTier: 'grounded' | 'ungrounded' } | null {
+    return this._lastGroundingMeta;
   }
 
   // 5. Adaptive Study Plan Suggester

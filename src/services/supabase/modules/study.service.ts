@@ -361,6 +361,21 @@ export class SupabaseStudyService implements IStudyService {
 
     if (error || !data) throw error || new Error('Failed to create study plan');
 
+    // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+    try {
+      await this.ctx.getServices().schedule.upsertFromSource({
+        sourceKind: 'study_plan_item',
+        sourceId: data.id,
+        title: data.title,
+        date: data.scheduled_date || getISODateString(new Date()),
+        durationMinutes: data.target_minutes || 45,
+        entryType: 'defended',
+        provenance: { subjectId: data.subject_id, subjectName: data.subject_name, priority: data.priority }
+      });
+    } catch (err) {
+      console.warn('[Solis] Schedule dual-write (plan item) failed — backfill will repair:', err);
+    }
+
     this.ctx.notify();
     return mapStudyPlanItem(data, item.subjectName, 0);
   };
@@ -387,6 +402,22 @@ export class SupabaseStudyService implements IStudyService {
       .single();
 
     if (error || !data) throw error || new Error('Failed to update plan item');
+
+    // V2 Phase 1 (P1-02): dual-write into the canonical schedule model.
+    try {
+      await this.ctx.getServices().schedule.upsertFromSource({
+        sourceKind: 'study_plan_item',
+        sourceId: data.id,
+        title: data.title,
+        date: data.scheduled_date || getISODateString(new Date()),
+        durationMinutes: data.target_minutes || 45,
+        entryType: 'defended',
+        status: data.completed ? 'done' : 'planned',
+        provenance: { subjectId: data.subject_id, subjectName: data.subject_name, priority: data.priority }
+      });
+    } catch (err) {
+      console.warn('[Solis] Schedule dual-write (plan item) failed — backfill will repair:', err);
+    }
 
     this.ctx.notify();
     return mapStudyPlanItem(data, updates.subjectName);
@@ -416,6 +447,12 @@ export class SupabaseStudyService implements IStudyService {
       .eq('user_id', userId);
 
     if (error) throw error;
+    // V2 Phase 1 (P1-02): the projection dies with its source.
+    try {
+      await this.ctx.getServices().schedule.deleteBySource('study_plan_item', id);
+    } catch (err) {
+      console.warn('[Solis] Schedule delete (plan item) failed — backfill will repair:', err);
+    }
     this.ctx.notify();
     return true;
   };

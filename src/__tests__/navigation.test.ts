@@ -21,7 +21,9 @@ describe('Global Navigation & Route Intelligence Architecture', () => {
     const todaySection = APP_NAVIGATION.find((s) => s.id === 'today');
     expect(todaySection).toBeDefined();
     const itemIds = todaySection?.items.map((i) => i.id);
-    expect(itemIds).toEqual(['dashboard', 'tasks', 'study', 'focus', 'rooms']);
+    // V2 Phase 1 (P1-13): Triage joins the Today group — decisions get one
+    // address in the navigation, with a live open-proposal badge.
+    expect(itemIds).toEqual(['dashboard', 'tasks', 'study', 'focus', 'rooms', 'triage']);
   });
 
   it('correctly maps mobile navigation to the Phase 7 five-tab bottom bar', () => {
