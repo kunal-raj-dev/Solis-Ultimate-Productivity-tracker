@@ -11,7 +11,8 @@ import {
   Moon,
   Clock,
   Plus,
-  Sun
+  Sun,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button/Button';
 import { Checkbox } from '../../components/ui/Checkbox/Checkbox';
@@ -918,6 +919,35 @@ export const DashboardPage: React.FC = () => {
                   </span>
                 )}
               </div>
+
+              {/* Phase 6 (P6.5): proactive retention alert — when the top
+                  intelligence signal is an overdue review, say so plainly. */}
+              {topRecommendations[0]?.type === 'spaced_retrieval' &&
+                topRecommendations[0].signal.toLowerCase().includes('overdue') && (
+                  <div
+                    className="solis-retention-alert"
+                    role="alert"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginTop: '12px',
+                      maxWidth: '640px',
+                      padding: '9px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(230, 90, 65, 0.12)',
+                      border: '1px solid var(--color-coral-500)',
+                      fontSize: 'var(--text-caption)',
+                      color: 'var(--text-primary)'
+                    }}
+                  >
+                    <AlertTriangle size={14} color="var(--color-coral-500)" style={{ flexShrink: 0 }} />
+                    <span>
+                      <strong>Retention alert:</strong> {topRecommendations[0].title} is overdue —{' '}
+                      {topRecommendations[0].evidence}
+                    </span>
+                  </div>
+                )}
 
               {/* Phase 0 P0.4/P0.5: daily momentum score + the top explainable
                   study recommendations, computed from the page's existing data. */}

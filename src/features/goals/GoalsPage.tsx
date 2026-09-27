@@ -315,6 +315,19 @@ export const GoalsPage: React.FC = () => {
     return map;
   }, [goals, topics]);
 
+  // Phase 6 (P6.6): actual hours logged this week per exam goal (via its
+  // subject), so pace drift against the requirement can be surfaced.
+  const weeklyHoursLoggedByGoal = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const goal of goals) {
+      const subject = subjects.find((s) => s.id === goal.subjectId);
+      if (subject) {
+        map.set(goal.id, subject.completedHoursThisWeek || 0);
+      }
+    }
+    return map;
+  }, [goals, subjects]);
+
   const handleLaunchFocus = (subjectId?: string, title?: string) => {
     navigate(
       `/app/focus?subjectId=${subjectId || ''}&title=${encodeURIComponent(title || 'Horizon Focus')}`
@@ -533,6 +546,7 @@ export const GoalsPage: React.FC = () => {
                   onToggleStatus={handleToggleStatus}
                   onGenerateStudyPlan={handleGenerateStudyPlan}
                   requiredWeeklyHours={requiredWeeklyHoursByGoal.get(goal.id)}
+                  weeklyHoursLogged={weeklyHoursLoggedByGoal.get(goal.id)}
                 />
               ))}
             </div>

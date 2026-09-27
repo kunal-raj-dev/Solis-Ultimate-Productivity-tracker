@@ -47,6 +47,8 @@ export interface GoalCardProps {
   onGenerateStudyPlan?: (goal: Goal) => void;
   /** Phase 3 (P3.3): suggested weekly hours to be ready by the target date. */
   requiredWeeklyHours?: number;
+  /** Phase 6 (P6.6): actual study hours logged this week toward this goal. */
+  weeklyHoursLogged?: number;
 }
 
 export const GoalCard: React.FC<GoalCardProps> = ({
@@ -65,7 +67,8 @@ export const GoalCard: React.FC<GoalCardProps> = ({
   onOpenProjectWorkspace,
   onToggleStatus,
   onGenerateStudyPlan,
-  requiredWeeklyHours
+  requiredWeeklyHours,
+  weeklyHoursLogged
 }) => {
   const navigate = useNavigate();
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
@@ -238,6 +241,20 @@ export const GoalCard: React.FC<GoalCardProps> = ({
                   <Clock size={11} /> Pace: ~<strong>{requiredWeeklyHours}h</strong>/week
                 </span>
               )}
+
+              {/* Phase 6 (P6.6): adaptive feasibility drift — proactive flag
+                  when this week's logged hours fall well short of the pace. */}
+              {requiredWeeklyHours !== undefined && requiredWeeklyHours > 0 &&
+                weeklyHoursLogged !== undefined &&
+                weeklyHoursLogged < requiredWeeklyHours * 0.5 && (
+                  <span
+                    className="solis-goal-card__exam-pill"
+                    style={{ color: 'var(--color-amber-600, var(--color-amber-500))' }}
+                    title="This week's logged hours are well below the suggested pace"
+                  >
+                    <AlertTriangle size={11} /> Off pace: {weeklyHoursLogged}h of ~{requiredWeeklyHours}h
+                  </span>
+                )}
 
               {/* Exam Readiness Preview Pill */}
               {examReadiness && (

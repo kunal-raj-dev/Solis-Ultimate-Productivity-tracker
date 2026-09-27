@@ -17,6 +17,7 @@ import { soundscapeEngine } from '../utils/focus/soundscapeEngine';
 import { hapticsEngine } from '../utils/focus/hapticsEngine';
 import { createInterruptionEvent } from '../utils/focus/interruptionTracker';
 import { autoToggleReviewHabits } from '../utils/habits/habitAutoToggle';
+import { getFocusMilestone } from '../utils/focus/sessionIntelligence';
 
 export type FocusPreset = 'pomodoro' | 'deep_flow' | 'short_break' | 'custom';
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed' | 'cancelled';
@@ -858,6 +859,22 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           subjectId: selectedSubjectId || undefined,
           tags: ['focus-distillation', selectedSubject?.name || 'general', ...(taskTag ? [taskTag] : [])]
         });
+      }
+
+      // Phase 6 (P6.3): tasteful milestone acknowledgment at exact session
+      // counts — never gamification theater, just a quiet marker of compounding.
+      try {
+        const allFocus = await dataService.focus.getRecentSessions();
+        const milestone = getFocusMilestone(allFocus.filter((f) => f.completed).length);
+        if (milestone) {
+          addToast({
+            title: `Milestone — ${milestone} focus sessions completed`,
+            description: 'Every deep hour is compounding. Well walked.',
+            type: 'success'
+          });
+        }
+      } catch {
+        // milestone check is best-effort
       }
 
       addToast({

@@ -55,6 +55,10 @@ import {
   computeFocusQualityTrend
 } from '../../utils/analytics/trends';
 import {
+  computePeakFocusWindow,
+  formatPeakWindowLabel
+} from '../../utils/focus/sessionIntelligence';
+import {
   WeekOverWeekDeltas,
   StudyHoursBarChart,
   SubjectTimeBreakdownCard,
@@ -347,6 +351,34 @@ export const AnalyticsPage: React.FC = () => {
   // Phase 1 (P1.7): flow-quality sparkline across recent rated focus sessions.
   const focusQualityTrend = useMemo(() => computeFocusQualityTrend({ focusSessions }), [focusSessions]);
 
+  // Phase 6 (P6.4): personalized, deterministic observation cards.
+  const personalInsights = useMemo(() => {
+    const insights: Array<{ icon: string; text: string }> = [];
+    const peak = computePeakFocusWindow(focusSessions);
+    if (peak) {
+      insights.push({
+        icon: '📈',
+        text: `You study best during ${formatPeakWindowLabel(peak)} — average flow ${peak.averageFlow.toFixed(1)}/5 across ${peak.sessionCount} sessions.`
+      });
+    }
+    const top = subjectBreakdown[0];
+    const second = subjectBreakdown[1];
+    if (top && second && top.minutes >= second.minutes * 2) {
+      insights.push({
+        icon: '⚖️',
+        text: `${top.name} is getting ${Math.round(top.minutes / Math.max(1, second.minutes))}× the time of ${second.name} — check whether that matches your priorities.`
+      });
+    }
+    const stale = retentionForecasts.find((r) => r.forecast.isOverdue);
+    if (stale) {
+      insights.push({
+        icon: '⏳',
+        text: `"${stale.topic.title}" is past its review window — retention is decaying. A 15-minute retrieval session would protect it.`
+      });
+    }
+    return insights.slice(0, 3);
+  }, [focusSessions, subjectBreakdown, retentionForecasts]);
+
   const getHeatmapLevelClass = (minutes: number): string => {
     if (minutes >= 120) return 'solis-heatmap-cell--l4';
     if (minutes >= 60) return 'solis-heatmap-cell--l3';
@@ -521,6 +553,30 @@ export const AnalyticsPage: React.FC = () => {
           <TaskVelocityCard buckets={weeklyBuckets} />
         </div>
       </section>
+
+      {/* 02.6 // PERSONAL OBSERVATIONS (Phase 6, P6.4 — deterministic insights) */}
+      {personalInsights.length > 0 && (
+        <section className="solis-trends-section" aria-label="Personalized study observations">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Sparkles size={16} color="var(--color-lavender-500)" />
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-heading-2)', fontWeight: 400, color: 'var(--text-primary)', margin: 0 }}>
+              Solis Noticed
+            </h2>
+          </div>
+          <div className="solis-trends-grid">
+            {personalInsights.map((insight, i) => (
+              <div key={i} className="solis-trend-card">
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '18px', lineHeight: 1.2 }} aria-hidden="true">{insight.icon}</span>
+                  <span style={{ fontSize: 'var(--text-body-sm)', color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                    {insight.text}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 03 // ACTIONABLE RECOMMENDATIONS LAYER */}
       <section className="solis-recommendations-layer">

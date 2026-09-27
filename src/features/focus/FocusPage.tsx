@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Play,
   Pause,
@@ -50,6 +50,13 @@ import {
 import { useToast } from '../../context/ToastContext';
 import { useGuide } from '../../context/GuideContext';
 import { dataService } from '../../services/dataService';
+import { synthesizeCircadianResonance } from '../../utils/intelligence';
+import {
+  computePeakFocusWindow,
+  computeSoundscapeAffinity,
+  formatPeakWindowLabel
+} from '../../utils/focus/sessionIntelligence';
+import { FocusSession } from '../../types/focus';
 import { useFocus, FocusPreset } from '../../context/FocusContext';
 import { SoundscapeType, PreSessionEnergy } from '../../types/focus';
 import { formatSecondsToTimer } from '../../utils/formatters';
@@ -335,6 +342,42 @@ export const FocusPage: React.FC = () => {
     hapticsEngine.playMechanicalTick();
     startTimer();
   };
+
+  /* ── Phase 6: pre-session personalization (P6.1 circadian, P6.2 soundscape) ── */
+
+  const [recentFocusForIntel, setRecentFocusForIntel] = useState<FocusSession[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    dataService.focus
+      .getRecentSessions()
+      .then((fs) => {
+        if (!cancelled) setRecentFocusForIntel(fs);
+      })
+      .catch(() => {
+        // personalization is best-effort
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const circadian = useMemo(() => {
+    try {
+      return synthesizeCircadianResonance({ workload: {} });
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const peakFocusWindow = useMemo(
+    () => computePeakFocusWindow(recentFocusForIntel),
+    [recentFocusForIntel]
+  );
+
+  const bestSoundscape = useMemo(
+    () => computeSoundscapeAffinity(recentFocusForIntel),
+    [recentFocusForIntel]
+  );
 
   const handlePause = () => {
     hapticsEngine.playMechanicalTick();
@@ -831,6 +874,73 @@ export const FocusPage: React.FC = () => {
               <div className="solis-focus-task-pill solis-focus-peripheral">
                 <Target size={13} color="var(--color-coral-400)" />
                 <span>Task: <strong>{activeTask.title}</strong></span>
+              </div>
+            )}
+
+            {/* Phase 6 (P6.1/P6.2): pre-session personalization — circadian
+                phase advice, learned peak-focus window, and the soundscape
+                that historically correlates with this learner's best flow. */}
+            {status === 'idle' && (circadian || peakFocusWindow || bestSoundscape) && (
+              <div
+                className="solis-focus-intel-strip"
+                role="status"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                  maxWidth: '520px',
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg-surface-secondary)',
+                  border: '1px solid var(--border-subtle)',
+                  fontSize: 'var(--text-caption)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                {circadian && (
+                  <span>
+                    <strong style={{ color: 'var(--text-primary)' }}>{circadian.archetitle}:</strong>{' '}
+                    {circadian.advice}
+                  </span>
+                )}
+                {peakFocusWindow && (
+                  <span>
+                    📈 Your flow historically peaks{' '}
+                    <strong style={{ color: 'var(--text-primary)' }}>
+                      {formatPeakWindowLabel(peakFocusWindow)}
+                    </strong>{' '}
+                    (avg {peakFocusWindow.averageFlow.toFixed(1)}/5 across {peakFocusWindow.sessionCount} sessions)
+                  </span>
+                )}
+                {bestSoundscape && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    🎧 Your best flow sessions used{' '}
+                    <strong style={{ color: 'var(--text-primary)' }}>
+                      {SOUNDSCAPE_PRESETS.find((p) => p.id === bestSoundscape.soundscape)?.label ||
+                        bestSoundscape.soundscape}
+                    </strong>
+                    {soundscape !== bestSoundscape.soundscape && (
+                      <button
+                        type="button"
+                        className="tactile-press"
+                        onClick={() => setSoundscape(bestSoundscape.soundscape)}
+                        style={{
+                          border: '1px solid var(--border-subtle)',
+                          background: 'var(--bg-surface-primary)',
+                          color: 'var(--text-primary)',
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-xs)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Try it
+                      </button>
+                    )}
+                  </span>
+                )}
               </div>
             )}
 
