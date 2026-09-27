@@ -475,3 +475,63 @@
   color: var(--text-primary) !important;
   border-color: var(--color-amber-500) !important;
 }
+
+/* Phase 4 (P4.1) — 90-day heatmap toggle button and cells */
+.solis-habit-90-toggle,
+.solis-habit-90-toggle--active {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 999px);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.solis-habit-90-toggle--active {
+  border-color: var(--color-amber-500);
+  color: var(--color-amber-600, var(--color-amber-500));
+  background: rgba(230, 168, 75, 0.1);
+}
+
+.solis-habit-heatcell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.solis-habit-heatcell--done {
+  background: var(--color-sage-500);
+}
+
+.solis-habit-heatcell--partial {
+  background: rgba(230, 168, 75, 0.55);
+}
+
+.solis-habit-heatcell--excused {
+  background: var(--text-muted);
+  opacity: 0.35;
+}
+
+.solis-habit-heatcell--missed {
+  background: var(--border-subtle);
+}
+
+.solis-heat-legend {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.solis-heat-legend--done { background: var(--color-sage-500); }
+.solis-heat-legend--partial { background: rgba(230, 168, 75, 0.55); }
+.solis-heat-legend--excused { background: var(--text-muted); opacity: 0.35; }
+.solis-heat-legend--missed { background: var(--border-subtle); }

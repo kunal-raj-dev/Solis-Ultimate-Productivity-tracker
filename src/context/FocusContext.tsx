@@ -16,6 +16,7 @@ import { playFocusCompletionChime, calculateTimerRemaining } from '../utils/time
 import { soundscapeEngine } from '../utils/focus/soundscapeEngine';
 import { hapticsEngine } from '../utils/focus/hapticsEngine';
 import { createInterruptionEvent } from '../utils/focus/interruptionTracker';
+import { autoToggleReviewHabits } from '../utils/habits/habitAutoToggle';
 
 export type FocusPreset = 'pomodoro' | 'deep_flow' | 'short_break' | 'custom';
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed' | 'cancelled';
@@ -785,6 +786,14 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         } catch (studyErr) {
           console.error('Failed to sync study session from focus:', studyErr);
+        }
+
+        // Phase 4 (P4.4): a logged recall/review session completes any matching
+        // "review flashcards"-style habit for today (idempotent, best-effort).
+        try {
+          await autoToggleReviewHabits();
+        } catch {
+          // never block the session flow on habit convenience
         }
       }
 

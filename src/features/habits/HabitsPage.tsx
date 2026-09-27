@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus,
   Flame,
@@ -8,7 +8,9 @@ import {
   Minus,
   Check,
   Shield,
-  Target
+  Target,
+  AlertTriangle,
+  CalendarRange
 } from 'lucide-react';
 import { SectionHeader } from '../../components/layout/SectionHeader/SectionHeader';
 import { Button } from '../../components/ui/Button/Button';
@@ -34,6 +36,12 @@ import {
   getTierMeta,
   getTierProgressInfo
 } from '../../utils/habits/tieredHabits';
+import {
+  computeHabitHeatmap,
+  computeCategoryInsights,
+  computeChainRiskHabits,
+  HabitHeatmapCell
+} from '../../utils/habits/habitInsights';
 import './HabitsPage.css';
 
 export const HabitsPage: React.FC = () => {
@@ -77,6 +85,15 @@ export const HabitsPage: React.FC = () => {
 
   // Plan §3.5: top summary pill — calm daily progress, never guilt.
   const ritualsCompletedToday = habits.filter((h) => h.completedToday).length;
+
+  // Phase 4 (P4.1): per-habit 90-day heatmap expansion state.
+  const [heatmapHabitId, setHeatmapHabitId] = useState<string | null>(null);
+
+  // Phase 4 (P4.6): trailing-30-day completion rate per category.
+  const categoryInsights = useMemo(() => computeCategoryInsights(habits), [habits]);
+
+  // Phase 4 (P4.7): streaks ≥ 7 days still incomplete late in the day.
+  const chainRisks = useMemo(() => computeChainRiskHabits(habits), [habits]);
 
   /**
    * Plan §3.5 "Rhythm Story": completions this month framed as a positive
@@ -413,6 +430,49 @@ export const HabitsPage: React.FC = () => {
             </div>
           )}
 
+          {/* Phase 4 (P4.7): calm chain-protection banner — actionable, never alarming. */}
+          {chainRisks.map(({ habit, hoursLeft }) => (
+            <div
+              key={`risk-${habit.id}`}
+              className="solis-habit-chain-alert"
+              role="status"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--status-warning-bg, rgba(230, 168, 75, 0.12))',
+                border: '1px solid var(--color-amber-500)',
+                fontSize: 'var(--text-body-sm)',
+                color: 'var(--text-primary)'
+              }}
+            >
+              <AlertTriangle size={15} color="var(--color-amber-500)" style={{ flexShrink: 0 }} />
+              <span>
+                Your <strong>{habit.currentStreak}-day</strong> streak on “{habit.title}” ends at midnight — about{' '}
+                <strong>{Math.max(1, hoursLeft)}h</strong> left today.
+              </span>
+            </div>
+          ))}
+
+          {/* Phase 4 (P4.6): strongest-category rhythm insights this month. */}
+          {categoryInsights.length >= 2 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }} aria-label="Habit category insights">
+              {categoryInsights.map((c, i) => (
+                <span
+                  key={c.category}
+                  className="solis-habits-summary-pill"
+                  title={`${c.completions} completions across ${c.habitsCount} habit${c.habitsCount === 1 ? '' : 's'} in the last 30 days`}
+                >
+                  <span style={{ textTransform: 'capitalize' }}>{c.category}</span>{' '}
+                  {Math.round(c.completionRate * 100)}% this month
+                  {i === 0 ? ' · strongest' : ''}
+                </span>
+              ))}
+            </div>
+          )}
+
           {habits.map((habit) => (
             <div key={habit.id} className="solis-habit-row">
               <div
@@ -612,9 +672,27 @@ export const HabitsPage: React.FC = () => {
 
                 {/* Bottom Row: Interactive Consistency Matrix (7-day on mobile, 14-day on desktop) */}
                 <div className="solis-habits-matrix-container">
-                  <span className="solis-habits-matrix-title">
-                    {isMobileViewport ? '7-Day' : '14-Day'} Consistency Horizon
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <span className="solis-habits-matrix-title">
+                      {isMobileViewport ? '7-Day' : '14-Day'} Consistency Horizon
+                    </span>
+                    {/* Phase 4 (P4.1): long-range 90-day heatmap toggle. */}
+                    <button
+                      type="button"
+                      className={`tactile-press ${heatmapHabitId === habit.id ? 'solis-habit-90-toggle--active' : 'solis-habit-90-toggle'}`}
+                      onClick={() => setHeatmapHabitId((prev) => (prev === habit.id ? null : habit.id))}
+                      aria-expanded={heatmapHabitId === habit.id}
+                      title="Toggle a 90-day completion heatmap for this habit"
+                    >
+                      <CalendarRange size={12} />
+                      90-Day View
+                    </button>
+                  </div>
+
+                  {/* Phase 4 (P4.1): GitHub-style 90-day completion heatmap. */}
+                  {heatmapHabitId === habit.id && (
+                    <HabitHeatmapGrid habit={habit} />
+                  )}
 
                   <div className="solis-habits-week-matrix">
                     {matrixDays.map((dateStr) => {
@@ -881,6 +959,62 @@ export const HabitsPage: React.FC = () => {
           </Button>
         </div>
       </Modal>
+    </div>
+  );
+};
+
+/**
+ * Phase 4 (P4.1) — GitHub-style 90-day completion heatmap for one habit.
+ * Rendered inline beneath the 14-day matrix when the user toggles "90-Day".
+ */
+const HabitHeatmapGrid: React.FC<{ habit: Habit }> = ({ habit }) => {
+  const cells: HabitHeatmapCell[] = useMemo(
+    () => computeHabitHeatmap(habit, 90),
+    [habit]
+  );
+
+  // 90 days laid out as ~13 columns of 7 (weeks), oldest → newest, ending today.
+  const weeks: HabitHeatmapCell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
+
+  const doneCount = cells.filter((c) => c.status === 'done').length;
+
+  return (
+    <div
+      style={{
+        marginTop: '10px',
+        padding: '10px 12px',
+        background: 'var(--bg-surface-secondary)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)'
+      }}
+      role="img"
+      aria-label={`90-day completion heatmap for ${habit.title}: ${doneCount} of 90 days completed`}
+    >
+      <div style={{ fontSize: 'var(--text-caption)', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+        {doneCount}/90 days completed
+      </div>
+      <div style={{ display: 'flex', gap: '3px', overflowX: 'auto' }}>
+        {weeks.map((week, wi) => (
+          <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {week.map((cell) => (
+              <div
+                key={cell.date}
+                className={`solis-habit-heatcell solis-habit-heatcell--${cell.status}`}
+                title={`${cell.date}: ${cell.status}${cell.value > 0 ? ` (${cell.value})` : ''}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '10px', color: 'var(--text-muted)' }}>
+        <span><i className="solis-heat-legend solis-heat-legend--done" /> Done</span>
+        <span><i className="solis-heat-legend solis-heat-legend--partial" /> Partial</span>
+        <span><i className="solis-heat-legend solis-heat-legend--excused" /> Excused</span>
+        <span><i className="solis-heat-legend solis-heat-legend--missed" /> Missed</span>
+      </div>
     </div>
   );
 };

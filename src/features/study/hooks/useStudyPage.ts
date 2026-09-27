@@ -9,6 +9,7 @@ import { StudyResource, ReadingStatus } from '../../../types/resource';
 import { LearningIntelligenceSnapshot } from '../../../types/learningIntelligence';
 import { Note } from '../../../types/note';
 import { createLearningIntelligenceSnapshot } from '../../../utils/intelligence';
+import { autoToggleReviewHabits } from '../../../utils/habits/habitAutoToggle';
 import { getISODateString } from '../../../utils/date';
 
 export function useStudyPage() {
@@ -426,6 +427,12 @@ export function useStudyPage() {
           category: 'concept',
           tags: ['study-log', ...(logged.topicsCovered || [])]
         });
+      }
+
+      // Phase 4 (P4.4): review/recall-type manual sessions complete matching
+      // "review flashcards"-style habits for today (idempotent, best-effort).
+      if (sessionType === 'spaced_repetition' || sessionType === 'active_recall') {
+        await autoToggleReviewHabits();
       }
 
       addToast({
