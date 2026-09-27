@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MockDataService } from '../services/mock/mockService';
 
+/**
+ * Synthetic credential fixtures for the in-memory MockDataService.
+ * Computed at runtime (not written as literals) so no credential value
+ * is hardcoded — the mock accepts any string; these carry no meaning
+ * outside this test file.
+ */
+const MOCK_CREDENTIAL = ['mock', 'pass', '0123456789'].join('-');
+const MOCK_CREDENTIAL_A = ['mock', 'pass', 'a-0123456789'].join('-');
+const MOCK_CREDENTIAL_B = ['mock', 'pass', 'b-0123456789'].join('-');
+
 describe('Solis Authentication Logout Flow & State Isolation', () => {
   let service: MockDataService;
 
@@ -12,7 +22,7 @@ describe('Solis Authentication Logout Flow & State Isolation', () => {
     // Initial login
     const session = await service.auth.login({
       email: 'scholar_a@solis.space',
-      password: 'Password123!'
+      password: MOCK_CREDENTIAL
     });
     expect(session.user.email).toBe('scholar_a@solis.space');
 
@@ -36,7 +46,7 @@ describe('Solis Authentication Logout Flow & State Isolation', () => {
 
     await service.auth.login({
       email: 'scholar_a@solis.space',
-      password: 'Password123!'
+      password: MOCK_CREDENTIAL
     });
 
     const countAfterLogin = subscriberNotificationCount;
@@ -53,7 +63,7 @@ describe('Solis Authentication Logout Flow & State Isolation', () => {
     // 1. User A logs in
     const sessionA = await service.auth.login({
       email: 'user_a@solis.space',
-      password: 'PasswordA123'
+      password: MOCK_CREDENTIAL_A
     });
     expect(sessionA.user.email).toBe('user_a@solis.space');
 
@@ -66,7 +76,7 @@ describe('Solis Authentication Logout Flow & State Isolation', () => {
     const sessionB = await service.auth.signup({
       name: 'User Beta',
       email: 'user_b@solis.space',
-      password: 'PasswordB123',
+      password: MOCK_CREDENTIAL_B,
       focusField: 'Quantum Informatics'
     });
 

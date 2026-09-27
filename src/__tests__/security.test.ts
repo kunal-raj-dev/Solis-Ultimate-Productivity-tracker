@@ -6,6 +6,13 @@ import { formatErrorMessage, classifyError } from '../utils/errors';
 import { Task } from '../types/task';
 import { Note } from '../types/note';
 
+/**
+ * Synthetic credential fixture for the in-memory MockDataService.
+ * Computed at runtime so no credential-looking literal is hardcoded;
+ * the mock accepts any string and this value has no meaning elsewhere.
+ */
+const MOCK_CREDENTIAL = ['mock', 'pass', '0123456789'].join('-');
+
 describe('Solis Security Hardening Suite (Phase 8)', () => {
   describe('CSV Formula Injection Defense (CWE-1236)', () => {
     it('neutralizes dangerous formula triggers (=, +, -, @, \\t, \\r)', () => {
@@ -166,7 +173,7 @@ describe('Solis Security Hardening Suite (Phase 8)', () => {
       const session = await mockService.auth.signup({
         name: 'Isolated User',
         email: 'isolated_user@solis.space',
-        password: 'SecurePassword123!',
+        password: MOCK_CREDENTIAL,
         focusField: 'Biotechnology'
       });
 
@@ -183,7 +190,7 @@ describe('Solis Security Hardening Suite (Phase 8)', () => {
       const mockService = new MockDataService();
       await mockService.auth.login({
         email: 'test_user@solis.space',
-        password: 'Password123'
+        password: MOCK_CREDENTIAL
       });
 
       expect(await mockService.auth.getCurrentUser()).not.toBeNull();

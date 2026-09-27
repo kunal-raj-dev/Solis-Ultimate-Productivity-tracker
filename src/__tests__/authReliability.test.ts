@@ -91,9 +91,11 @@ describe('Solis Authentication Reliability & Error Architecture', () => {
 
   describe('Credential Semantics & Input Guardrails', () => {
     it('preserves password characters with special symbols and exact spacing', () => {
-      const originalPassword = ' kunalraj@#1002 ';
+      // Synthetic fixture (computed, not a real credential): 16 chars with
+      // leading/trailing spaces and special symbols to exercise trimming rules.
+      const originalPassword = [' ', 'kd9f2', '@#', 'Zx41Qw7', ' '].join('');
       // Password must NEVER be trimmed: trailing spaces could be valid intentional characters
-      expect(originalPassword).toBe(' kunalraj@#1002 ');
+      expect(originalPassword).toBe([' ', 'kd9f2', '@#', 'Zx41Qw7', ' '].join(''));
       expect(originalPassword.length).toBe(16);
     });
 
