@@ -1,0 +1,129 @@
+/* DashboardIntelligenceBrief — compact momentum score + explainable
+   recommendation strip shown under the dashboard greeting (Phase 0 P0.4/P0.5). */
+
+.solis-intel-brief {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  max-width: 640px;
+}
+
+.solis-intel-brief__score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 14px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.solis-intel-brief__score-icon {
+  color: var(--color-amber-500);
+  flex-shrink: 0;
+}
+
+.solis-intel-brief__score-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.solis-intel-brief__score-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.solis-intel-brief__score-max {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.solis-intel-brief__score-label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.solis-intel-brief__context {
+  font-size: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.solis-intel-brief__recs {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.solis-intel-brief__empty {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+}
+
+.solis-intel-brief__rec {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.solis-intel-brief__rec--secondary {
+  opacity: 0.85;
+}
+
+.solis-intel-brief__rec-icon {
+  color: var(--color-amber-500);
+  flex-shrink: 0;
+}
+
+.solis-intel-brief__rec-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.solis-intel-brief__rec-title {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-intel-brief__rec-why {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solis-intel-brief__rec-action {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .solis-intel-brief__score {
+    border-right: none;
+    padding-right: 0;
+  }
+}

@@ -408,7 +408,7 @@ export const StudyPage: React.FC = () => {
           onTogglePlanItem={handleTogglePlanItem}
           onDeletePlanItem={handleDeletePlanItem}
           onConvertPlanToTask={handleConvertPlanToTask}
-          onStartFocus={(item) => navigate(`/app/focus?subjectId=${item.subjectId}&planId=${item.id}&title=${encodeURIComponent(item.title)}`)}
+          onStartFocus={(item) => navigate(`/app/focus?subjectId=${item.subjectId}&planId=${item.id}&title=${encodeURIComponent(item.title)}&duration=${item.targetMinutes}`)}
         />
         </div>
 

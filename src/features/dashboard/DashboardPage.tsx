@@ -46,6 +46,10 @@ import { RecurringStudyRoutine, TimeBlock } from '../../types/planning';
 import { DailyReflection } from '../../types/reflection';
 import { getTimeOfDayGreeting, formatFriendlyDate, formatFullDate, getISODateString, addDays } from '../../utils/date';
 import { evaluateCognitiveLoad } from '../../utils/intelligence/masteryIntelligence';
+import { createLearningIntelligenceSnapshot } from '../../utils/intelligence';
+import { calculateDailySummary } from '../../utils/productivity';
+import { ExplainableRecommendation } from '../../types/learningIntelligence';
+import { DashboardIntelligenceBrief } from '../../components/features/Intelligence/DashboardIntelligenceBrief';
 import { buildTimeBlocks, findTimeBlockConflicts, calculateTimeAllocation } from '../../utils/planning/timeBlocking';
 import { evaluateHabitTier, getTierMeta } from '../../utils/habits/tieredHabits';
 import { ActivationWelcomeModal } from '../../components/features/Activation/ActivationWelcomeModal';
@@ -238,6 +242,36 @@ export const DashboardPage: React.FC = () => {
       }
     };
   }, []);
+
+  // Phase 0 P0.3: the morning ritual persists its completion record
+  // (MorningPlanningModal writes solis_morning_calibration_<date>); the CTA
+  // swaps to a done-state instead of repeating the same invitation all morning.
+  const [isMorningPlanned, setIsMorningPlanned] = useState(() => {
+    try {
+      return Boolean(localStorage.getItem(`solis_morning_calibration_${getISODateString(new Date())}`));
+    } catch {
+      return false;
+    }
+  });
+
+  // Phase 0 P0.8: today's intention can be linked to an active goal so the
+  // intention strip feeds the goals system instead of vanishing into free text.
+  const [intentionGoalId, setIntentionGoalId] = useState(() => {
+    try {
+      return localStorage.getItem(`solis_daily_intention_goal_${getISODateString(new Date())}`) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const handleLinkIntentionGoal = (goalId: string) => {
+    setIntentionGoalId(goalId);
+    try {
+      localStorage.setItem(`solis_daily_intention_goal_${getISODateString(currentTime)}`, goalId);
+    } catch {
+      // storage unavailable — the link stays in session state only
+    }
+  };
 
   const greetingInfo = getTimeOfDayGreeting(user?.name || 'Scholar');
 
@@ -749,6 +783,59 @@ export const DashboardPage: React.FC = () => {
     });
   }, [recentFocus, recentSessions, reflections]);
 
+  // Phase 0 P0.4: deterministic daily momentum score (30% tasks / 30% study /
+  // 20% focus / 20% habits) derived from the data this page already fetches.
+  const dailyMomentum = useMemo(
+    () =>
+      calculateDailySummary({
+        tasks,
+        studySessions: recentSessions,
+        focusSessions: recentFocus,
+        habits
+      }),
+    [tasks, recentSessions, recentFocus, habits]
+  );
+
+  // Phase 0 P0.5: the same learning intelligence snapshot Analytics computes,
+  // so the dashboard can surface the top explainable recommendations without
+  // any additional requests.
+  const intelligenceSnapshot = useMemo(() => {
+    if (subjects.length === 0) return null;
+    try {
+      return createLearningIntelligenceSnapshot({
+        subjects,
+        topics,
+        sessions: recentSessions,
+        flashcards,
+        reviews: [],
+        notes,
+        resources: [],
+        planItems: studyPlan
+      });
+    } catch (err) {
+      console.warn('Dashboard intelligence snapshot failed:', err);
+      return null;
+    }
+  }, [subjects, topics, recentSessions, flashcards, notes, studyPlan]);
+
+  const topRecommendations = useMemo(
+    () => intelligenceSnapshot?.recommendations.slice(0, 2) ?? [],
+    [intelligenceSnapshot]
+  );
+
+  const handleRecommendationAction = useCallback((rec: ExplainableRecommendation) => {
+    const payload = rec.actionPayload;
+    if (payload.type === 'drill_flashcards') {
+      navigate('/app/study');
+      return;
+    }
+    const params = new URLSearchParams();
+    if (payload.subjectId) params.set('subjectId', payload.subjectId);
+    if (payload.topicTitle) params.set('title', payload.topicTitle);
+    if (payload.suggestedDurationMinutes) params.set('duration', String(payload.suggestedDurationMinutes));
+    navigate(`/app/focus?${params.toString()}`);
+  }, [navigate]);
+
   // Plan §3.2: priority triage — sort active tasks by priority
   // (urgent → high → medium → low) and due date before rendering.
   const activeTasks = useMemo(() => {
@@ -808,12 +895,38 @@ export const DashboardPage: React.FC = () => {
                   className="solis-intention-input"
                   aria-label="What is your main study goal today?"
                 />
+                {goals.some((g) => g.status === 'active') && (
+                  <select
+                    className="solis-intention-goal-select"
+                    value={intentionGoalId}
+                    onChange={(e) => handleLinkIntentionGoal(e.target.value)}
+                    aria-label="Link today's intention to a goal"
+                  >
+                    <option value="">No linked goal</option>
+                    {goals
+                      .filter((g) => g.status === 'active')
+                      .map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.title}
+                        </option>
+                      ))}
+                  </select>
+                )}
                 {intentionSaved && (
                   <span className="solis-intention-pill" aria-live="polite">
                     ✓ Saved
                   </span>
                 )}
               </div>
+
+              {/* Phase 0 P0.4/P0.5: daily momentum score + the top explainable
+                  study recommendations, computed from the page's existing data. */}
+              <DashboardIntelligenceBrief
+                breakdown={dailyMomentum.breakdown}
+                summary={dailyMomentum.summary}
+                topRecommendations={topRecommendations}
+                onRecommendationAction={handleRecommendationAction}
+              />
             </div>
 
             <div className="solis-solar-hero__controls">
@@ -830,16 +943,22 @@ export const DashboardPage: React.FC = () => {
               >
                 Start Focus Session
               </Button>
-              {/* Morning Planning primary CTA before 14:00 (F-201) */}
+              {/* Morning Planning primary CTA before 14:00 (F-201); Phase 0 P0.3
+                  swaps to a done-state once the ritual is completed today. */}
               {currentTime.getHours() < 14 && (
                 <Button
-                  variant="accent"
+                  variant={isMorningPlanned ? 'outline' : 'accent'}
                   size="md"
                   className="tactile-press"
-                  leftIcon={<Sun size={16} />}
+                  leftIcon={isMorningPlanned ? <CheckCircle2 size={16} /> : <Sun size={16} />}
+                  title={
+                    isMorningPlanned
+                      ? "Today's morning planning is complete — reopen to review"
+                      : undefined
+                  }
                   onClick={() => setIsMorningModalOpen(true)}
                 >
-                  Morning Planning (90s)
+                  {isMorningPlanned ? 'Morning Planned ✓' : 'Morning Planning (90s)'}
                 </Button>
               )}
               {/* Evening Closure primary CTA after 17:00 (Zone 1) */}
@@ -1158,7 +1277,10 @@ export const DashboardPage: React.FC = () => {
         tasks={tasks}
         timeBlocks={taskTimeBlocks}
         dailyCapacityMinutes={getDefaultDailyCapacityMinutes()}
-        onPlanningCompleted={loadDashboardData}
+        onPlanningCompleted={() => {
+          setIsMorningPlanned(true);
+          loadDashboardData();
+        }}
       />
 
       {/* Evening Closure & Reflection Ritual Modal */}
