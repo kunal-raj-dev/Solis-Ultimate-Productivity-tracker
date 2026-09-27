@@ -439,6 +439,13 @@ export function useStudyRoom(roomId: string | undefined): UseStudyRoomResult {
       console.warn('Auto-join participant error:', err);
     });
 
+    // Phase 5 (P5.4): structured session opener — every arrival logs a
+    // check-in to the pod timeline ("Kunal checked in — studying Physics"),
+    // giving body-doubling sessions a visible start-of-session ritual.
+    dataService.rooms.sendRoomEvent(roomId, 'nudge', 'checked in to the sanctuary').catch(() => {
+      // Check-in is ceremony, not critical state — ignore failures.
+    });
+
     if (!isSupabaseConfigured()) {
       // Development Mock Channel fallback
       const unsubscribe = dataService.subscribe(() => {
